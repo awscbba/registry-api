@@ -58,7 +58,7 @@ Actions:
             
             # Create deployment package
             mkdir -p deployment-package
-            cp -r src/* deployment-package/
+            cp -r src deployment-package/
             cp main.py deployment-package/
             cp pyproject.toml deployment-package/
             cp uv.lock deployment-package/
