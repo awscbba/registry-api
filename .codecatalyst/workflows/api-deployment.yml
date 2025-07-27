@@ -81,8 +81,8 @@ Actions:
             if aws sts get-caller-identity > /dev/null 2>&1; then
                 echo "✅ AWS CLI access confirmed"
                 
-                # Update Lambda function code (replace with your actual function name)
-                FUNCTION_NAME="people-registry-api"
+                # Update Lambda function code (actual deployed function name)
+                FUNCTION_NAME="PeopleRegisterInfrastruct-PeopleApiFunction67A8223-zeZ2Gf1F4U1T"
                 
                 if aws lambda update-function-code \
                     --function-name "$FUNCTION_NAME" \
