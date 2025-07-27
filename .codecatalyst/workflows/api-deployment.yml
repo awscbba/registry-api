@@ -36,55 +36,24 @@ Actions:
             uv --version || echo "uv version check failed"
             
             # Setup environment
-            echo "📦 Setting up environment..."
+            echo "📦 Setting up deployment environment..."
             uv venv --python=python3.13 --clear
             source .venv/bin/activate
             uv pip install -r requirements.txt
-            uv pip install pytest flake8 black
             
-            # Validate critical dependencies are installed
-            echo "🔍 Validating dependencies..."
+            # Validate critical dependencies for deployment
+            echo "🔍 Validating deployment dependencies..."
             python -c "
             import sys
             try:
-                import fastapi, boto3, pytest
-                print('✅ All critical dependencies installed successfully')
+                import fastapi, boto3
+                print('✅ Deployment dependencies validated')
             except ImportError as e:
-                print(f'❌ Missing critical dependency: {e}')
+                print(f'❌ Missing deployment dependency: {e}')
                 sys.exit(1)
             "
             
-            # Set AWS environment variables for testing
-            echo "🔧 Setting up test environment..."
-            export AWS_DEFAULT_REGION=us-east-1
-            export AWS_REGION=us-east-1
-            export AWS_ACCESS_KEY_ID=testing
-            export AWS_SECRET_ACCESS_KEY=testing
-            export AWS_SECURITY_TOKEN=testing
-            export AWS_SESSION_TOKEN=testing
-            
-            # Set table names for testing
-            export PEOPLE_TABLE_NAME=PeopleTable
-            export AUDIT_TABLE_NAME=AuditLogsTable
-            export LOCKOUT_TABLE_NAME=AccountLockoutTable
-            export PROJECTS_TABLE_NAME=ProjectsTable
-            export SUBSCRIPTIONS_TABLE_NAME=SubscriptionsTable
-            export JWT_SECRET=test-secret-key-for-testing-only
-            
-            # Run tests
-            echo "🧪 Running tests..."
-            export PYTHONPATH="${PYTHONPATH}:$(pwd)/src"
-            python -m pytest tests/ --verbose || {
-                echo "❌ Tests failed"
-                exit 1
-            }
-            
-            # Run linting
-            echo "🔍 Running linting..."
-            flake8 . || {
-                echo "❌ Linting failed"
-                exit 1
-            }
+            echo "ℹ️ Skipping tests and linting - already validated in PR/merge pipeline"
             
             # Deploy - sync code to infrastructure repo
             echo "🔄 Syncing code to infrastructure..."
