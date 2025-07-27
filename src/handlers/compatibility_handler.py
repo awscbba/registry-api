@@ -14,11 +14,10 @@ from ..middleware.auth_middleware import get_current_user, require_no_password_c
 app = FastAPI()
 db_service = DynamoDBService()
 
+
 @app.get("/people/legacy", response_model=List[PersonResponse])
 async def list_people_legacy_format(
-    request: Request,
-    limit: int = 100,
-    current_user=Depends(require_no_password_change)
+    request: Request, limit: int = 100, current_user=Depends(require_no_password_change)
 ):
     """
     Legacy endpoint that returns people as a direct array for backward compatibility.
@@ -35,14 +34,13 @@ async def list_people_legacy_format(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to retrieve people"
+            detail="Failed to retrieve people",
         )
+
 
 @app.get("/people/new", response_model=dict)
 async def list_people_new_format(
-    request: Request,
-    limit: int = 100,
-    current_user=Depends(require_no_password_change)
+    request: Request, limit: int = 100, current_user=Depends(require_no_password_change)
 ):
     """
     New endpoint that returns people with metadata (count, pagination info, etc.)
@@ -59,11 +57,12 @@ async def list_people_new_format(
             "people": people_response,
             "count": len(people_response),
             "limit": limit,
-            "has_more": len(people_response) == limit  # Indicates if there might be more
+            "has_more": len(people_response)
+            == limit,  # Indicates if there might be more
         }
 
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to retrieve people"
+            detail="Failed to retrieve people",
         )
