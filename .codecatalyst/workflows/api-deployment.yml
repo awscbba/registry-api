@@ -54,6 +54,23 @@ Actions:
                 sys.exit(1)
             "
             
+            # Set AWS environment variables for testing
+            echo "🔧 Setting up test environment..."
+            export AWS_DEFAULT_REGION=us-east-1
+            export AWS_REGION=us-east-1
+            export AWS_ACCESS_KEY_ID=testing
+            export AWS_SECRET_ACCESS_KEY=testing
+            export AWS_SECURITY_TOKEN=testing
+            export AWS_SESSION_TOKEN=testing
+            
+            # Set table names for testing
+            export PEOPLE_TABLE_NAME=PeopleTable
+            export AUDIT_TABLE_NAME=AuditLogsTable
+            export LOCKOUT_TABLE_NAME=AccountLockoutTable
+            export PROJECTS_TABLE_NAME=ProjectsTable
+            export SUBSCRIPTIONS_TABLE_NAME=SubscriptionsTable
+            export JWT_SECRET=test-secret-key-for-testing-only
+            
             # Run tests
             echo "🧪 Running tests..."
             export PYTHONPATH="${PYTHONPATH}:$(pwd)/src"
@@ -64,7 +81,7 @@ Actions:
             
             # Run linting
             echo "🔍 Running linting..."
-            flake8 src/ tests/ --max-line-length=88 || {
+            flake8 . || {
                 echo "❌ Linting failed"
                 exit 1
             }

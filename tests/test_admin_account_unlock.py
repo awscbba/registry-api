@@ -57,7 +57,7 @@ async def mock_get_current_user():
 
 
 @pytest.fixture
-def test_app():
+def test_app(mock_dynamodb_tables):
     # Store original overrides
     original_overrides = app.dependency_overrides.copy()
 
