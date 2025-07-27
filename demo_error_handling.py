@@ -110,7 +110,7 @@ async def demo_rate_limiting():
             context=context
         )
 
-        print(f"Attempt {i+1}: Allowed={result.allowed}, Count={result.current_count}/{result.limit}")
+        print(f"Attempt {i + 1}: Allowed={result.allowed}, Count={result.current_count}/{result.limit}")
 
         if not result.allowed:
             print(f"Rate limit exceeded! Retry after {result.retry_after_seconds} seconds")
