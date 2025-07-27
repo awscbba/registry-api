@@ -86,7 +86,7 @@ Actions:
             
             # Run linting
             echo "🔍 Running linting..."
-            flake8 src/ tests/ --max-line-length=88 || {
+            flake8 . || {
                 echo "❌ Linting failed"
                 exit 1
             }
