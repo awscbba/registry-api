@@ -1,6 +1,7 @@
 """
 Tests for authentication service.
 """
+
 import pytest
 from datetime import datetime, timezone, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -31,10 +32,10 @@ def sample_person():
             city="Anytown",
             state="CA",
             zipCode="12345",
-            country="USA"
+            country="USA",
         ),
         createdAt=datetime.now(timezone.utc),
-        updatedAt=datetime.now(timezone.utc)
+        updatedAt=datetime.now(timezone.utc),
     )
 
 
@@ -43,8 +44,11 @@ def sample_person_with_password(sample_person):
     """Create a sample person with password for testing."""
     # Generate a proper bcrypt hash of "TestPassword123!"
     import bcrypt
+
     password = "TestPassword123!"
-    sample_person.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    sample_person.password_hash = bcrypt.hashpw(
+        password.encode("utf-8"), bcrypt.gensalt()
+    ).decode("utf-8")
     sample_person.require_password_change = False
     sample_person.is_active = True
     return sample_person
@@ -54,20 +58,35 @@ class TestAuthService:
     """Test cases for AuthService."""
 
     @pytest.mark.asyncio
-    async def test_authenticate_user_success(self, auth_service, sample_person_with_password):
+    async def test_authenticate_user_success(
+        self, auth_service, sample_person_with_password
+    ):
         """Test successful user authentication."""
         login_request = LoginRequest(
-            email="john.doe@example.com",
-            password="TestPassword123!"
+            email="john.doe@example.com", password="TestPassword123!"
         )
 
         # Mock the database service methods
-        with patch.object(auth_service.db_service, 'get_person_by_email', new_callable=AsyncMock) as mock_get_person, \
-             patch.object(auth_service.db_service, 'get_account_lockout', new_callable=AsyncMock) as mock_get_lockout, \
-             patch.object(auth_service.db_service, 'save_account_lockout', new_callable=AsyncMock) as mock_save_lockout, \
-             patch.object(auth_service.db_service, 'clear_account_lockout', new_callable=AsyncMock) as mock_clear_lockout, \
-             patch.object(auth_service.db_service, 'update_last_login', new_callable=AsyncMock) as mock_update_login, \
-             patch.object(auth_service.db_service, 'log_security_event', new_callable=AsyncMock) as mock_log_event:
+        with (
+            patch.object(
+                auth_service.db_service, "get_person_by_email", new_callable=AsyncMock
+            ) as mock_get_person,
+            patch.object(
+                auth_service.db_service, "get_account_lockout", new_callable=AsyncMock
+            ) as mock_get_lockout,
+            patch.object(
+                auth_service.db_service, "save_account_lockout", new_callable=AsyncMock
+            ) as mock_save_lockout,
+            patch.object(
+                auth_service.db_service, "clear_account_lockout", new_callable=AsyncMock
+            ) as mock_clear_lockout,
+            patch.object(
+                auth_service.db_service, "update_last_login", new_callable=AsyncMock
+            ) as mock_update_login,
+            patch.object(
+                auth_service.db_service, "log_security_event", new_callable=AsyncMock
+            ) as mock_log_event,
+        ):
 
             mock_get_person.return_value = sample_person_with_password
             mock_get_lockout.return_value = None  # No lockout
@@ -97,12 +116,17 @@ class TestAuthService:
     async def test_authenticate_user_invalid_email(self, auth_service):
         """Test authentication with invalid email."""
         login_request = LoginRequest(
-            email="nonexistent@example.com",
-            password="TestPassword123!"
+            email="nonexistent@example.com", password="TestPassword123!"
         )
 
-        with patch.object(auth_service.db_service, 'get_person_by_email', new_callable=AsyncMock) as mock_get_person, \
-             patch.object(auth_service, '_log_security_event', new_callable=AsyncMock) as mock_log_event:
+        with (
+            patch.object(
+                auth_service.db_service, "get_person_by_email", new_callable=AsyncMock
+            ) as mock_get_person,
+            patch.object(
+                auth_service, "_log_security_event", new_callable=AsyncMock
+            ) as mock_log_event,
+        ):
 
             mock_get_person.return_value = None
 
@@ -122,17 +146,28 @@ class TestAuthService:
             assert log_call["details"]["reason"] == "user_not_found"
 
     @pytest.mark.asyncio
-    async def test_authenticate_user_invalid_password(self, auth_service, sample_person_with_password):
+    async def test_authenticate_user_invalid_password(
+        self, auth_service, sample_person_with_password
+    ):
         """Test authentication with invalid password."""
         login_request = LoginRequest(
-            email="john.doe@example.com",
-            password="WrongPassword123!"
+            email="john.doe@example.com", password="WrongPassword123!"
         )
 
-        with patch.object(auth_service.db_service, 'get_person_by_email', new_callable=AsyncMock) as mock_get_person, \
-             patch.object(auth_service, '_check_account_lockout', new_callable=AsyncMock) as mock_check_lockout, \
-             patch.object(auth_service, '_record_failed_attempt', new_callable=AsyncMock) as mock_record_failed, \
-             patch.object(auth_service, '_log_security_event', new_callable=AsyncMock) as mock_log_event:
+        with (
+            patch.object(
+                auth_service.db_service, "get_person_by_email", new_callable=AsyncMock
+            ) as mock_get_person,
+            patch.object(
+                auth_service, "_check_account_lockout", new_callable=AsyncMock
+            ) as mock_check_lockout,
+            patch.object(
+                auth_service, "_record_failed_attempt", new_callable=AsyncMock
+            ) as mock_record_failed,
+            patch.object(
+                auth_service, "_log_security_event", new_callable=AsyncMock
+            ) as mock_log_event,
+        ):
 
             mock_get_person.return_value = sample_person_with_password
             mock_check_lockout.return_value = (False, None)
@@ -156,11 +191,12 @@ class TestAuthService:
             assert log_call["details"]["reason"] == "invalid_password"
 
     @pytest.mark.asyncio
-    async def test_authenticate_user_account_locked(self, auth_service, sample_person_with_password):
+    async def test_authenticate_user_account_locked(
+        self, auth_service, sample_person_with_password
+    ):
         """Test authentication with locked account."""
         login_request = LoginRequest(
-            email="john.doe@example.com",
-            password="TestPassword123!"
+            email="john.doe@example.com", password="TestPassword123!"
         )
 
         locked_until = datetime.now(timezone.utc) + timedelta(minutes=10)
@@ -169,12 +205,20 @@ class TestAuthService:
             failed_attempts=5,
             locked_until=locked_until,
             last_attempt_at=datetime.now(timezone.utc),
-            ip_addresses=["192.168.1.1"]
+            ip_addresses=["192.168.1.1"],
         )
 
-        with patch.object(auth_service.db_service, 'get_person_by_email', new_callable=AsyncMock) as mock_get_person, \
-             patch.object(auth_service, '_check_account_lockout', new_callable=AsyncMock) as mock_check_lockout, \
-             patch.object(auth_service, '_log_security_event', new_callable=AsyncMock) as mock_log_event:
+        with (
+            patch.object(
+                auth_service.db_service, "get_person_by_email", new_callable=AsyncMock
+            ) as mock_get_person,
+            patch.object(
+                auth_service, "_check_account_lockout", new_callable=AsyncMock
+            ) as mock_check_lockout,
+            patch.object(
+                auth_service, "_log_security_event", new_callable=AsyncMock
+            ) as mock_log_event,
+        ):
 
             mock_get_person.return_value = sample_person_with_password
             mock_check_lockout.return_value = (True, lockout_info)
@@ -198,13 +242,20 @@ class TestAuthService:
     async def test_authenticate_user_no_password_set(self, auth_service, sample_person):
         """Test authentication when user has no password set."""
         login_request = LoginRequest(
-            email="john.doe@example.com",
-            password="TestPassword123!"
+            email="john.doe@example.com", password="TestPassword123!"
         )
 
-        with patch.object(auth_service.db_service, 'get_person_by_email', new_callable=AsyncMock) as mock_get_person, \
-             patch.object(auth_service, '_check_account_lockout', new_callable=AsyncMock) as mock_check_lockout, \
-             patch.object(auth_service, '_log_security_event', new_callable=AsyncMock) as mock_log_event:
+        with (
+            patch.object(
+                auth_service.db_service, "get_person_by_email", new_callable=AsyncMock
+            ) as mock_get_person,
+            patch.object(
+                auth_service, "_check_account_lockout", new_callable=AsyncMock
+            ) as mock_check_lockout,
+            patch.object(
+                auth_service, "_log_security_event", new_callable=AsyncMock
+            ) as mock_log_event,
+        ):
 
             mock_get_person.return_value = sample_person  # No password_hash attribute
             mock_check_lockout.return_value = (False, None)
@@ -225,18 +276,27 @@ class TestAuthService:
             assert log_call["details"]["reason"] == "no_password_set"
 
     @pytest.mark.asyncio
-    async def test_authenticate_user_inactive_account(self, auth_service, sample_person_with_password):
+    async def test_authenticate_user_inactive_account(
+        self, auth_service, sample_person_with_password
+    ):
         """Test authentication with inactive account."""
         login_request = LoginRequest(
-            email="john.doe@example.com",
-            password="TestPassword123!"
+            email="john.doe@example.com", password="TestPassword123!"
         )
 
         sample_person_with_password.is_active = False
 
-        with patch.object(auth_service.db_service, 'get_person_by_email', new_callable=AsyncMock) as mock_get_person, \
-             patch.object(auth_service, '_check_account_lockout', new_callable=AsyncMock) as mock_check_lockout, \
-             patch.object(auth_service, '_log_security_event', new_callable=AsyncMock) as mock_log_event:
+        with (
+            patch.object(
+                auth_service.db_service, "get_person_by_email", new_callable=AsyncMock
+            ) as mock_get_person,
+            patch.object(
+                auth_service, "_check_account_lockout", new_callable=AsyncMock
+            ) as mock_check_lockout,
+            patch.object(
+                auth_service, "_log_security_event", new_callable=AsyncMock
+            ) as mock_log_event,
+        ):
 
             mock_get_person.return_value = sample_person_with_password
             mock_check_lockout.return_value = (False, None)
@@ -267,12 +327,20 @@ class TestAuthService:
             person_id=person_id,
             failed_attempts=4,
             last_attempt_at=datetime.now(timezone.utc) - timedelta(minutes=1),
-            ip_addresses=[ip_address]
+            ip_addresses=[ip_address],
         )
 
-        with patch.object(auth_service.db_service, 'get_account_lockout', new_callable=AsyncMock) as mock_get_lockout, \
-             patch.object(auth_service.db_service, 'save_account_lockout', new_callable=AsyncMock) as mock_save_lockout, \
-             patch.object(auth_service, '_log_security_event', new_callable=AsyncMock) as mock_log_event:
+        with (
+            patch.object(
+                auth_service.db_service, "get_account_lockout", new_callable=AsyncMock
+            ) as mock_get_lockout,
+            patch.object(
+                auth_service.db_service, "save_account_lockout", new_callable=AsyncMock
+            ) as mock_save_lockout,
+            patch.object(
+                auth_service, "_log_security_event", new_callable=AsyncMock
+            ) as mock_log_event,
+        ):
 
             mock_get_lockout.return_value = existing_lockout
 
@@ -297,8 +365,14 @@ class TestAuthService:
         person_id = "test-person-id"
         admin_user_id = "admin-user-id"
 
-        with patch.object(auth_service.db_service, 'clear_account_lockout', new_callable=AsyncMock) as mock_clear_lockout, \
-             patch.object(auth_service, '_log_security_event', new_callable=AsyncMock) as mock_log_event:
+        with (
+            patch.object(
+                auth_service.db_service, "clear_account_lockout", new_callable=AsyncMock
+            ) as mock_clear_lockout,
+            patch.object(
+                auth_service, "_log_security_event", new_callable=AsyncMock
+            ) as mock_log_event,
+        ):
 
             result = await auth_service.unlock_account(person_id, admin_user_id)
 

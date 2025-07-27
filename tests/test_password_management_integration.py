@@ -2,6 +2,7 @@
 Integration tests for password management functionality.
 Tests the complete password update workflow from API to database.
 """
+
 import pytest
 import sys
 import os
@@ -12,7 +13,7 @@ from fastapi.testclient import TestClient
 from fastapi import status
 
 # Add the src directory to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../src"))
 
 from src.models.person import Person, PasswordUpdateRequest, Address
 from src.services.password_management_service import PasswordManagementService
@@ -43,14 +44,14 @@ class TestPasswordManagementIntegration:
                 city="Anytown",
                 state="CA",
                 zipCode="12345",
-                country="USA"
+                country="USA",
             ),
             createdAt=datetime.now(timezone.utc),
             updatedAt=datetime.now(timezone.utc),
             password_hash=PasswordHasher.hash_password("CurrentPassword123!"),
             password_history=[],
             is_active=True,
-            require_password_change=False
+            require_password_change=False,
         )
 
     @pytest.fixture
@@ -65,151 +66,196 @@ class TestPasswordManagementIntegration:
         mock_user.require_password_change = False
         return mock_user
 
-    @patch('src.handlers.people_handler.password_service')
-    @patch('src.handlers.people_handler.get_current_user')
-    def test_password_update_api_success(self, mock_get_user, mock_password_service, client, mock_auth_user):
+    @patch("src.handlers.people_handler.password_service")
+    @patch("src.handlers.people_handler.get_current_user")
+    def test_password_update_api_success(
+        self, mock_get_user, mock_password_service, client, mock_auth_user
+    ):
         """Test successful password update through API."""
         # Setup mocks
         mock_get_user.return_value = mock_auth_user
-        mock_password_service.update_password = AsyncMock(return_value=(
-            True,
-            Mock(success=True, message="Password updated successfully", require_reauth=True),
-            None
-        ))
+        mock_password_service.update_password = AsyncMock(
+            return_value=(
+                True,
+                Mock(
+                    success=True,
+                    message="Password updated successfully",
+                    require_reauth=True,
+                ),
+                None,
+            )
+        )
 
         # Make API request
-        response = client.put("/auth/password", json={
-            "current_password": "CurrentPassword123!",
-            "new_password": "NewPassword456@",
-            "confirm_password": "NewPassword456@"
-        })
+        response = client.put(
+            "/auth/password",
+            json={
+                "current_password": "CurrentPassword123!",
+                "new_password": "NewPassword456@",
+                "confirm_password": "NewPassword456@",
+            },
+        )
 
         # Verify response - endpoint is protected, so we expect 403 without proper auth
         assert response.status_code == status.HTTP_403_FORBIDDEN
         # This tests that the endpoint exists and is properly protected
 
-    @patch('src.handlers.people_handler.password_service')
-    @patch('src.handlers.people_handler.get_current_user')
-    def test_password_update_api_invalid_current_password(self, mock_get_user, mock_password_service, client, mock_auth_user):
+    @patch("src.handlers.people_handler.password_service")
+    @patch("src.handlers.people_handler.get_current_user")
+    def test_password_update_api_invalid_current_password(
+        self, mock_get_user, mock_password_service, client, mock_auth_user
+    ):
         """Test password update with invalid current password."""
         # Setup mocks
         mock_get_user.return_value = mock_auth_user
-        mock_password_service.update_password = AsyncMock(return_value=(
-            False,
-            Mock(success=False, message="Current password is incorrect", require_reauth=False),
-            "Current password is incorrect"
-        ))
+        mock_password_service.update_password = AsyncMock(
+            return_value=(
+                False,
+                Mock(
+                    success=False,
+                    message="Current password is incorrect",
+                    require_reauth=False,
+                ),
+                "Current password is incorrect",
+            )
+        )
 
         # Make API request
-        response = client.put("/auth/password", json={
-            "current_password": "WrongPassword123!",
-            "new_password": "NewPassword456@",
-            "confirm_password": "NewPassword456@"
-        })
+        response = client.put(
+            "/auth/password",
+            json={
+                "current_password": "WrongPassword123!",
+                "new_password": "NewPassword456@",
+                "confirm_password": "NewPassword456@",
+            },
+        )
 
         # Verify response
         assert response.status_code == status.HTTP_403_FORBIDDEN  # Protected endpoint
         assert "Not authenticated" in response.json()["detail"]
 
-    @patch('src.handlers.people_handler.password_service')
-    @patch('src.handlers.people_handler.get_current_user')
-    def test_password_validation_api(self, mock_get_user, mock_password_service, client, mock_auth_user):
+    @patch("src.handlers.people_handler.password_service")
+    @patch("src.handlers.people_handler.get_current_user")
+    def test_password_validation_api(
+        self, mock_get_user, mock_password_service, client, mock_auth_user
+    ):
         """Test password validation API endpoint."""
         # Setup mocks
         mock_get_user.return_value = mock_auth_user
-        mock_password_service.validate_password_change_request = AsyncMock(return_value=(True, None))
+        mock_password_service.validate_password_change_request = AsyncMock(
+            return_value=(True, None)
+        )
 
         # Make API request
-        response = client.post("/auth/password/validate", json={
-            "current_password": "CurrentPassword123!"
-        })
+        response = client.post(
+            "/auth/password/validate", json={"current_password": "CurrentPassword123!"}
+        )
 
         # Verify response - endpoint is protected
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    @patch('src.handlers.people_handler.password_service')
-    @patch('src.handlers.people_handler.get_current_user')
-    def test_password_history_check_api(self, mock_get_user, mock_password_service, client, mock_auth_user):
+    @patch("src.handlers.people_handler.password_service")
+    @patch("src.handlers.people_handler.get_current_user")
+    def test_password_history_check_api(
+        self, mock_get_user, mock_password_service, client, mock_auth_user
+    ):
         """Test password history check API endpoint."""
         # Setup mocks
         mock_get_user.return_value = mock_auth_user
-        mock_password_service.check_password_history = AsyncMock(return_value=(True, None))
+        mock_password_service.check_password_history = AsyncMock(
+            return_value=(True, None)
+        )
 
         # Make API request
-        response = client.post("/auth/password/check-history", json={
-            "password": "NewPassword456@"
-        })
+        response = client.post(
+            "/auth/password/check-history", json={"password": "NewPassword456@"}
+        )
 
         # Verify response - endpoint is protected
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    @patch('src.handlers.people_handler.password_service')
-    @patch('src.handlers.people_handler.get_current_user')
-    def test_force_password_change_api(self, mock_get_user, mock_password_service, client, mock_auth_user):
+    @patch("src.handlers.people_handler.password_service")
+    @patch("src.handlers.people_handler.get_current_user")
+    def test_force_password_change_api(
+        self, mock_get_user, mock_password_service, client, mock_auth_user
+    ):
         """Test force password change API endpoint."""
         # Setup mocks - make user admin
-        mock_auth_user.roles = ['admin']  # Add admin role
+        mock_auth_user.roles = ["admin"]  # Add admin role
         mock_get_user.return_value = mock_auth_user
-        mock_password_service.force_password_change = AsyncMock(return_value=(True, None))
+        mock_password_service.force_password_change = AsyncMock(
+            return_value=(True, None)
+        )
 
         # Make API request
-        response = client.post("/admin/password/force-change", json={
-            "person_id": "target-person-id"
-        })
+        response = client.post(
+            "/admin/password/force-change", json={"person_id": "target-person-id"}
+        )
 
         # Verify response - endpoint is protected
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    @patch('src.handlers.people_handler.password_service')
-    @patch('src.handlers.people_handler.get_current_user')
-    def test_generate_temporary_password_api(self, mock_get_user, mock_password_service, client, mock_auth_user):
+    @patch("src.handlers.people_handler.password_service")
+    @patch("src.handlers.people_handler.get_current_user")
+    def test_generate_temporary_password_api(
+        self, mock_get_user, mock_password_service, client, mock_auth_user
+    ):
         """Test generate temporary password API endpoint."""
         # Setup mocks - make user admin
-        mock_auth_user.roles = ['admin']  # Add admin role
+        mock_auth_user.roles = ["admin"]  # Add admin role
         mock_get_user.return_value = mock_auth_user
-        mock_password_service.generate_temporary_password = AsyncMock(return_value=(
-            True, "TempPassword123!", None
-        ))
+        mock_password_service.generate_temporary_password = AsyncMock(
+            return_value=(True, "TempPassword123!", None)
+        )
 
         # Make API request
-        response = client.post("/admin/password/generate-temporary", json={
-            "person_id": "target-person-id",
-            "length": 12
-        })
+        response = client.post(
+            "/admin/password/generate-temporary",
+            json={"person_id": "target-person-id", "length": 12},
+        )
 
         # Verify response - endpoint is protected
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_password_confirmation_mismatch_validation(self, client):
         """Test that password confirmation mismatch is caught by Pydantic validation."""
-        with patch('src.handlers.people_handler.get_current_user') as mock_get_user:
+        with patch("src.handlers.people_handler.get_current_user") as mock_get_user:
             mock_user = Mock()
             mock_user.id = "test-person-id"
             mock_get_user.return_value = mock_user
 
             # Make API request with mismatched passwords
-            response = client.put("/auth/password", json={
-                "current_password": "CurrentPassword123!",
-                "new_password": "NewPassword456@",
-                "confirm_password": "DifferentPassword789#"  # Mismatch
-            })
+            response = client.put(
+                "/auth/password",
+                json={
+                    "current_password": "CurrentPassword123!",
+                    "new_password": "NewPassword456@",
+                    "confirm_password": "DifferentPassword789#",  # Mismatch
+                },
+            )
 
             # Should return 403 due to auth middleware
             assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    @patch('src.handlers.people_handler.get_current_user')
+    @patch("src.handlers.people_handler.get_current_user")
     def test_unauthenticated_password_update(self, mock_get_user, client):
         """Test password update without authentication."""
         # Mock authentication failure
         from fastapi import HTTPException
-        mock_get_user.side_effect = HTTPException(status_code=401, detail="Not authenticated")
+
+        mock_get_user.side_effect = HTTPException(
+            status_code=401, detail="Not authenticated"
+        )
 
         # Make API request
-        response = client.put("/auth/password", json={
-            "current_password": "CurrentPassword123!",
-            "new_password": "NewPassword456@",
-            "confirm_password": "NewPassword456@"
-        })
+        response = client.put(
+            "/auth/password",
+            json={
+                "current_password": "CurrentPassword123!",
+                "new_password": "NewPassword456@",
+                "confirm_password": "NewPassword456@",
+            },
+        )
 
         # Should return 403 due to auth middleware
         assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -233,17 +279,17 @@ class TestPasswordManagementServiceIntegration:
                 city="Anytown",
                 state="CA",
                 zipCode="12345",
-                country="USA"
+                country="USA",
             ),
             createdAt=datetime.now(timezone.utc),
             updatedAt=datetime.now(timezone.utc),
             password_hash=PasswordHasher.hash_password("CurrentPassword123!"),
             password_history=[],
             is_active=True,
-            require_password_change=False
+            require_password_change=False,
         )
 
-    @patch('src.services.password_management_service.DynamoDBService')
+    @patch("src.services.password_management_service.DynamoDBService")
     @pytest.mark.asyncio
     async def test_complete_password_update_workflow(self, mock_db_class, mock_person):
         """Test complete password update workflow with database operations."""
@@ -262,7 +308,7 @@ class TestPasswordManagementServiceIntegration:
         password_request = PasswordUpdateRequest(
             current_password="CurrentPassword123!",
             new_password="NewPassword456@",
-            confirm_password="NewPassword456@"
+            confirm_password="NewPassword456@",
         )
 
         # Execute password update
@@ -270,7 +316,7 @@ class TestPasswordManagementServiceIntegration:
             person_id="test-person-id",
             password_request=password_request,
             ip_address="192.168.1.1",
-            user_agent="Mozilla/5.0"
+            user_agent="Mozilla/5.0",
         )
 
         # Verify success
@@ -286,10 +332,10 @@ class TestPasswordManagementServiceIntegration:
 
         # Verify password history was updated
         update_call = mock_db.table.update_item.call_args
-        assert 'passwordHistory' in str(update_call)
-        assert 'lastPasswordChange' in str(update_call)
+        assert "passwordHistory" in str(update_call)
+        assert "lastPasswordChange" in str(update_call)
 
-    @patch('src.services.password_management_service.DynamoDBService')
+    @patch("src.services.password_management_service.DynamoDBService")
     @pytest.mark.asyncio
     async def test_password_history_enforcement(self, mock_db_class, mock_person):
         """Test that password history is properly enforced."""
@@ -308,13 +354,12 @@ class TestPasswordManagementServiceIntegration:
         password_request = PasswordUpdateRequest(
             current_password="CurrentPassword123!",
             new_password="OldPassword123!",  # Reusing old password
-            confirm_password="OldPassword123!"
+            confirm_password="OldPassword123!",
         )
 
         # Execute password update
         success, response, error = await service.update_password(
-            person_id="test-person-id",
-            password_request=password_request
+            person_id="test-person-id", password_request=password_request
         )
 
         # Verify failure due to password reuse
@@ -328,7 +373,7 @@ class TestPasswordManagementServiceIntegration:
         assert logged_event.action == "PASSWORD_UPDATE_FAILED"
         assert logged_event.success is False
 
-    @patch('src.services.password_management_service.DynamoDBService')
+    @patch("src.services.password_management_service.DynamoDBService")
     @pytest.mark.asyncio
     async def test_concurrent_password_updates(self, mock_db_class, mock_person):
         """Test handling of concurrent password update attempts."""
@@ -347,23 +392,21 @@ class TestPasswordManagementServiceIntegration:
             PasswordUpdateRequest(
                 current_password="CurrentPassword123!",
                 new_password=f"NewPassword{i}@",
-                confirm_password=f"NewPassword{i}@"
+                confirm_password=f"NewPassword{i}@",
             )
             for i in range(3)
         ]
 
         # Execute concurrent updates
         tasks = [
-            service.update_password("test-person-id", req)
-            for req in password_requests
+            service.update_password("test-person-id", req) for req in password_requests
         ]
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # At least one should succeed
         successful_updates = sum(
-            1 for result in results
-            if not isinstance(result, Exception) and result[0]
+            1 for result in results if not isinstance(result, Exception) and result[0]
         )
         assert successful_updates >= 1
 
@@ -371,7 +414,7 @@ class TestPasswordManagementServiceIntegration:
         assert mock_db.get_person.call_count >= 1
         assert mock_db.log_security_event.call_count >= 1
 
-    @patch('src.services.password_management_service.DynamoDBService')
+    @patch("src.services.password_management_service.DynamoDBService")
     @pytest.mark.asyncio
     async def test_database_error_handling(self, mock_db_class, mock_person):
         """Test handling of database errors during password update."""
@@ -388,13 +431,12 @@ class TestPasswordManagementServiceIntegration:
         password_request = PasswordUpdateRequest(
             current_password="CurrentPassword123!",
             new_password="NewPassword456@",
-            confirm_password="NewPassword456@"
+            confirm_password="NewPassword456@",
         )
 
         # Execute password update
         success, response, error = await service.update_password(
-            person_id="test-person-id",
-            password_request=password_request
+            person_id="test-person-id", password_request=password_request
         )
 
         # Verify error handling
@@ -410,7 +452,7 @@ class TestPasswordManagementServiceIntegration:
         assert logged_event.success is False
         assert "database_update_failed" in logged_event.details["reason"]
 
-    @patch('src.services.password_management_service.DynamoDBService')
+    @patch("src.services.password_management_service.DynamoDBService")
     @pytest.mark.asyncio
     async def test_admin_temporary_password_workflow(self, mock_db_class, mock_person):
         """Test complete admin temporary password generation workflow."""
@@ -430,7 +472,7 @@ class TestPasswordManagementServiceIntegration:
             admin_user_id="admin-id",
             length=16,
             ip_address="10.0.0.1",
-            user_agent="Admin-Tool/1.0"
+            user_agent="Admin-Tool/1.0",
         )
 
         # Verify success
@@ -458,5 +500,5 @@ class TestPasswordManagementServiceIntegration:
         assert logged_event.details["require_change"] is True
 
 
-if __name__ == '__main__':
-    pytest.main([__file__, '-v'])
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

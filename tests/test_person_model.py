@@ -6,11 +6,7 @@ from src.models.person import Person, PersonCreate, PersonUpdate, Address
 def test_person_create():
     """Test PersonCreate model"""
     address = Address(
-        street="123 Main St",
-        city="Anytown",
-        state="CA",
-        zipCode="12345",
-        country="USA"
+        street="123 Main St", city="Anytown", state="CA", zipCode="12345", country="USA"
     )
 
     person_data = PersonCreate(
@@ -19,7 +15,7 @@ def test_person_create():
         email="john.doe@example.com",
         phone="+1-555-123-4567",
         dateOfBirth="1990-01-01",
-        address=address
+        address=address,
     )
 
     assert person_data.first_name == "John"
@@ -33,11 +29,7 @@ def test_person_create():
 def test_person_create_new():
     """Test Person.create_new method"""
     address = Address(
-        street="123 Main St",
-        city="Anytown",
-        state="CA",
-        zipCode="12345",
-        country="USA"
+        street="123 Main St", city="Anytown", state="CA", zipCode="12345", country="USA"
     )
 
     person_data = PersonCreate(
@@ -46,7 +38,7 @@ def test_person_create_new():
         email="jane.smith@example.com",
         phone="+1-555-987-6543",
         dateOfBirth="1985-05-15",
-        address=address
+        address=address,
     )
 
     person = Person.create_new(person_data)
@@ -62,10 +54,7 @@ def test_person_create_new():
 
 def test_person_update():
     """Test PersonUpdate model"""
-    person_update = PersonUpdate(
-        firstName="Updated Name",
-        email="updated@example.com"
-    )
+    person_update = PersonUpdate(firstName="Updated Name", email="updated@example.com")
 
     assert person_update.first_name == "Updated Name"
     assert person_update.email == "updated@example.com"

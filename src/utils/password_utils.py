@@ -1,6 +1,7 @@
 """
 Password utilities for secure password hashing, validation, and generation.
 """
+
 import bcrypt
 import secrets
 import string
@@ -11,6 +12,7 @@ from datetime import datetime
 
 class PasswordPolicy:
     """Password security policy configuration."""
+
     MIN_LENGTH = 8
     REQUIRE_UPPERCASE = True
     REQUIRE_LOWERCASE = True
@@ -38,18 +40,20 @@ class PasswordValidator:
 
         # Check minimum length
         if len(password) < PasswordPolicy.MIN_LENGTH:
-            errors.append(f"Password must be at least {PasswordPolicy.MIN_LENGTH} characters long")
+            errors.append(
+                f"Password must be at least {PasswordPolicy.MIN_LENGTH} characters long"
+            )
 
         # Check for uppercase letter
-        if PasswordPolicy.REQUIRE_UPPERCASE and not re.search(r'[A-Z]', password):
+        if PasswordPolicy.REQUIRE_UPPERCASE and not re.search(r"[A-Z]", password):
             errors.append("Password must contain at least one uppercase letter")
 
         # Check for lowercase letter
-        if PasswordPolicy.REQUIRE_LOWERCASE and not re.search(r'[a-z]', password):
+        if PasswordPolicy.REQUIRE_LOWERCASE and not re.search(r"[a-z]", password):
             errors.append("Password must contain at least one lowercase letter")
 
         # Check for number
-        if PasswordPolicy.REQUIRE_NUMBERS and not re.search(r'\d', password):
+        if PasswordPolicy.REQUIRE_NUMBERS and not re.search(r"\d", password):
             errors.append("Password must contain at least one number")
 
         # Check for special character
@@ -100,8 +104,8 @@ class PasswordHasher:
         """
         # Generate salt and hash password
         salt = bcrypt.gensalt(rounds=PasswordHasher.SALT_ROUNDS)
-        hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
-        return hashed.decode('utf-8')
+        hashed = bcrypt.hashpw(password.encode("utf-8"), salt)
+        return hashed.decode("utf-8")
 
     @staticmethod
     def verify_password(password: str, hashed_password: str) -> bool:
@@ -116,7 +120,9 @@ class PasswordHasher:
             True if password matches, False otherwise
         """
         try:
-            return bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8'))
+            return bcrypt.checkpw(
+                password.encode("utf-8"), hashed_password.encode("utf-8")
+            )
         except (ValueError, TypeError):
             return False
 
@@ -164,7 +170,7 @@ class PasswordGenerator:
         # Shuffle the password to avoid predictable patterns
         secrets.SystemRandom().shuffle(password_chars)
 
-        return ''.join(password_chars)
+        return "".join(password_chars)
 
 
 class PasswordHistoryManager:
@@ -189,10 +195,12 @@ class PasswordHistoryManager:
         updated_history = [new_password_hash] + current_history
 
         # Keep only the last N passwords
-        return updated_history[:PasswordPolicy.PREVENT_REUSE_COUNT]
+        return updated_history[: PasswordPolicy.PREVENT_REUSE_COUNT]
 
     @staticmethod
-    def can_use_password(password: str, password_history: List[str]) -> Tuple[bool, str]:
+    def can_use_password(
+        password: str, password_history: List[str]
+    ) -> Tuple[bool, str]:
         """
         Check if a password can be used (not in recent history).
 
@@ -204,12 +212,17 @@ class PasswordHistoryManager:
             Tuple of (can_use, error_message)
         """
         if PasswordValidator.check_password_reuse(password, password_history or []):
-            return False, f"Cannot reuse any of the last {PasswordPolicy.PREVENT_REUSE_COUNT} passwords"
+            return (
+                False,
+                f"Cannot reuse any of the last {PasswordPolicy.PREVENT_REUSE_COUNT} passwords",
+            )
         return True, ""
 
 
 # Convenience functions for common operations
-def hash_and_validate_password(password: str, password_history: List[str] = None) -> Tuple[bool, str, List[str]]:
+def hash_and_validate_password(
+    password: str, password_history: List[str] = None
+) -> Tuple[bool, str, List[str]]:
     """
     Validate and hash a password in one operation.
 
@@ -227,7 +240,9 @@ def hash_and_validate_password(password: str, password_history: List[str] = None
 
     # Check password reuse if history provided
     if password_history:
-        can_use, reuse_error = PasswordHistoryManager.can_use_password(password, password_history)
+        can_use, reuse_error = PasswordHistoryManager.can_use_password(
+            password, password_history
+        )
         if not can_use:
             return False, "", [reuse_error]
 

@@ -7,7 +7,8 @@ import sys
 import os
 
 # Add the src directory to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+
 
 def validate_imports():
     """Validate that all required modules can be imported"""
@@ -15,9 +16,12 @@ def validate_imports():
 
     try:
         from src.models.person import (
-            PersonDeletionRequest, PersonDeletionInitiateRequest,
-            PersonDeletionResponse, ReferentialIntegrityError
+            PersonDeletionRequest,
+            PersonDeletionInitiateRequest,
+            PersonDeletionResponse,
+            ReferentialIntegrityError,
         )
+
         print("✓ Person deletion models imported successfully")
     except ImportError as e:
         print(f"✗ Failed to import person deletion models: {e}")
@@ -25,13 +29,19 @@ def validate_imports():
 
     try:
         from src.services.person_deletion_service import PersonDeletionService
+
         print("✓ PersonDeletionService imported successfully")
     except ImportError as e:
         print(f"✗ Failed to import PersonDeletionService: {e}")
         return False
 
     try:
-        from src.models.security_event import SecurityEvent, SecurityEventType, SecurityEventSeverity
+        from src.models.security_event import (
+            SecurityEvent,
+            SecurityEventType,
+            SecurityEventSeverity,
+        )
+
         print("✓ Security event models imported successfully")
     except ImportError as e:
         print(f"✗ Failed to import security event models: {e}")
@@ -39,12 +49,16 @@ def validate_imports():
 
     return True
 
+
 def validate_models():
     """Validate that the models work correctly"""
     print("\nValidating models...")
 
     try:
-        from src.models.person import PersonDeletionInitiateRequest, PersonDeletionRequest
+        from src.models.person import (
+            PersonDeletionInitiateRequest,
+            PersonDeletionRequest,
+        )
 
         # Test PersonDeletionInitiateRequest
         init_request = PersonDeletionInitiateRequest(reason="Test deletion")
@@ -52,8 +66,7 @@ def validate_models():
 
         # Test PersonDeletionRequest
         del_request = PersonDeletionRequest(
-            confirmation_token="test-token-123",
-            reason="Test deletion confirmation"
+            confirmation_token="test-token-123", reason="Test deletion confirmation"
         )
         print("✓ PersonDeletionRequest created successfully")
 
@@ -62,6 +75,7 @@ def validate_models():
         return False
 
     return True
+
 
 def validate_service_structure():
     """Validate that the service has the required methods"""
@@ -77,10 +91,10 @@ def validate_service_structure():
 
         # Check required methods exist
         required_methods = [
-            'initiate_deletion',
-            'confirm_deletion',
-            'cleanup_expired_tokens',
-            'get_pending_deletions_count'
+            "initiate_deletion",
+            "confirm_deletion",
+            "cleanup_expired_tokens",
+            "get_pending_deletions_count",
         ]
 
         for method_name in required_methods:
@@ -96,6 +110,7 @@ def validate_service_structure():
 
     return True
 
+
 def validate_handler_integration():
     """Validate that the handler can import the required components"""
     print("\nValidating handler integration...")
@@ -103,7 +118,10 @@ def validate_handler_integration():
     try:
         # Test that the handler file can be compiled
         import py_compile
-        handler_path = os.path.join(os.path.dirname(__file__), '..', 'src', 'handlers', 'people_handler.py')
+
+        handler_path = os.path.join(
+            os.path.dirname(__file__), "..", "src", "handlers", "people_handler.py"
+        )
         py_compile.compile(handler_path, doraise=True)
         print("✓ People handler compiles successfully")
 
@@ -112,6 +130,7 @@ def validate_handler_integration():
         return False
 
     return True
+
 
 def main():
     """Run all validation tests"""
@@ -138,6 +157,7 @@ def main():
     else:
         print("✗ Some validation tests failed!")
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

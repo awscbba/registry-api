@@ -1,6 +1,7 @@
 """
 Test cases for admin account unlock functionality.
 """
+
 import pytest
 from datetime import datetime, timedelta, timezone
 import uuid
@@ -11,6 +12,7 @@ from src.handlers.people_handler import app
 from src.models.person import Person, PersonUpdate, AdminUnlockRequest, Address
 from src.models.auth import AuthenticatedUser
 from src.services.dynamodb_service import DynamoDBService
+
 
 # Mock the DynamoDB service
 class MockDynamoDBService:
@@ -50,7 +52,7 @@ async def mock_get_current_user():
         first_name="Admin",
         last_name="User",
         require_password_change=False,
-        is_active=True
+        is_active=True,
     )
 
 
@@ -68,6 +70,7 @@ def test_app():
 
     # Override the authentication middleware
     from src.middleware.auth_middleware import get_current_user
+
     app.dependency_overrides[get_current_user] = mock_get_current_user
 
     # Create a test client
@@ -100,19 +103,19 @@ def test_unlock_account_success(test_app):
             city="Anytown",
             state="CA",
             zipCode="12345",
-            country="USA"
+            country="USA",
         ),
         created_at=datetime.now(timezone.utc),
         updated_at=datetime.now(timezone.utc),
         failed_login_attempts=5,
         account_locked_until=locked_until,
-        is_active=True
+        is_active=True,
     )
 
     # Make the unlock request
     response = client.post(
         f"/people/{locked_user_id}/unlock",
-        json={"reason": "Customer service request to unlock account"}
+        json={"reason": "Customer service request to unlock account"},
     )
 
     # Check response
@@ -141,7 +144,7 @@ def test_unlock_account_not_found(test_app):
     # Make the unlock request for a non-existent user
     response = client.post(
         f"/people/non-existent-id/unlock",
-        json={"reason": "Customer service request to unlock account"}
+        json={"reason": "Customer service request to unlock account"},
     )
 
     # Check response
@@ -171,19 +174,19 @@ def test_unlock_account_already_unlocked(test_app):
             city="Anytown",
             state="CA",
             zipCode="12345",
-            country="USA"
+            country="USA",
         ),
         created_at=datetime.now(timezone.utc),
         updated_at=datetime.now(timezone.utc),
         failed_login_attempts=0,
         account_locked_until=None,
-        is_active=True
+        is_active=True,
     )
 
     # Make the unlock request
     response = client.post(
         f"/people/{unlocked_user_id}/unlock",
-        json={"reason": "Customer service request to unlock account"}
+        json={"reason": "Customer service request to unlock account"},
     )
 
     # Check response
@@ -215,20 +218,17 @@ def test_unlock_account_invalid_request(test_app):
             city="Anytown",
             state="CA",
             zipCode="12345",
-            country="USA"
+            country="USA",
         ),
         created_at=datetime.now(timezone.utc),
         updated_at=datetime.now(timezone.utc),
         failed_login_attempts=5,
         account_locked_until=locked_until,
-        is_active=True
+        is_active=True,
     )
 
     # Make the unlock request with invalid data (missing reason)
-    response = client.post(
-        f"/people/{locked_user_id}/unlock",
-        json={}
-    )
+    response = client.post(f"/people/{locked_user_id}/unlock", json={})
 
     # Check response
     assert response.status_code == 422  # Validation error
@@ -262,20 +262,17 @@ def test_unlock_account_short_reason(test_app):
             city="Anytown",
             state="CA",
             zipCode="12345",
-            country="USA"
+            country="USA",
         ),
         created_at=datetime.now(timezone.utc),
         updated_at=datetime.now(timezone.utc),
         failed_login_attempts=5,
         account_locked_until=locked_until,
-        is_active=True
+        is_active=True,
     )
 
     # Make the unlock request with too short reason
-    response = client.post(
-        f"/people/{locked_user_id}/unlock",
-        json={"reason": "Short"}
-    )
+    response = client.post(f"/people/{locked_user_id}/unlock", json={"reason": "Short"})
 
     # Check response
     assert response.status_code == 422  # Validation error

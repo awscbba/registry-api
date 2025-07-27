@@ -17,6 +17,7 @@ from ..services.logging_service import logging_service
 
 class RateLimitType(str, Enum):
     """Types of rate limits for different scenarios."""
+
     LOGIN_ATTEMPTS = "LOGIN_ATTEMPTS"
     PASSWORD_RESET = "PASSWORD_RESET"
     PASSWORD_CHANGE = "PASSWORD_CHANGE"
@@ -29,6 +30,7 @@ class RateLimitType(str, Enum):
 
 class RateLimitWindow(str, Enum):
     """Time windows for rate limiting."""
+
     MINUTE = "MINUTE"
     HOUR = "HOUR"
     DAY = "DAY"
@@ -44,7 +46,7 @@ class RateLimitConfig:
         window: RateLimitWindow,
         window_size_seconds: int,
         block_duration_seconds: int = 300,  # 5 minutes default
-        progressive_penalties: bool = False
+        progressive_penalties: bool = False,
     ):
         self.limit_type = limit_type
         self.max_requests = max_requests
@@ -64,7 +66,7 @@ class RateLimitResult:
         limit: int,
         reset_time: datetime,
         retry_after_seconds: Optional[int] = None,
-        blocked_until: Optional[datetime] = None
+        blocked_until: Optional[datetime] = None,
     ):
         self.allowed = allowed
         self.current_count = current_count
@@ -88,64 +90,61 @@ class RateLimitingService:
                 window=RateLimitWindow.HOUR,
                 window_size_seconds=3600,
                 block_duration_seconds=900,  # 15 minutes
-                progressive_penalties=True
+                progressive_penalties=True,
             ),
             RateLimitType.PASSWORD_RESET: RateLimitConfig(
                 limit_type=RateLimitType.PASSWORD_RESET,
                 max_requests=3,
                 window=RateLimitWindow.HOUR,
                 window_size_seconds=3600,
-                block_duration_seconds=1800  # 30 minutes
+                block_duration_seconds=1800,  # 30 minutes
             ),
             RateLimitType.PASSWORD_CHANGE: RateLimitConfig(
                 limit_type=RateLimitType.PASSWORD_CHANGE,
                 max_requests=10,
                 window=RateLimitWindow.HOUR,
                 window_size_seconds=3600,
-                block_duration_seconds=300  # 5 minutes
+                block_duration_seconds=300,  # 5 minutes
             ),
             RateLimitType.API_REQUESTS: RateLimitConfig(
                 limit_type=RateLimitType.API_REQUESTS,
                 max_requests=1000,
                 window=RateLimitWindow.HOUR,
                 window_size_seconds=3600,
-                block_duration_seconds=60  # 1 minute
+                block_duration_seconds=60,  # 1 minute
             ),
             RateLimitType.PERSON_CREATION: RateLimitConfig(
                 limit_type=RateLimitType.PERSON_CREATION,
                 max_requests=10,
                 window=RateLimitWindow.HOUR,
                 window_size_seconds=3600,
-                block_duration_seconds=600  # 10 minutes
+                block_duration_seconds=600,  # 10 minutes
             ),
             RateLimitType.PERSON_UPDATES: RateLimitConfig(
                 limit_type=RateLimitType.PERSON_UPDATES,
                 max_requests=50,
                 window=RateLimitWindow.HOUR,
                 window_size_seconds=3600,
-                block_duration_seconds=300  # 5 minutes
+                block_duration_seconds=300,  # 5 minutes
             ),
             RateLimitType.EMAIL_VERIFICATION: RateLimitConfig(
                 limit_type=RateLimitType.EMAIL_VERIFICATION,
                 max_requests=5,
                 window=RateLimitWindow.HOUR,
                 window_size_seconds=3600,
-                block_duration_seconds=1800  # 30 minutes
+                block_duration_seconds=1800,  # 30 minutes
             ),
             RateLimitType.SEARCH_REQUESTS: RateLimitConfig(
                 limit_type=RateLimitType.SEARCH_REQUESTS,
                 max_requests=100,
                 window=RateLimitWindow.HOUR,
                 window_size_seconds=3600,
-                block_duration_seconds=60  # 1 minute
-            )
+                block_duration_seconds=60,  # 1 minute
+            ),
         }
 
     async def check_rate_limit(
-        self,
-        limit_type: RateLimitType,
-        identifier: str,
-        context: ErrorContext
+        self, limit_type: RateLimitType, identifier: str, context: ErrorContext
     ) -> RateLimitResult:
         """
         Check if request is within rate limits.
@@ -166,7 +165,7 @@ class RateLimitingService:
                     allowed=True,
                     current_count=0,
                     limit=0,
-                    reset_time=datetime.now(timezone.utc)
+                    reset_time=datetime.now(timezone.utc),
                 )
 
             # Generate rate limit key
@@ -175,7 +174,9 @@ class RateLimitingService:
             # Check if currently blocked
             block_result = await self._check_block_status(rate_limit_key, config)
             if not block_result.allowed:
-                await self._log_rate_limit_blocked(limit_type, identifier, context, block_result)
+                await self._log_rate_limit_blocked(
+                    limit_type, identifier, context, block_result
+                )
                 return block_result
 
             # Get current request count
@@ -189,19 +190,29 @@ class RateLimitingService:
                 # Apply block if configured
                 blocked_until = None
                 if config.block_duration_seconds > 0:
-                    blocked_until = datetime.now(timezone.utc) + timedelta(seconds=config.block_duration_seconds)
-                    await self._apply_block(rate_limit_key, blocked_until, current_count)
+                    blocked_until = datetime.now(timezone.utc) + timedelta(
+                        seconds=config.block_duration_seconds
+                    )
+                    await self._apply_block(
+                        rate_limit_key, blocked_until, current_count
+                    )
 
                 result = RateLimitResult(
                     allowed=False,
                     current_count=current_count,
                     limit=config.max_requests,
                     reset_time=reset_time,
-                    retry_after_seconds=config.block_duration_seconds if blocked_until else config.window_size_seconds,
-                    blocked_until=blocked_until
+                    retry_after_seconds=(
+                        config.block_duration_seconds
+                        if blocked_until
+                        else config.window_size_seconds
+                    ),
+                    blocked_until=blocked_until,
                 )
 
-                await self._log_rate_limit_exceeded(limit_type, identifier, context, result, config)
+                await self._log_rate_limit_exceeded(
+                    limit_type, identifier, context, result, config
+                )
                 return result
 
             # Increment counter
@@ -211,7 +222,7 @@ class RateLimitingService:
                 allowed=True,
                 current_count=current_count + 1,
                 limit=config.max_requests,
-                reset_time=reset_time
+                reset_time=reset_time,
             )
 
         except Exception as e:
@@ -221,7 +232,10 @@ class RateLimitingService:
                 category="RATE_LIMITING",
                 message=f"Rate limiting check failed: {str(e)}",
                 context=context,
-                additional_data={"limit_type": limit_type.value, "identifier": identifier}
+                additional_data={
+                    "limit_type": limit_type.value,
+                    "identifier": identifier,
+                },
             )
 
             # Allow request on rate limiting service failure
@@ -229,7 +243,7 @@ class RateLimitingService:
                 allowed=True,
                 current_count=0,
                 limit=0,
-                reset_time=datetime.now(timezone.utc)
+                reset_time=datetime.now(timezone.utc),
             )
 
     async def record_violation(
@@ -237,7 +251,7 @@ class RateLimitingService:
         limit_type: RateLimitType,
         identifier: str,
         context: ErrorContext,
-        severity: str = "HIGH"
+        severity: str = "HIGH",
     ):
         """Record a rate limit violation for tracking repeat offenders."""
         try:
@@ -252,7 +266,9 @@ class RateLimitingService:
             # Apply progressive penalties if configured
             config = self.configs.get(limit_type)
             if config and config.progressive_penalties:
-                await self._apply_progressive_penalty(limit_type, identifier, violations + 1)
+                await self._apply_progressive_penalty(
+                    limit_type, identifier, violations + 1
+                )
 
             # Log violation
             await logging_service.log_structured(
@@ -264,8 +280,8 @@ class RateLimitingService:
                     "limit_type": limit_type.value,
                     "identifier": identifier,
                     "violation_count": violations + 1,
-                    "severity": severity
-                }
+                    "severity": severity,
+                },
             )
 
         except Exception as e:
@@ -273,14 +289,11 @@ class RateLimitingService:
                 level="ERROR",
                 category="RATE_LIMITING",
                 message=f"Failed to record rate limit violation: {str(e)}",
-                context=context
+                context=context,
             )
 
     async def clear_rate_limit(
-        self,
-        limit_type: RateLimitType,
-        identifier: str,
-        context: ErrorContext
+        self, limit_type: RateLimitType, identifier: str, context: ErrorContext
     ):
         """Clear rate limit for an identifier (admin function)."""
         try:
@@ -301,8 +314,8 @@ class RateLimitingService:
                 additional_data={
                     "limit_type": limit_type.value,
                     "identifier": identifier,
-                    "admin_action": True
-                }
+                    "admin_action": True,
+                },
             )
 
         except Exception as e:
@@ -310,17 +323,23 @@ class RateLimitingService:
                 level="ERROR",
                 category="RATE_LIMITING",
                 message=f"Failed to clear rate limit: {str(e)}",
-                context=context
+                context=context,
             )
 
-    def _generate_rate_limit_key(self, limit_type: RateLimitType, identifier: str) -> str:
+    def _generate_rate_limit_key(
+        self, limit_type: RateLimitType, identifier: str
+    ) -> str:
         """Generate a unique key for rate limiting storage."""
         # Hash identifier for privacy and consistent key length
         identifier_hash = hashlib.sha256(identifier.encode()).hexdigest()[:16]
-        timestamp_window = int(time.time() // self.configs[limit_type].window_size_seconds)
+        timestamp_window = int(
+            time.time() // self.configs[limit_type].window_size_seconds
+        )
         return f"rate_limit:{limit_type.value}:{identifier_hash}:{timestamp_window}"
 
-    async def _check_block_status(self, rate_limit_key: str, config: RateLimitConfig) -> RateLimitResult:
+    async def _check_block_status(
+        self, rate_limit_key: str, config: RateLimitConfig
+    ) -> RateLimitResult:
         """Check if identifier is currently blocked."""
         try:
             block_key = f"block:{rate_limit_key}"
@@ -331,7 +350,7 @@ class RateLimitingService:
                 allowed=True,
                 current_count=0,
                 limit=config.max_requests,
-                reset_time=datetime.now(timezone.utc)
+                reset_time=datetime.now(timezone.utc),
             )
 
         except Exception:
@@ -340,10 +359,12 @@ class RateLimitingService:
                 allowed=True,
                 current_count=0,
                 limit=config.max_requests,
-                reset_time=datetime.now(timezone.utc)
+                reset_time=datetime.now(timezone.utc),
             )
 
-    async def _get_current_count(self, rate_limit_key: str, config: RateLimitConfig) -> int:
+    async def _get_current_count(
+        self, rate_limit_key: str, config: RateLimitConfig
+    ) -> int:
         """Get current request count for the rate limit window."""
         try:
             # This would query DynamoDB for current count
@@ -355,8 +376,12 @@ class RateLimitingService:
     def _calculate_reset_time(self, config: RateLimitConfig) -> datetime:
         """Calculate when the rate limit window resets."""
         now = datetime.now(timezone.utc)
-        window_start = int(time.time() // config.window_size_seconds) * config.window_size_seconds
-        reset_time = datetime.fromtimestamp(window_start + config.window_size_seconds, tz=timezone.utc)
+        window_start = (
+            int(time.time() // config.window_size_seconds) * config.window_size_seconds
+        )
+        reset_time = datetime.fromtimestamp(
+            window_start + config.window_size_seconds, tz=timezone.utc
+        )
         return reset_time
 
     async def _increment_counter(self, rate_limit_key: str, config: RateLimitConfig):
@@ -368,7 +393,9 @@ class RateLimitingService:
             # Log but don't fail the request
             pass
 
-    async def _apply_block(self, rate_limit_key: str, blocked_until: datetime, violation_count: int):
+    async def _apply_block(
+        self, rate_limit_key: str, blocked_until: datetime, violation_count: int
+    ):
         """Apply a temporary block for rate limit violation."""
         try:
             block_key = f"block:{rate_limit_key}"
@@ -377,7 +404,7 @@ class RateLimitingService:
             block_data = {
                 "blocked_until": blocked_until.isoformat(),
                 "violation_count": violation_count,
-                "created_at": datetime.now(timezone.utc).isoformat()
+                "created_at": datetime.now(timezone.utc).isoformat(),
             }
 
             # Store with TTL
@@ -403,13 +430,17 @@ class RateLimitingService:
         except Exception:
             pass
 
-    async def _apply_progressive_penalty(self, limit_type: RateLimitType, identifier: str, violation_count: int):
+    async def _apply_progressive_penalty(
+        self, limit_type: RateLimitType, identifier: str, violation_count: int
+    ):
         """Apply progressive penalties for repeat violations."""
         try:
             # Progressive penalty logic
             if violation_count >= 5:
                 # Extended block for repeat offenders
-                penalty_duration = 3600 * violation_count  # Hours based on violation count
+                penalty_duration = (
+                    3600 * violation_count
+                )  # Hours based on violation count
                 penalty_key = f"penalty:{limit_type.value}:{identifier}"
 
                 # This would apply extended penalty
@@ -441,7 +472,7 @@ class RateLimitingService:
         identifier: str,
         context: ErrorContext,
         result: RateLimitResult,
-        config: RateLimitConfig
+        config: RateLimitConfig,
     ):
         """Log rate limit exceeded event."""
         await logging_service.log_rate_limit_event(
@@ -450,7 +481,7 @@ class RateLimitingService:
             limit_type=limit_type.value,
             current_count=result.current_count,
             limit=result.limit,
-            window_seconds=config.window_size_seconds
+            window_seconds=config.window_size_seconds,
         )
 
     async def _log_rate_limit_blocked(
@@ -458,7 +489,7 @@ class RateLimitingService:
         limit_type: RateLimitType,
         identifier: str,
         context: ErrorContext,
-        result: RateLimitResult
+        result: RateLimitResult,
     ):
         """Log rate limit block event."""
         await logging_service.log_structured(
@@ -469,15 +500,15 @@ class RateLimitingService:
             additional_data={
                 "limit_type": limit_type.value,
                 "identifier": identifier,
-                "blocked_until": result.blocked_until.isoformat() if result.blocked_until else None,
-                "retry_after_seconds": result.retry_after_seconds
-            }
+                "blocked_until": (
+                    result.blocked_until.isoformat() if result.blocked_until else None
+                ),
+                "retry_after_seconds": result.retry_after_seconds,
+            },
         )
 
     async def get_rate_limit_status(
-        self,
-        limit_type: RateLimitType,
-        identifier: str
+        self, limit_type: RateLimitType, identifier: str
     ) -> Dict[str, Any]:
         """Get current rate limit status for monitoring."""
         try:
@@ -495,7 +526,7 @@ class RateLimitingService:
                 "limit": config.max_requests,
                 "remaining": max(0, config.max_requests - current_count),
                 "reset_time": reset_time.isoformat(),
-                "window_seconds": config.window_size_seconds
+                "window_seconds": config.window_size_seconds,
             }
 
         except Exception as e:
@@ -507,40 +538,50 @@ rate_limiting_service = RateLimitingService()
 
 
 # Convenience functions for common rate limiting checks
-async def check_login_rate_limit(identifier: str, context: ErrorContext) -> RateLimitResult:
+async def check_login_rate_limit(
+    identifier: str, context: ErrorContext
+) -> RateLimitResult:
     """Check rate limit for login attempts."""
     return await rate_limiting_service.check_rate_limit(
         RateLimitType.LOGIN_ATTEMPTS, identifier, context
     )
 
 
-async def check_password_reset_rate_limit(identifier: str, context: ErrorContext) -> RateLimitResult:
+async def check_password_reset_rate_limit(
+    identifier: str, context: ErrorContext
+) -> RateLimitResult:
     """Check rate limit for password reset requests."""
     return await rate_limiting_service.check_rate_limit(
         RateLimitType.PASSWORD_RESET, identifier, context
     )
 
 
-async def check_password_change_rate_limit(identifier: str, context: ErrorContext) -> RateLimitResult:
+async def check_password_change_rate_limit(
+    identifier: str, context: ErrorContext
+) -> RateLimitResult:
     """Check rate limit for password changes."""
     return await rate_limiting_service.check_rate_limit(
         RateLimitType.PASSWORD_CHANGE, identifier, context
     )
 
 
-async def check_api_rate_limit(identifier: str, context: ErrorContext) -> RateLimitResult:
+async def check_api_rate_limit(
+    identifier: str, context: ErrorContext
+) -> RateLimitResult:
     """Check general API rate limit."""
     return await rate_limiting_service.check_rate_limit(
         RateLimitType.API_REQUESTS, identifier, context
     )
 
 
-def create_rate_limit_exception(result: RateLimitResult, context: ErrorContext) -> APIException:
+def create_rate_limit_exception(
+    result: RateLimitResult, context: ErrorContext
+) -> APIException:
     """Create a rate limit exception from rate limit result."""
     return APIException(
         error_code=ErrorCode.RATE_LIMIT_EXCEEDED,
         message=f"Rate limit exceeded. Try again in {result.retry_after_seconds} seconds.",
         context=context,
         retry_after=result.retry_after_seconds,
-        blocked_until=result.blocked_until
+        blocked_until=result.blocked_until,
     )

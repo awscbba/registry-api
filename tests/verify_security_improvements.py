@@ -8,7 +8,7 @@ import os
 from datetime import datetime
 
 # Add the src directory to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 
 def verify_security_event_types():
@@ -20,15 +20,16 @@ def verify_security_event_types():
 
         # Check that new event types exist
         required_types = [
-            'PERSON_ACCESS',
-            'PERSON_LIST_ACCESS',
-            'PERSON_SEARCH',
-            'DATA_ACCESS'
+            "PERSON_ACCESS",
+            "PERSON_LIST_ACCESS",
+            "PERSON_SEARCH",
+            "DATA_ACCESS",
         ]
 
         for event_type in required_types:
-            assert hasattr(SecurityEventType, event_type), \
-                f"Missing event type: {event_type}"
+            assert hasattr(
+                SecurityEventType, event_type
+            ), f"Missing event type: {event_type}"
             print(f"✓ {event_type} event type defined")
 
         print("✓ All required security event types are defined")
@@ -59,7 +60,7 @@ def verify_person_response_model():
                 "city": "Test City",
                 "state": "CA",
                 "zipCode": "12345",
-                "country": "USA"
+                "country": "USA",
             },
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
@@ -70,7 +71,7 @@ def verify_person_response_model():
             password_history=["old1", "old2"],
             email_verification_token="secret_token",
             failed_login_attempts=2,
-            require_password_change=False
+            require_password_change=False,
         )
 
         # Create PersonResponse
@@ -79,25 +80,40 @@ def verify_person_response_model():
 
         # Check that sensitive fields are excluded
         sensitive_fields = [
-            'password_hash', 'password_salt', 'password_history',
-            'email_verification_token', 'failed_login_attempts',
-            'account_locked_until', 'last_login_at', 'require_password_change'
+            "password_hash",
+            "password_salt",
+            "password_history",
+            "email_verification_token",
+            "failed_login_attempts",
+            "account_locked_until",
+            "last_login_at",
+            "require_password_change",
         ]
 
         for field in sensitive_fields:
-            assert field not in response_dict, \
-                f"Sensitive field {field} found in response"
+            assert (
+                field not in response_dict
+            ), f"Sensitive field {field} found in response"
 
         # Check that expected fields are included
         expected_fields = [
-            'id', 'firstName', 'lastName', 'email', 'phone',
-            'dateOfBirth', 'address', 'createdAt', 'updatedAt',
-            'isActive', 'emailVerified'
+            "id",
+            "firstName",
+            "lastName",
+            "email",
+            "phone",
+            "dateOfBirth",
+            "address",
+            "createdAt",
+            "updatedAt",
+            "isActive",
+            "emailVerified",
         ]
 
         for field in expected_fields:
-            assert field in response_dict, \
-                f"Expected field {field} missing from response"
+            assert (
+                field in response_dict
+            ), f"Expected field {field} missing from response"
 
         print("✓ PersonResponse correctly excludes sensitive fields")
         print("✓ PersonResponse includes all expected fields")
@@ -115,26 +131,26 @@ def verify_handler_structure():
     try:
         # Read the handler file to check for key components
         handler_path = os.path.join(
-            os.path.dirname(__file__), '..', 'src', 'handlers', 'people_handler.py'
+            os.path.dirname(__file__), "..", "src", "handlers", "people_handler.py"
         )
-        with open(handler_path, 'r') as f:
+        with open(handler_path, "r") as f:
             content = f.read()
 
         # Check for enhanced endpoints
         required_patterns = [
-            'async def list_people(',
-            'request: Request',
-            '_log_people_list_access_event',
-            '_log_people_list_success_event',
-            '_log_people_list_error_event',
-            '_log_person_access_event',
-            '_log_person_access_success_event',
-            '_log_person_not_found_event',
-            '_log_person_access_error_event',
-            'INVALID_PAGINATION',
-            'PERSON_NOT_FOUND',
-            'INTERNAL_SERVER_ERROR',
-            'request_id'
+            "async def list_people(",
+            "request: Request",
+            "_log_people_list_access_event",
+            "_log_people_list_success_event",
+            "_log_people_list_error_event",
+            "_log_person_access_event",
+            "_log_person_access_success_event",
+            "_log_person_not_found_event",
+            "_log_person_access_error_event",
+            "INVALID_PAGINATION",
+            "PERSON_NOT_FOUND",
+            "INTERNAL_SERVER_ERROR",
+            "request_id",
         ]
 
         for pattern in required_patterns:
@@ -155,20 +171,20 @@ def verify_audit_logging_functions():
 
     try:
         handler_path = os.path.join(
-            os.path.dirname(__file__), '..', 'src', 'handlers', 'people_handler.py'
+            os.path.dirname(__file__), "..", "src", "handlers", "people_handler.py"
         )
-        with open(handler_path, 'r') as f:
+        with open(handler_path, "r") as f:
             content = f.read()
 
         # Check for all required logging functions
         required_functions = [
-            'async def _log_people_list_access_event(',
-            'async def _log_people_list_success_event(',
-            'async def _log_people_list_error_event(',
-            'async def _log_person_access_event(',
-            'async def _log_person_not_found_event(',
-            'async def _log_person_access_success_event(',
-            'async def _log_person_access_error_event('
+            "async def _log_people_list_access_event(",
+            "async def _log_people_list_success_event(",
+            "async def _log_people_list_error_event(",
+            "async def _log_person_access_event(",
+            "async def _log_person_not_found_event(",
+            "async def _log_person_access_success_event(",
+            "async def _log_person_access_error_event(",
         ]
 
         for func in required_functions:
@@ -177,11 +193,11 @@ def verify_audit_logging_functions():
 
         # Check that functions use proper security event types
         security_checks = [
-            'SecurityEventType.PERSON_LIST_ACCESS',
-            'SecurityEventType.PERSON_ACCESS',
-            'SecurityEventSeverity.LOW',
-            'SecurityEventSeverity.MEDIUM',
-            'await db_service.log_security_event'
+            "SecurityEventType.PERSON_LIST_ACCESS",
+            "SecurityEventType.PERSON_ACCESS",
+            "SecurityEventSeverity.LOW",
+            "SecurityEventSeverity.MEDIUM",
+            "await db_service.log_security_event",
         ]
 
         for check in security_checks:
@@ -207,7 +223,7 @@ def main():
         verify_security_event_types,
         verify_person_response_model,
         verify_handler_structure,
-        verify_audit_logging_functions
+        verify_audit_logging_functions,
     ]
 
     for check in checks:

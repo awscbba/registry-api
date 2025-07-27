@@ -11,12 +11,18 @@ from typing import Dict, Any, Optional, List, Union
 from enum import Enum
 
 from ..models.error_handling import ErrorLogEntry, ErrorContext, APIException
-from ..models.security_event import SecurityEvent, SecurityEventType, SecurityEventSeverity, get_default_severity
+from ..models.security_event import (
+    SecurityEvent,
+    SecurityEventType,
+    SecurityEventSeverity,
+    get_default_severity,
+)
 from ..services.dynamodb_service import DynamoDBService
 
 
 class LogLevel(str, Enum):
     """Log levels for structured logging."""
+
     DEBUG = "DEBUG"
     INFO = "INFO"
     WARNING = "WARNING"
@@ -26,6 +32,7 @@ class LogLevel(str, Enum):
 
 class LogCategory(str, Enum):
     """Categories of log entries for better organization."""
+
     AUTHENTICATION = "AUTHENTICATION"
     AUTHORIZATION = "AUTHORIZATION"
     PERSON_OPERATIONS = "PERSON_OPERATIONS"
@@ -48,7 +55,7 @@ class StructuredLogEntry:
         category: LogCategory,
         message: str,
         context: Optional[ErrorContext] = None,
-        additional_data: Optional[Dict[str, Any]] = None
+        additional_data: Optional[Dict[str, Any]] = None,
     ):
         self.id = str(uuid.uuid4())
         self.timestamp = datetime.now(timezone.utc)
@@ -76,7 +83,7 @@ class StructuredLogEntry:
                 "user_agent": self.context.user_agent,
                 "path": self.context.path,
                 "method": self.context.method,
-                "additional_data": self.context.additional_data
+                "additional_data": self.context.additional_data,
             }
 
         if self.additional_data:
@@ -98,7 +105,7 @@ class LoggingService:
 
         # Configure structured logging format
         formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
         )
 
         # Ensure handler exists
@@ -115,7 +122,7 @@ class LoggingService:
         message: str,
         context: Optional[ErrorContext] = None,
         additional_data: Optional[Dict[str, Any]] = None,
-        persist_to_db: bool = True
+        persist_to_db: bool = True,
     ):
         """Log a structured entry with optional database persistence."""
         try:
@@ -125,7 +132,9 @@ class LoggingService:
             if isinstance(category, str):
                 category = LogCategory(category.upper())
 
-            entry = StructuredLogEntry(level, category, message, context, additional_data)
+            entry = StructuredLogEntry(
+                level, category, message, context, additional_data
+            )
 
             # Log to standard logger
             log_method = getattr(self.logger, level.value.lower())
@@ -145,7 +154,7 @@ class LoggingService:
         person_id: str,
         context: ErrorContext,
         success: bool = True,
-        details: Optional[Dict[str, Any]] = None
+        details: Optional[Dict[str, Any]] = None,
     ):
         """Log person-related operations for audit trail."""
         level = LogLevel.INFO if success else LogLevel.ERROR
@@ -155,7 +164,7 @@ class LoggingService:
             "operation": operation,
             "person_id": person_id,
             "success": success,
-            "details": details or {}
+            "details": details or {},
         }
 
         await self.log_structured(
@@ -163,7 +172,7 @@ class LoggingService:
             category=LogCategory.PERSON_OPERATIONS,
             message=message,
             context=context,
-            additional_data=additional_data
+            additional_data=additional_data,
         )
 
     async def log_authentication_event(
@@ -172,7 +181,7 @@ class LoggingService:
         user_email: Optional[str],
         context: ErrorContext,
         success: bool = True,
-        failure_reason: Optional[str] = None
+        failure_reason: Optional[str] = None,
     ):
         """Log authentication events."""
         level = LogLevel.INFO if success else LogLevel.WARNING
@@ -185,7 +194,7 @@ class LoggingService:
             "event_type": event_type,
             "user_email": user_email,
             "success": success,
-            "failure_reason": failure_reason
+            "failure_reason": failure_reason,
         }
 
         await self.log_structured(
@@ -193,7 +202,7 @@ class LoggingService:
             category=LogCategory.AUTHENTICATION,
             message=message,
             context=context,
-            additional_data=additional_data
+            additional_data=additional_data,
         )
 
     async def log_password_event(
@@ -202,7 +211,7 @@ class LoggingService:
         person_id: str,
         context: ErrorContext,
         success: bool = True,
-        details: Optional[Dict[str, Any]] = None
+        details: Optional[Dict[str, Any]] = None,
     ):
         """Log password-related events."""
         level = LogLevel.INFO if success else LogLevel.WARNING
@@ -212,7 +221,7 @@ class LoggingService:
             "event_type": event_type,
             "person_id": person_id,
             "success": success,
-            "details": details or {}
+            "details": details or {},
         }
 
         await self.log_structured(
@@ -220,7 +229,7 @@ class LoggingService:
             category=LogCategory.PASSWORD_MANAGEMENT,
             message=message,
             context=context,
-            additional_data=additional_data
+            additional_data=additional_data,
         )
 
     async def log_security_event(
@@ -228,7 +237,7 @@ class LoggingService:
         event_type: SecurityEventType,
         context: ErrorContext,
         severity: Optional[SecurityEventSeverity] = None,
-        details: Optional[Dict[str, Any]] = None
+        details: Optional[Dict[str, Any]] = None,
     ) -> str:
         """Log security events and create security event record."""
         try:
@@ -245,18 +254,22 @@ class LoggingService:
                 user_id=context.user_id,
                 ip_address=context.ip_address,
                 user_agent=context.user_agent,
-                details=details or {}
+                details=details or {},
             )
 
             # Log structured entry
-            level = LogLevel.CRITICAL if severity == SecurityEventSeverity.CRITICAL else LogLevel.WARNING
+            level = (
+                LogLevel.CRITICAL
+                if severity == SecurityEventSeverity.CRITICAL
+                else LogLevel.WARNING
+            )
             message = f"Security event: {event_type.value}"
 
             additional_data = {
                 "security_event_id": security_event.id,
                 "event_type": event_type.value,
                 "severity": severity.value,
-                "details": details or {}
+                "details": details or {},
             }
 
             await self.log_structured(
@@ -264,7 +277,7 @@ class LoggingService:
                 category=LogCategory.SECURITY_EVENTS,
                 message=message,
                 context=context,
-                additional_data=additional_data
+                additional_data=additional_data,
             )
 
             # Persist security event to database
@@ -283,7 +296,7 @@ class LoggingService:
         context: ErrorContext,
         status_code: int,
         response_time_ms: Optional[float] = None,
-        response_size: Optional[int] = None
+        response_size: Optional[int] = None,
     ):
         """Log API access for monitoring and analytics."""
         level = LogLevel.INFO if status_code < 400 else LogLevel.WARNING
@@ -294,7 +307,7 @@ class LoggingService:
             "method": method,
             "status_code": status_code,
             "response_time_ms": response_time_ms,
-            "response_size": response_size
+            "response_size": response_size,
         }
 
         await self.log_structured(
@@ -303,7 +316,7 @@ class LoggingService:
             message=message,
             context=context,
             additional_data=additional_data,
-            persist_to_db=False  # High volume, don't persist all API access logs
+            persist_to_db=False,  # High volume, don't persist all API access logs
         )
 
     async def log_rate_limit_event(
@@ -313,7 +326,7 @@ class LoggingService:
         limit_type: str,
         current_count: int,
         limit: int,
-        window_seconds: int
+        window_seconds: int,
     ):
         """Log rate limiting events."""
         message = f"Rate limit exceeded: {endpoint} - {current_count}/{limit} in {window_seconds}s"
@@ -323,7 +336,7 @@ class LoggingService:
             "limit_type": limit_type,
             "current_count": current_count,
             "limit": limit,
-            "window_seconds": window_seconds
+            "window_seconds": window_seconds,
         }
 
         await self.log_structured(
@@ -331,7 +344,7 @@ class LoggingService:
             category=LogCategory.RATE_LIMITING,
             message=message,
             context=context,
-            additional_data=additional_data
+            additional_data=additional_data,
         )
 
         # Also create a security event for rate limiting
@@ -339,13 +352,11 @@ class LoggingService:
             event_type=SecurityEventType.RATE_LIMIT_EXCEEDED,
             context=context,
             severity=SecurityEventSeverity.HIGH,
-            details=additional_data
+            details=additional_data,
         )
 
     async def log_error(
-        self,
-        exception: APIException,
-        context: Optional[ErrorContext] = None
+        self, exception: APIException, context: Optional[ErrorContext] = None
     ):
         """Log API exceptions with full context."""
         try:
@@ -359,7 +370,11 @@ class LoggingService:
                 "error_code": exception.error_code.value,
                 "category": exception.category.value,
                 "http_status": exception.http_status,
-                "details": [detail.model_dump() for detail in exception.details] if exception.details else []
+                "details": (
+                    [detail.model_dump() for detail in exception.details]
+                    if exception.details
+                    else []
+                ),
             }
 
             # Determine log level based on error category
@@ -375,18 +390,20 @@ class LoggingService:
                 category=LogCategory.ERROR_HANDLING,
                 message=message,
                 context=context,
-                additional_data=additional_data
+                additional_data=additional_data,
             )
 
             # Create security event for security-related errors
             if exception.category.value == "SECURITY":
-                security_event_type = self._map_error_to_security_event(exception.error_code)
+                security_event_type = self._map_error_to_security_event(
+                    exception.error_code
+                )
                 if security_event_type:
                     await self.log_security_event(
                         event_type=security_event_type,
                         context=context or ErrorContext(request_id=str(uuid.uuid4())),
                         severity=SecurityEventSeverity.HIGH,
-                        details=additional_data
+                        details=additional_data,
                     )
 
         except Exception as e:
@@ -401,7 +418,7 @@ class LoggingService:
         context: ErrorContext,
         before_state: Optional[Dict[str, Any]] = None,
         after_state: Optional[Dict[str, Any]] = None,
-        success: bool = True
+        success: bool = True,
     ):
         """Log audit events for compliance and tracking."""
         message = f"Audit: {action} on {resource_type} {resource_id}"
@@ -412,7 +429,7 @@ class LoggingService:
             "resource_id": resource_id,
             "success": success,
             "before_state": before_state,
-            "after_state": after_state
+            "after_state": after_state,
         }
 
         level = LogLevel.INFO if success else LogLevel.ERROR
@@ -422,7 +439,7 @@ class LoggingService:
             category=LogCategory.AUDIT_TRAIL,
             message=message,
             context=context,
-            additional_data=additional_data
+            additional_data=additional_data,
         )
 
     async def _persist_log_entry(self, entry: StructuredLogEntry):
@@ -450,7 +467,7 @@ class LoggingService:
         category: Optional[LogCategory] = None,
         level: Optional[LogLevel] = None,
         hours: int = 24,
-        limit: int = 100
+        limit: int = 100,
     ) -> List[Dict[str, Any]]:
         """Retrieve recent log entries for monitoring dashboard."""
         try:
@@ -469,41 +486,61 @@ logging_service = LoggingService()
 # Convenience functions for common logging operations
 async def log_person_created(person_id: str, context: ErrorContext):
     """Log person creation event."""
-    await logging_service.log_person_operation("CREATE", person_id, context, success=True)
+    await logging_service.log_person_operation(
+        "CREATE", person_id, context, success=True
+    )
 
 
-async def log_person_updated(person_id: str, context: ErrorContext, updated_fields: List[str]):
+async def log_person_updated(
+    person_id: str, context: ErrorContext, updated_fields: List[str]
+):
     """Log person update event."""
     details = {"updated_fields": updated_fields}
-    await logging_service.log_person_operation("UPDATE", person_id, context, success=True, details=details)
+    await logging_service.log_person_operation(
+        "UPDATE", person_id, context, success=True, details=details
+    )
 
 
 async def log_person_deleted(person_id: str, context: ErrorContext):
     """Log person deletion event."""
-    await logging_service.log_person_operation("DELETE", person_id, context, success=True)
+    await logging_service.log_person_operation(
+        "DELETE", person_id, context, success=True
+    )
 
 
 async def log_person_accessed(person_id: str, context: ErrorContext):
     """Log person access event."""
-    await logging_service.log_person_operation("ACCESS", person_id, context, success=True)
+    await logging_service.log_person_operation(
+        "ACCESS", person_id, context, success=True
+    )
 
 
 async def log_login_success(user_email: str, context: ErrorContext):
     """Log successful login."""
-    await logging_service.log_authentication_event("LOGIN", user_email, context, success=True)
+    await logging_service.log_authentication_event(
+        "LOGIN", user_email, context, success=True
+    )
 
 
 async def log_login_failure(user_email: str, context: ErrorContext, reason: str):
     """Log failed login attempt."""
-    await logging_service.log_authentication_event("LOGIN", user_email, context, success=False, failure_reason=reason)
+    await logging_service.log_authentication_event(
+        "LOGIN", user_email, context, success=False, failure_reason=reason
+    )
 
 
 async def log_password_changed(person_id: str, context: ErrorContext):
     """Log password change event."""
-    await logging_service.log_password_event("PASSWORD_CHANGED", person_id, context, success=True)
+    await logging_service.log_password_event(
+        "PASSWORD_CHANGED", person_id, context, success=True
+    )
 
 
-async def log_password_change_failed(person_id: str, context: ErrorContext, reason: str):
+async def log_password_change_failed(
+    person_id: str, context: ErrorContext, reason: str
+):
     """Log failed password change attempt."""
     details = {"failure_reason": reason}
-    await logging_service.log_password_event("PASSWORD_CHANGE_FAILED", person_id, context, success=False, details=details)
+    await logging_service.log_password_event(
+        "PASSWORD_CHANGE_FAILED", person_id, context, success=False, details=details
+    )

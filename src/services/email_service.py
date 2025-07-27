@@ -1,6 +1,7 @@
 """
 AWS SES Email Service for sending notifications and password reset emails.
 """
+
 import logging
 import os
 import json
@@ -13,7 +14,7 @@ from ..models.email import (
     EmailResponse,
     EmailType,
     EmailConfig,
-    EMAIL_TEMPLATES
+    EMAIL_TEMPLATES,
 )
 from .email_templates import EmailTemplates
 
@@ -24,10 +25,10 @@ class EmailService:
     """Service for sending emails via AWS SES."""
 
     def __init__(self):
-        self.ses_client = boto3.client('ses')
+        self.ses_client = boto3.client("ses")
         self.from_email = EmailConfig.get_from_email()
         self.from_name = EmailConfig.DEFAULT_FROM_NAME
-        self.configuration_set = os.environ.get('SES_CONFIGURATION_SET')
+        self.configuration_set = os.environ.get("SES_CONFIGURATION_SET")
         self.frontend_url = EmailConfig.get_frontend_url()
 
     async def send_email(self, request: EmailRequest) -> EmailResponse:
@@ -48,28 +49,19 @@ class EmailService:
             # Get email configuration
             email_config = EMAIL_TEMPLATES.get(request.email_type)
             if not email_config:
-                raise ValueError(f"Email configuration not found for type: {request.email_type}")
+                raise ValueError(
+                    f"Email configuration not found for type: {request.email_type}"
+                )
 
             # Prepare SES email parameters
-            destination = {
-                'ToAddresses': [request.to_email]
-            }
+            destination = {"ToAddresses": [request.to_email]}
 
             message = {
-                'Subject': {
-                    'Data': email_config['subject'],
-                    'Charset': 'UTF-8'
+                "Subject": {"Data": email_config["subject"], "Charset": "UTF-8"},
+                "Body": {
+                    "Html": {"Data": template["html_body"], "Charset": "UTF-8"},
+                    "Text": {"Data": template["text_body"], "Charset": "UTF-8"},
                 },
-                'Body': {
-                    'Html': {
-                        'Data': template['html_body'],
-                        'Charset': 'UTF-8'
-                    },
-                    'Text': {
-                        'Data': template['text_body'],
-                        'Charset': 'UTF-8'
-                    }
-                }
             }
 
             # Prepare source email
@@ -77,57 +69,51 @@ class EmailService:
 
             # Prepare SES send parameters
             send_params = {
-                'Source': source_email,
-                'Destination': destination,
-                'Message': message
+                "Source": source_email,
+                "Destination": destination,
+                "Message": message,
             }
 
             # Add configuration set if available
             if self.configuration_set:
-                send_params['ConfigurationSetName'] = self.configuration_set
+                send_params["ConfigurationSetName"] = self.configuration_set
 
             # Add reply-to if specified
             if request.reply_to:
-                send_params['ReplyToAddresses'] = [request.reply_to]
+                send_params["ReplyToAddresses"] = [request.reply_to]
 
             # Send email via SES
             response = self.ses_client.send_email(**send_params)
 
-            message_id = response.get('MessageId')
+            message_id = response.get("MessageId")
 
             logger.info(f"Email sent successfully: {message_id} to {request.to_email}")
 
             return EmailResponse(
-                success=True,
-                message_id=message_id,
-                message="Email sent successfully"
+                success=True, message_id=message_id, message="Email sent successfully"
             )
 
         except ClientError as e:
-            error_code = e.response['Error']['Code']
-            error_message = e.response['Error']['Message']
+            error_code = e.response["Error"]["Code"]
+            error_message = e.response["Error"]["Message"]
 
             logger.error(f"SES ClientError: {error_code} - {error_message}")
 
             return EmailResponse(
                 success=False,
                 message=f"Failed to send email: {error_message}",
-                error_code=error_code
+                error_code=error_code,
             )
 
         except Exception as e:
             logger.error(f"Unexpected error sending email: {str(e)}")
 
             return EmailResponse(
-                success=False,
-                message=f"Failed to send email: {str(e)}"
+                success=False, message=f"Failed to send email: {str(e)}"
             )
 
     async def send_password_reset_email(
-        self,
-        to_email: str,
-        first_name: str,
-        reset_token: str
+        self, to_email: str, first_name: str, reset_token: str
     ) -> EmailResponse:
         """
         Send password reset email with secure reset link.
@@ -146,10 +132,10 @@ class EmailService:
             to_email=to_email,
             email_type=EmailType.PASSWORD_RESET,
             variables={
-                'first_name': first_name,
-                'reset_link': reset_link,
-                'reset_token': reset_token
-            }
+                "first_name": first_name,
+                "reset_link": reset_link,
+                "reset_token": reset_token,
+            },
         )
 
         return await self.send_email(request)
@@ -159,7 +145,7 @@ class EmailService:
         to_email: str,
         first_name: str,
         change_time: str,
-        ip_address: Optional[str] = None
+        ip_address: Optional[str] = None,
     ) -> EmailResponse:
         """
         Send password changed confirmation email.
@@ -177,18 +163,16 @@ class EmailService:
             to_email=to_email,
             email_type=EmailType.PASSWORD_CHANGED,
             variables={
-                'first_name': first_name,
-                'change_time': change_time,
-                'ip_address': ip_address or 'Not available'
-            }
+                "first_name": first_name,
+                "change_time": change_time,
+                "ip_address": ip_address or "Not available",
+            },
         )
 
         return await self.send_email(request)
 
     async def send_password_reset_confirmation_email(
-        self,
-        to_email: str,
-        first_name: str
+        self, to_email: str, first_name: str
     ) -> EmailResponse:
         """
         Send password reset confirmation email.
@@ -203,9 +187,7 @@ class EmailService:
         request = EmailRequest(
             to_email=to_email,
             email_type=EmailType.PASSWORD_RESET_CONFIRMATION,
-            variables={
-                'first_name': first_name
-            }
+            variables={"first_name": first_name},
         )
 
         return await self.send_email(request)
@@ -222,9 +204,9 @@ class EmailService:
         """
         # Start with default data
         template_data = {
-            'support_email': EmailConfig.DEFAULT_SUPPORT_EMAIL,
-            'frontend_url': self.frontend_url,
-            'expiry_hours': 1  # Default for password reset
+            "support_email": EmailConfig.DEFAULT_SUPPORT_EMAIL,
+            "frontend_url": self.frontend_url,
+            "expiry_hours": 1,  # Default for password reset
         }
 
         # Add user-provided variables
@@ -244,10 +226,10 @@ class EmailService:
             stats_response = self.ses_client.get_send_statistics()
 
             return {
-                'max_24_hour_send': quota_response.get('Max24HourSend', 0),
-                'max_send_rate': quota_response.get('MaxSendRate', 0),
-                'sent_last_24_hours': quota_response.get('SentLast24Hours', 0),
-                'send_data_points': stats_response.get('SendDataPoints', [])
+                "max_24_hour_send": quota_response.get("Max24HourSend", 0),
+                "max_send_rate": quota_response.get("MaxSendRate", 0),
+                "sent_last_24_hours": quota_response.get("SentLast24Hours", 0),
+                "send_data_points": stats_response.get("SendDataPoints", []),
             }
 
         except ClientError as e:

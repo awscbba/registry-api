@@ -1,6 +1,7 @@
 """
 Tests for the new PUT /people/{person_id}/password endpoint.
 """
+
 import pytest
 from unittest.mock import Mock, patch, AsyncMock
 from fastapi.testclient import TestClient
@@ -30,7 +31,7 @@ class TestPersonPasswordEndpoint:
             last_name="User",
             require_password_change=False,
             is_active=True,
-            last_login_at=None
+            last_login_at=None,
         )
 
     @pytest.fixture
@@ -51,12 +52,20 @@ class TestPersonPasswordEndpoint:
         return {
             "current_password": "OldPassword123!",
             "new_password": "NewPassword123!",
-            "confirm_password": "NewPassword123!"
+            "confirm_password": "NewPassword123!",
         }
 
-    @patch('src.handlers.people_handler.db_service')
-    @patch('src.handlers.people_handler.password_service')
-    def test_update_person_password_success(self, mock_password_service, mock_db_service, client, mock_auth_user, mock_person, password_request_data):
+    @patch("src.handlers.people_handler.db_service")
+    @patch("src.handlers.people_handler.password_service")
+    def test_update_person_password_success(
+        self,
+        mock_password_service,
+        mock_db_service,
+        client,
+        mock_auth_user,
+        mock_person,
+        password_request_data,
+    ):
         """Test successful password update for a person."""
         # Override the dependency
         app.dependency_overrides[get_current_user] = lambda: mock_auth_user
@@ -65,18 +74,18 @@ class TestPersonPasswordEndpoint:
         mock_db_service.get_person = AsyncMock(return_value=mock_person)
 
         mock_response = PasswordUpdateResponse(
-            success=True,
-            message="Password updated successfully",
-            require_reauth=True
+            success=True, message="Password updated successfully", require_reauth=True
         )
-        mock_password_service.update_password = AsyncMock(return_value=(True, mock_response, None))
+        mock_password_service.update_password = AsyncMock(
+            return_value=(True, mock_response, None)
+        )
 
         try:
             # Make request
             response = client.put(
                 f"/people/{mock_auth_user.id}/password",
                 json=password_request_data,
-                headers={"Authorization": "Bearer test-token"}
+                headers={"Authorization": "Bearer test-token"},
             )
 
             # Verify response
@@ -96,7 +105,9 @@ class TestPersonPasswordEndpoint:
             # Clean up dependency override
             app.dependency_overrides.clear()
 
-    def test_update_person_password_unauthorized_different_user(self, client, mock_auth_user, password_request_data):
+    def test_update_person_password_unauthorized_different_user(
+        self, client, mock_auth_user, password_request_data
+    ):
         """Test that users cannot update other users' passwords."""
         # Override the dependency
         app.dependency_overrides[get_current_user] = lambda: mock_auth_user
@@ -107,7 +118,7 @@ class TestPersonPasswordEndpoint:
             response = client.put(
                 f"/people/{different_user_id}/password",
                 json=password_request_data,
-                headers={"Authorization": "Bearer test-token"}
+                headers={"Authorization": "Bearer test-token"},
             )
 
             # Verify forbidden response
@@ -118,8 +129,10 @@ class TestPersonPasswordEndpoint:
             # Clean up dependency override
             app.dependency_overrides.clear()
 
-    @patch('src.handlers.people_handler.db_service')
-    def test_update_person_password_person_not_found(self, mock_db_service, client, mock_auth_user, password_request_data):
+    @patch("src.handlers.people_handler.db_service")
+    def test_update_person_password_person_not_found(
+        self, mock_db_service, client, mock_auth_user, password_request_data
+    ):
         """Test password update when person doesn't exist."""
         # Override the dependency
         app.dependency_overrides[get_current_user] = lambda: mock_auth_user
@@ -132,7 +145,7 @@ class TestPersonPasswordEndpoint:
             response = client.put(
                 f"/people/{mock_auth_user.id}/password",
                 json=password_request_data,
-                headers={"Authorization": "Bearer test-token"}
+                headers={"Authorization": "Bearer test-token"},
             )
 
             # Verify not found response
@@ -143,8 +156,15 @@ class TestPersonPasswordEndpoint:
             # Clean up dependency override
             app.dependency_overrides.clear()
 
-    @patch('src.handlers.people_handler.db_service')
-    def test_update_person_password_inactive_account(self, mock_db_service, client, mock_auth_user, mock_person, password_request_data):
+    @patch("src.handlers.people_handler.db_service")
+    def test_update_person_password_inactive_account(
+        self,
+        mock_db_service,
+        client,
+        mock_auth_user,
+        mock_person,
+        password_request_data,
+    ):
         """Test password update for inactive account."""
         # Override the dependency
         app.dependency_overrides[get_current_user] = lambda: mock_auth_user
@@ -158,7 +178,7 @@ class TestPersonPasswordEndpoint:
             response = client.put(
                 f"/people/{mock_auth_user.id}/password",
                 json=password_request_data,
-                headers={"Authorization": "Bearer test-token"}
+                headers={"Authorization": "Bearer test-token"},
             )
 
             # Verify forbidden response
@@ -169,9 +189,17 @@ class TestPersonPasswordEndpoint:
             # Clean up dependency override
             app.dependency_overrides.clear()
 
-    @patch('src.handlers.people_handler.db_service')
-    @patch('src.handlers.people_handler.password_service')
-    def test_update_person_password_invalid_current_password(self, mock_password_service, mock_db_service, client, mock_auth_user, mock_person, password_request_data):
+    @patch("src.handlers.people_handler.db_service")
+    @patch("src.handlers.people_handler.password_service")
+    def test_update_person_password_invalid_current_password(
+        self,
+        mock_password_service,
+        mock_db_service,
+        client,
+        mock_auth_user,
+        mock_person,
+        password_request_data,
+    ):
         """Test password update with invalid current password."""
         # Override the dependency
         app.dependency_overrides[get_current_user] = lambda: mock_auth_user
@@ -180,17 +208,18 @@ class TestPersonPasswordEndpoint:
         mock_db_service.get_person = AsyncMock(return_value=mock_person)
 
         mock_response = PasswordUpdateResponse(
-            success=False,
-            message="Current password is incorrect"
+            success=False, message="Current password is incorrect"
         )
-        mock_password_service.update_password = AsyncMock(return_value=(False, mock_response, "Current password is incorrect"))
+        mock_password_service.update_password = AsyncMock(
+            return_value=(False, mock_response, "Current password is incorrect")
+        )
 
         try:
             # Make request
             response = client.put(
                 f"/people/{mock_auth_user.id}/password",
                 json=password_request_data,
-                headers={"Authorization": "Bearer test-token"}
+                headers={"Authorization": "Bearer test-token"},
             )
 
             # Verify bad request response
@@ -204,9 +233,17 @@ class TestPersonPasswordEndpoint:
             # Clean up dependency override
             app.dependency_overrides.clear()
 
-    @patch('src.handlers.people_handler.db_service')
-    @patch('src.handlers.people_handler.password_service')
-    def test_update_person_password_policy_violation(self, mock_password_service, mock_db_service, client, mock_auth_user, mock_person, password_request_data):
+    @patch("src.handlers.people_handler.db_service")
+    @patch("src.handlers.people_handler.password_service")
+    def test_update_person_password_policy_violation(
+        self,
+        mock_password_service,
+        mock_db_service,
+        client,
+        mock_auth_user,
+        mock_person,
+        password_request_data,
+    ):
         """Test password update with policy violation."""
         # Override the dependency
         app.dependency_overrides[get_current_user] = lambda: mock_auth_user
@@ -215,54 +252,75 @@ class TestPersonPasswordEndpoint:
         mock_db_service.get_person = AsyncMock(return_value=mock_person)
 
         mock_response = PasswordUpdateResponse(
-            success=False,
-            message="Password does not meet policy requirements"
+            success=False, message="Password does not meet policy requirements"
         )
-        mock_password_service.update_password = AsyncMock(return_value=(False, mock_response, "Password does not meet policy requirements"))
+        mock_password_service.update_password = AsyncMock(
+            return_value=(
+                False,
+                mock_response,
+                "Password does not meet policy requirements",
+            )
+        )
 
         try:
             # Make request
             response = client.put(
                 f"/people/{mock_auth_user.id}/password",
                 json=password_request_data,
-                headers={"Authorization": "Bearer test-token"}
+                headers={"Authorization": "Bearer test-token"},
             )
 
             # Verify bad request response
             assert response.status_code == 400
             data = response.json()
             assert data["detail"]["error"] == "PASSWORD_POLICY_VIOLATION"
-            assert data["detail"]["message"] == "Password does not meet policy requirements"
+            assert (
+                data["detail"]["message"]
+                == "Password does not meet policy requirements"
+            )
             assert "timestamp" in data["detail"]
             assert "request_id" in data["detail"]
         finally:
             # Clean up dependency override
             app.dependency_overrides.clear()
 
-    @patch('src.handlers.people_handler.db_service')
-    @patch('src.handlers.people_handler.password_service')
-    def test_update_person_password_service_error(self, mock_password_service, mock_db_service, client, mock_auth_user, mock_person, password_request_data):
+    @patch("src.handlers.people_handler.db_service")
+    @patch("src.handlers.people_handler.password_service")
+    def test_update_person_password_service_error(
+        self,
+        mock_password_service,
+        mock_db_service,
+        client,
+        mock_auth_user,
+        mock_person,
+        password_request_data,
+    ):
         """Test password update with service error."""
         # Override the dependency
         app.dependency_overrides[get_current_user] = lambda: mock_auth_user
 
         # Setup mocks
         mock_db_service.get_person = AsyncMock(return_value=mock_person)
-        mock_password_service.update_password = AsyncMock(side_effect=Exception("Database error"))
+        mock_password_service.update_password = AsyncMock(
+            side_effect=Exception("Database error")
+        )
 
         try:
             # Make request
             response = client.put(
                 f"/people/{mock_auth_user.id}/password",
                 json=password_request_data,
-                headers={"Authorization": "Bearer test-token"}
+                headers={"Authorization": "Bearer test-token"},
             )
 
             # Verify internal server error response
             assert response.status_code == 500
             data = response.json()
             assert data["detail"]["error"] == "INTERNAL_SERVER_ERROR"
-            assert data["detail"]["message"] == "An unexpected error occurred while updating the password"
+            assert (
+                data["detail"]["message"]
+                == "An unexpected error occurred while updating the password"
+            )
             assert "timestamp" in data["detail"]
             assert "request_id" in data["detail"]
         finally:
@@ -277,14 +335,14 @@ class TestPersonPasswordEndpoint:
         invalid_data = {
             "current_password": "",  # Empty current password
             "new_password": "short",  # Too short
-            "confirm_password": "different"  # Doesn't match
+            "confirm_password": "different",  # Doesn't match
         }
 
         try:
             response = client.put(
                 "/people/test-user-123/password",
                 json=invalid_data,
-                headers={"Authorization": "Bearer test-token"}
+                headers={"Authorization": "Bearer test-token"},
             )
 
             # Should get validation error from Pydantic
@@ -296,8 +354,7 @@ class TestPersonPasswordEndpoint:
     def test_update_person_password_missing_auth(self, client, password_request_data):
         """Test password update without authentication."""
         response = client.put(
-            "/people/test-user-123/password",
-            json=password_request_data
+            "/people/test-user-123/password", json=password_request_data
         )
 
         # Should get unauthorized

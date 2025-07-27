@@ -1,6 +1,7 @@
 """
 Password management API handlers for FastAPI endpoints.
 """
+
 import logging
 from typing import Dict, Any, Optional
 from fastapi import HTTPException, Request, Depends
@@ -26,7 +27,7 @@ class PasswordManagementHandler:
         self,
         request: PasswordUpdateRequest,
         client_request: Request,
-        current_user: AuthenticatedUser = Depends(get_current_user)
+        current_user: AuthenticatedUser = Depends(get_current_user),
     ) -> JSONResponse:
         """
         Handle password update request for authenticated user.
@@ -49,7 +50,7 @@ class PasswordManagementHandler:
                 person_id=current_user.id,
                 password_request=request,
                 ip_address=client_ip,
-                user_agent=user_agent
+                user_agent=user_agent,
             )
 
             # Return appropriate HTTP status
@@ -60,21 +61,20 @@ class PasswordManagementHandler:
                 content={
                     "success": response.success,
                     "message": response.message,
-                    "require_reauth": response.require_reauth
-                }
+                    "require_reauth": response.require_reauth,
+                },
             )
 
         except Exception as e:
             logger.error(f"Error in update_password handler: {str(e)}")
             raise HTTPException(
-                status_code=500,
-                detail="Internal server error while updating password"
+                status_code=500, detail="Internal server error while updating password"
             )
 
     async def validate_current_password(
         self,
         current_password: str,
-        current_user: AuthenticatedUser = Depends(get_current_user)
+        current_user: AuthenticatedUser = Depends(get_current_user),
     ) -> JSONResponse:
         """
         Validate current password for authenticated user.
@@ -87,9 +87,10 @@ class PasswordManagementHandler:
             JSONResponse with validation result
         """
         try:
-            is_valid, error_msg = await self.password_service.validate_password_change_request(
-                person_id=current_user.id,
-                current_password=current_password
+            is_valid, error_msg = (
+                await self.password_service.validate_password_change_request(
+                    person_id=current_user.id, current_password=current_password
+                )
             )
 
             status_code = 200 if is_valid else 400
@@ -98,21 +99,21 @@ class PasswordManagementHandler:
                 status_code=status_code,
                 content={
                     "valid": is_valid,
-                    "message": error_msg if error_msg else "Password validation successful"
-                }
+                    "message": (
+                        error_msg if error_msg else "Password validation successful"
+                    ),
+                },
             )
 
         except Exception as e:
             logger.error(f"Error in validate_current_password handler: {str(e)}")
             raise HTTPException(
                 status_code=500,
-                detail="Internal server error while validating password"
+                detail="Internal server error while validating password",
             )
 
     async def check_password_history(
-        self,
-        password: str,
-        current_user: AuthenticatedUser = Depends(get_current_user)
+        self, password: str, current_user: AuthenticatedUser = Depends(get_current_user)
     ) -> JSONResponse:
         """
         Check if password has been used recently.
@@ -126,8 +127,7 @@ class PasswordManagementHandler:
         """
         try:
             can_use, error_msg = await self.password_service.check_password_history(
-                person_id=current_user.id,
-                password=password
+                person_id=current_user.id, password=password
             )
 
             status_code = 200 if can_use else 400
@@ -136,22 +136,22 @@ class PasswordManagementHandler:
                 status_code=status_code,
                 content={
                     "can_use": can_use,
-                    "message": error_msg if error_msg else "Password can be used"
-                }
+                    "message": error_msg if error_msg else "Password can be used",
+                },
             )
 
         except Exception as e:
             logger.error(f"Error in check_password_history handler: {str(e)}")
             raise HTTPException(
                 status_code=500,
-                detail="Internal server error while checking password history"
+                detail="Internal server error while checking password history",
             )
 
     async def force_password_change(
         self,
         person_id: str,
         client_request: Request,
-        current_user: AuthenticatedUser = Depends(get_current_user)
+        current_user: AuthenticatedUser = Depends(get_current_user),
     ) -> JSONResponse:
         """
         Force password change for a user (admin function).
@@ -168,8 +168,7 @@ class PasswordManagementHandler:
             # Check if current user has admin privileges
             if not self._is_admin(current_user):
                 raise HTTPException(
-                    status_code=403,
-                    detail="Insufficient privileges for this operation"
+                    status_code=403, detail="Insufficient privileges for this operation"
                 )
 
             # Extract client information
@@ -181,7 +180,7 @@ class PasswordManagementHandler:
                 person_id=person_id,
                 admin_user_id=current_user.id,
                 ip_address=client_ip,
-                user_agent=user_agent
+                user_agent=user_agent,
             )
 
             status_code = 200 if success else 400
@@ -190,8 +189,10 @@ class PasswordManagementHandler:
                 status_code=status_code,
                 content={
                     "success": success,
-                    "message": "Password change forced successfully" if success else error_msg
-                }
+                    "message": (
+                        "Password change forced successfully" if success else error_msg
+                    ),
+                },
             )
 
         except HTTPException:
@@ -200,7 +201,7 @@ class PasswordManagementHandler:
             logger.error(f"Error in force_password_change handler: {str(e)}")
             raise HTTPException(
                 status_code=500,
-                detail="Internal server error while forcing password change"
+                detail="Internal server error while forcing password change",
             )
 
     async def generate_temporary_password(
@@ -208,7 +209,7 @@ class PasswordManagementHandler:
         person_id: str,
         client_request: Request,
         length: int = 12,
-        current_user: AuthenticatedUser = Depends(get_current_user)
+        current_user: AuthenticatedUser = Depends(get_current_user),
     ) -> JSONResponse:
         """
         Generate temporary password for a user (admin function).
@@ -226,8 +227,7 @@ class PasswordManagementHandler:
             # Check if current user has admin privileges
             if not self._is_admin(current_user):
                 raise HTTPException(
-                    status_code=403,
-                    detail="Insufficient privileges for this operation"
+                    status_code=403, detail="Insufficient privileges for this operation"
                 )
 
             # Extract client information
@@ -235,29 +235,32 @@ class PasswordManagementHandler:
             user_agent = client_request.headers.get("user-agent")
 
             # Generate temporary password
-            success, temp_password, error_msg = await self.password_service.generate_temporary_password(
-                person_id=person_id,
-                admin_user_id=current_user.id,
-                length=length,
-                ip_address=client_ip,
-                user_agent=user_agent
+            success, temp_password, error_msg = (
+                await self.password_service.generate_temporary_password(
+                    person_id=person_id,
+                    admin_user_id=current_user.id,
+                    length=length,
+                    ip_address=client_ip,
+                    user_agent=user_agent,
+                )
             )
 
             status_code = 200 if success else 400
 
             response_content = {
                 "success": success,
-                "message": "Temporary password generated successfully" if success else error_msg
+                "message": (
+                    "Temporary password generated successfully"
+                    if success
+                    else error_msg
+                ),
             }
 
             if success and temp_password:
                 response_content["temporary_password"] = temp_password
                 response_content["require_change"] = True
 
-            return JSONResponse(
-                status_code=status_code,
-                content=response_content
-            )
+            return JSONResponse(status_code=status_code, content=response_content)
 
         except HTTPException:
             raise
@@ -265,7 +268,7 @@ class PasswordManagementHandler:
             logger.error(f"Error in generate_temporary_password handler: {str(e)}")
             raise HTTPException(
                 status_code=500,
-                detail="Internal server error while generating temporary password"
+                detail="Internal server error while generating temporary password",
             )
 
     def _get_client_ip(self, request: Request) -> str:
@@ -307,7 +310,7 @@ class PasswordManagementHandler:
         """
         # TODO: Implement proper admin role checking
         # For now, check if user has admin role or specific permissions
-        return hasattr(user, 'roles') and 'admin' in getattr(user, 'roles', [])
+        return hasattr(user, "roles") and "admin" in getattr(user, "roles", [])
 
 
 # Request/Response models for API endpoints
@@ -316,23 +319,35 @@ from pydantic import BaseModel, Field
 
 class PasswordValidationRequest(BaseModel):
     """Request model for password validation."""
-    current_password: str = Field(..., min_length=1, description="Current password to validate")
+
+    current_password: str = Field(
+        ..., min_length=1, description="Current password to validate"
+    )
 
 
 class PasswordHistoryCheckRequest(BaseModel):
     """Request model for password history checking."""
-    password: str = Field(..., min_length=8, description="Password to check against history")
+
+    password: str = Field(
+        ..., min_length=8, description="Password to check against history"
+    )
 
 
 class ForcePasswordChangeRequest(BaseModel):
     """Request model for forcing password change."""
+
     person_id: str = Field(..., description="ID of person to force password change for")
 
 
 class GenerateTemporaryPasswordRequest(BaseModel):
     """Request model for generating temporary password."""
-    person_id: str = Field(..., description="ID of person to generate temporary password for")
-    length: int = Field(default=12, ge=8, le=128, description="Length of temporary password")
+
+    person_id: str = Field(
+        ..., description="ID of person to generate temporary password for"
+    )
+    length: int = Field(
+        default=12, ge=8, le=128, description="Length of temporary password"
+    )
 
 
 # Convenience functions for use in FastAPI routes
@@ -342,15 +357,17 @@ password_management_handler = PasswordManagementHandler()
 async def handle_update_password(
     request: PasswordUpdateRequest,
     client_request: Request,
-    current_user: AuthenticatedUser = Depends(get_current_user)
+    current_user: AuthenticatedUser = Depends(get_current_user),
 ):
     """Convenience function for updating password."""
-    return await password_management_handler.update_password(request, client_request, current_user)
+    return await password_management_handler.update_password(
+        request, client_request, current_user
+    )
 
 
 async def handle_validate_current_password(
     request: PasswordValidationRequest,
-    current_user: AuthenticatedUser = Depends(get_current_user)
+    current_user: AuthenticatedUser = Depends(get_current_user),
 ):
     """Convenience function for validating current password."""
     return await password_management_handler.validate_current_password(
@@ -360,7 +377,7 @@ async def handle_validate_current_password(
 
 async def handle_check_password_history(
     request: PasswordHistoryCheckRequest,
-    current_user: AuthenticatedUser = Depends(get_current_user)
+    current_user: AuthenticatedUser = Depends(get_current_user),
 ):
     """Convenience function for checking password history."""
     return await password_management_handler.check_password_history(
@@ -371,7 +388,7 @@ async def handle_check_password_history(
 async def handle_force_password_change(
     request: ForcePasswordChangeRequest,
     client_request: Request,
-    current_user: AuthenticatedUser = Depends(get_current_user)
+    current_user: AuthenticatedUser = Depends(get_current_user),
 ):
     """Convenience function for forcing password change."""
     return await password_management_handler.force_password_change(
@@ -382,7 +399,7 @@ async def handle_force_password_change(
 async def handle_generate_temporary_password(
     request: GenerateTemporaryPasswordRequest,
     client_request: Request,
-    current_user: AuthenticatedUser = Depends(get_current_user)
+    current_user: AuthenticatedUser = Depends(get_current_user),
 ):
     """Convenience function for generating temporary password."""
     return await password_management_handler.generate_temporary_password(

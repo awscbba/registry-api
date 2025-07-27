@@ -1,6 +1,7 @@
 """
 Password reset service for managing reset tokens and validation.
 """
+
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, Any, List
@@ -14,7 +15,7 @@ from ..models.password_reset import (
     PasswordResetValidation,
     PasswordResetResponse,
     RateLimitInfo,
-    PasswordResetConfig
+    PasswordResetConfig,
 )
 from ..models.person import Person
 from ..services.dynamodb_service import DynamoDBService
@@ -37,8 +38,7 @@ class PasswordResetService:
         self.people_table = "People"
 
     async def initiate_password_reset(
-        self,
-        request: PasswordResetRequest
+        self, request: PasswordResetRequest
     ) -> PasswordResetResponse:
         """
         Initiate password reset process by generating and storing a reset token.
@@ -54,7 +54,7 @@ class PasswordResetService:
             if not await self._check_rate_limit(request.email, request.ip_address):
                 return PasswordResetResponse(
                     success=False,
-                    message="Too many reset requests. Please wait before trying again."
+                    message="Too many reset requests. Please wait before trying again.",
                 )
 
             # Verify email exists in system
@@ -63,7 +63,7 @@ class PasswordResetService:
                 # Don't reveal if email exists or not for security
                 return PasswordResetResponse(
                     success=True,
-                    message="If the email address exists in our system, you will receive a password reset link."
+                    message="If the email address exists in our system, you will receive a password reset link.",
                 )
 
             # Generate reset token
@@ -77,7 +77,7 @@ class PasswordResetService:
                 email=request.email,
                 expires_at=expires_at,
                 ip_address=request.ip_address,
-                user_agent=request.user_agent
+                user_agent=request.user_agent,
             )
 
             # Store token in database
@@ -93,7 +93,7 @@ class PasswordResetService:
                 ip_address=request.ip_address,
                 user_agent=request.user_agent,
                 success=True,
-                details={"email": request.email}
+                details={"email": request.email},
             )
 
             logger.info(f"Password reset initiated for email: {request.email}")
@@ -101,14 +101,14 @@ class PasswordResetService:
             return PasswordResetResponse(
                 success=True,
                 message="If the email address exists in our system, you will receive a password reset link.",
-                expires_at=expires_at
+                expires_at=expires_at,
             )
 
         except Exception as e:
             logger.error(f"Error initiating password reset: {str(e)}")
             return PasswordResetResponse(
                 success=False,
-                message="An error occurred while processing your request. Please try again later."
+                message="An error occurred while processing your request. Please try again later.",
             )
 
     async def validate_reset_token(self, token: str) -> PasswordResetResponse:
@@ -129,7 +129,7 @@ class PasswordResetService:
                 return PasswordResetResponse(
                     success=False,
                     message="Invalid or expired reset link.",
-                    token_valid=False
+                    token_valid=False,
                 )
 
             # Check if token is expired
@@ -137,7 +137,7 @@ class PasswordResetService:
                 return PasswordResetResponse(
                     success=False,
                     message="Reset link has expired. Please request a new one.",
-                    token_valid=False
+                    token_valid=False,
                 )
 
             # Check if token has been used
@@ -145,14 +145,14 @@ class PasswordResetService:
                 return PasswordResetResponse(
                     success=False,
                     message="Reset link has already been used. Please request a new one.",
-                    token_valid=False
+                    token_valid=False,
                 )
 
             return PasswordResetResponse(
                 success=True,
                 message="Reset link is valid.",
                 token_valid=True,
-                expires_at=token_record.expires_at
+                expires_at=token_record.expires_at,
             )
 
         except Exception as e:
@@ -160,14 +160,14 @@ class PasswordResetService:
             return PasswordResetResponse(
                 success=False,
                 message="An error occurred while validating the reset link.",
-                token_valid=False
+                token_valid=False,
             )
 
     async def reset_password(
         self,
         validation: PasswordResetValidation,
         ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None
+        user_agent: Optional[str] = None,
     ) -> PasswordResetResponse:
         """
         Reset password using a valid reset token.
@@ -187,37 +187,37 @@ class PasswordResetService:
                 return token_validation
 
             # Validate new password
-            is_valid, errors = self.password_validator.validate_password(validation.new_password)
+            is_valid, errors = self.password_validator.validate_password(
+                validation.new_password
+            )
             if not is_valid:
                 return PasswordResetResponse(
                     success=False,
-                    message=f"Password validation failed: {', '.join(errors)}"
+                    message=f"Password validation failed: {', '.join(errors)}",
                 )
 
             # Get token record
             token_record = await self._get_reset_token(validation.reset_token)
             if not token_record:
                 return PasswordResetResponse(
-                    success=False,
-                    message="Invalid reset token."
+                    success=False, message="Invalid reset token."
                 )
 
             # Get person record
             person = await self._get_person_by_id(token_record.person_id)
             if not person:
                 return PasswordResetResponse(
-                    success=False,
-                    message="User account not found."
+                    success=False, message="User account not found."
                 )
 
             # Hash new password
-            password_hash, salt = self.password_hasher.hash_password(validation.new_password)
+            password_hash, salt = self.password_hasher.hash_password(
+                validation.new_password
+            )
 
             # Update person's password
             await self._update_person_password(
-                person_id=person.id,
-                password_hash=password_hash,
-                password_salt=salt
+                person_id=person.id, password_hash=password_hash, password_salt=salt
             )
 
             # Mark token as used
@@ -230,21 +230,21 @@ class PasswordResetService:
                 ip_address=ip_address,
                 user_agent=user_agent,
                 success=True,
-                details={"reset_token": validation.reset_token}
+                details={"reset_token": validation.reset_token},
             )
 
             logger.info(f"Password reset completed for person: {person.id}")
 
             return PasswordResetResponse(
                 success=True,
-                message="Password has been successfully reset. You can now log in with your new password."
+                message="Password has been successfully reset. You can now log in with your new password.",
             )
 
         except Exception as e:
             logger.error(f"Error resetting password: {str(e)}")
             return PasswordResetResponse(
                 success=False,
-                message="An error occurred while resetting your password. Please try again."
+                message="An error occurred while resetting your password. Please try again.",
             )
 
     async def cleanup_expired_tokens(self) -> int:
@@ -335,10 +335,7 @@ class PasswordResetService:
             raise
 
     async def _update_person_password(
-        self,
-        person_id: str,
-        password_hash: str,
-        password_salt: str
+        self, person_id: str, password_hash: str, password_salt: str
     ):
         """Update person's password in database."""
         try:
@@ -355,7 +352,7 @@ class PasswordResetService:
         ip_address: Optional[str],
         user_agent: Optional[str],
         success: bool,
-        details: Optional[Dict[str, Any]] = None
+        details: Optional[Dict[str, Any]] = None,
     ):
         """Log security event for audit purposes."""
         try:

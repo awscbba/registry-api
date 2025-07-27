@@ -20,7 +20,7 @@ def test_api_documentation():
         print(f"❌ API documentation file not found: {doc_path}")
         return False
 
-    with open(doc_path, 'r') as f:
+    with open(doc_path, "r") as f:
         content = f.read()
 
     # Check for required sections
@@ -40,7 +40,7 @@ def test_api_documentation():
         "## Error Codes",
         "## Rate Limiting",
         "## Security Features",
-        "## Field Naming Convention"
+        "## Field Naming Convention",
     ]
 
     missing_sections = []
@@ -60,7 +60,7 @@ def test_api_documentation():
         '"createdAt": "2025-01-22T10:30:00Z"',
         '"updatedAt": "2025-01-22T10:30:00Z"',
         '"isActive": true',
-        '"emailVerified": true'
+        '"emailVerified": true',
     ]
 
     missing_examples = []
@@ -77,7 +77,7 @@ def test_api_documentation():
         '"error": "AUTHENTICATION_FAILED"',
         '"error": "VALIDATION_ERROR"',
         '"error": "PERSON_NOT_FOUND"',
-        '"requestId": "req_123456789"'
+        '"requestId": "req_123456789"',
     ]
 
     missing_error_examples = []
@@ -100,7 +100,7 @@ def test_api_documentation():
         "404 Not Found",
         "409 Conflict",
         "429 Too Many Requests",
-        "500 Internal Server Error"
+        "500 Internal Server Error",
     ]
 
     missing_status_codes = []
@@ -126,26 +126,26 @@ def test_response_formatter():
         print(f"❌ Response formatter file not found: {formatter_path}")
         return False
 
-    with open(formatter_path, 'r') as f:
+    with open(formatter_path, "r") as f:
         content = f.read()
 
     # Check for required classes and functions
     required_elements = [
-        'class ResponseFormatter:',
-        'class CamelCaseConverter:',
-        'class HTTPStatusCodes:',
-        'class ErrorCodes:',
-        'def snake_to_camel(',
-        'def convert_dict_keys(',
-        'def success_response(',
-        'def error_response(',
-        'def validation_error_response(',
-        'def not_found_response(',
-        'def unauthorized_response(',
-        'def forbidden_response(',
-        'def conflict_response(',
-        'def rate_limit_response(',
-        'def internal_server_error_response('
+        "class ResponseFormatter:",
+        "class CamelCaseConverter:",
+        "class HTTPStatusCodes:",
+        "class ErrorCodes:",
+        "def snake_to_camel(",
+        "def convert_dict_keys(",
+        "def success_response(",
+        "def error_response(",
+        "def validation_error_response(",
+        "def not_found_response(",
+        "def unauthorized_response(",
+        "def forbidden_response(",
+        "def conflict_response(",
+        "def rate_limit_response(",
+        "def internal_server_error_response(",
     ]
 
     missing_elements = []
@@ -159,16 +159,16 @@ def test_response_formatter():
 
     # Check for HTTP status code constants
     status_constants = [
-        'OK = status.HTTP_200_OK',
-        'CREATED = status.HTTP_201_CREATED',
-        'NO_CONTENT = status.HTTP_204_NO_CONTENT',
-        'BAD_REQUEST = status.HTTP_400_BAD_REQUEST',
-        'UNAUTHORIZED = status.HTTP_401_UNAUTHORIZED',
-        'FORBIDDEN = status.HTTP_403_FORBIDDEN',
-        'NOT_FOUND = status.HTTP_404_NOT_FOUND',
-        'CONFLICT = status.HTTP_409_CONFLICT',
-        'TOO_MANY_REQUESTS = status.HTTP_429_TOO_MANY_REQUESTS',
-        'INTERNAL_SERVER_ERROR = status.HTTP_500_INTERNAL_SERVER_ERROR'
+        "OK = status.HTTP_200_OK",
+        "CREATED = status.HTTP_201_CREATED",
+        "NO_CONTENT = status.HTTP_204_NO_CONTENT",
+        "BAD_REQUEST = status.HTTP_400_BAD_REQUEST",
+        "UNAUTHORIZED = status.HTTP_401_UNAUTHORIZED",
+        "FORBIDDEN = status.HTTP_403_FORBIDDEN",
+        "NOT_FOUND = status.HTTP_404_NOT_FOUND",
+        "CONFLICT = status.HTTP_409_CONFLICT",
+        "TOO_MANY_REQUESTS = status.HTTP_429_TOO_MANY_REQUESTS",
+        "INTERNAL_SERVER_ERROR = status.HTTP_500_INTERNAL_SERVER_ERROR",
     ]
 
     missing_constants = []
@@ -188,7 +188,7 @@ def test_response_formatter():
         'PERSON_NOT_FOUND = "PERSON_NOT_FOUND"',
         'EMAIL_ALREADY_EXISTS = "EMAIL_ALREADY_EXISTS"',
         'RATE_LIMIT_EXCEEDED = "RATE_LIMIT_EXCEEDED"',
-        'INTERNAL_SERVER_ERROR = "INTERNAL_SERVER_ERROR"'
+        'INTERNAL_SERVER_ERROR = "INTERNAL_SERVER_ERROR"',
     ]
 
     missing_error_constants = []
@@ -214,25 +214,25 @@ def test_documented_handler():
         print(f"❌ Documented handler file not found: {handler_path}")
         return False
 
-    with open(handler_path, 'r') as f:
+    with open(handler_path, "r") as f:
         content = f.read()
 
     # Check for FastAPI app with comprehensive documentation
     required_elements = [
-        'app = FastAPI(',
+        "app = FastAPI(",
         'title="People Register API"',
-        'openapi_tags=[',
-        '@app.get(',
+        "openapi_tags=[",
+        "@app.get(",
         'tags=["health"]',
         'summary="Health Check"',
-        'responses={',
+        "responses={",
         '"application/json"',
         '"example"',
         'tags=["authentication"]',
         'tags=["password-management"]',
         'tags=["people"]',
         'tags=["search"]',
-        'tags=["admin"]'
+        'tags=["admin"]',
     ]
 
     missing_elements = []
@@ -255,7 +255,7 @@ def test_documented_handler():
         'summary="Update Person"',
         'summary="Delete Person"',
         'summary="Search People"',
-        'summary="Unlock User Account"'
+        'summary="Unlock User Account"',
     ]
 
     missing_docs = []
@@ -282,7 +282,7 @@ def test_camel_case_examples():
         print(f"❌ Person model file not found: {person_model_path}")
         return False
 
-    with open(person_model_path, 'r') as f:
+    with open(person_model_path, "r") as f:
         content = f.read()
 
     # Check for camelCase field aliases
@@ -294,7 +294,7 @@ def test_camel_case_examples():
         'alias="updatedAt"',
         'alias="isActive"',
         'alias="emailVerified"',
-        'alias="zipCode"'
+        'alias="zipCode"',
     ]
 
     missing_aliases = []
@@ -332,8 +332,12 @@ def main():
             print("   - Proper error response documentation with examples")
             print("\n📁 Files created/updated:")
             print("   - API_DOCUMENTATION.md - Comprehensive API documentation")
-            print("   - src/utils/response_formatter.py - Response formatting utilities")
-            print("   - src/handlers/documented_people_handler.py - Documented API handler")
+            print(
+                "   - src/utils/response_formatter.py - Response formatting utilities"
+            )
+            print(
+                "   - src/handlers/documented_people_handler.py - Documented API handler"
+            )
             print("   - tests/test_api_documentation_and_formatting.py - Test suite")
             return True
         else:
@@ -343,6 +347,7 @@ def main():
     except Exception as e:
         print(f"❌ Validation failed with error: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 

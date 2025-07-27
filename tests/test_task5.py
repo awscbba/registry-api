@@ -7,7 +7,8 @@ import sys
 import os
 
 # Add the src directory to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+
 
 async def test_task5_implementation():
     """Test the enhanced person update endpoint implementation."""
@@ -33,10 +34,12 @@ async def test_task5_implementation():
             firstName="John",
             lastName="Doe",
             email="john@example.com",
-            phone="555-123-4567"
+            phone="555-123-4567",
         )
 
-        result = await validation_service.validate_person_update("test-id", valid_update)
+        result = await validation_service.validate_person_update(
+            "test-id", valid_update
+        )
         if result.is_valid:
             print("✅ Valid person update data passes validation")
         else:
@@ -46,7 +49,9 @@ async def test_task5_implementation():
 
         # Test 4: Test validation with invalid phone
         invalid_update = PersonUpdate(phone="123")  # Too short
-        result = await validation_service.validate_person_update("test-id", invalid_update)
+        result = await validation_service.validate_person_update(
+            "test-id", invalid_update
+        )
 
         if not result.is_valid:
             print("✅ Invalid phone number correctly rejected")
@@ -55,24 +60,28 @@ async def test_task5_implementation():
             print("❌ Invalid phone number was incorrectly accepted")
 
         # Test 5: Check error response models
-        from src.models.person import ErrorResponse, ValidationError, ValidationErrorType
+        from src.models.person import (
+            ErrorResponse,
+            ValidationError,
+            ValidationErrorType,
+        )
 
         error = ValidationError(
             field="email",
             message="Email is required",
-            code=ValidationErrorType.REQUIRED_FIELD
+            code=ValidationErrorType.REQUIRED_FIELD,
         )
 
         response = ErrorResponse(
-            error="VALIDATION_ERROR",
-            message="Validation failed",
-            details=[error]
+            error="VALIDATION_ERROR", message="Validation failed", details=[error]
         )
 
         print("✅ Error response models working correctly")
 
         # Test 6: Check email verification service features
-        print(f"✅ Email verification token expiry: {email_service.verification_token_expiry_hours} hours")
+        print(
+            f"✅ Email verification token expiry: {email_service.verification_token_expiry_hours} hours"
+        )
 
         print("\n" + "=" * 60)
         print("🎉 All Task 5 components are working correctly!")
@@ -89,8 +98,10 @@ async def test_task5_implementation():
     except Exception as e:
         print(f"❌ Error testing Task 5 implementation: {str(e)}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 if __name__ == "__main__":
     success = asyncio.run(test_task5_implementation())

@@ -13,6 +13,7 @@ import traceback
 
 class ErrorCategory(str, Enum):
     """Categories of errors for better organization and handling."""
+
     VALIDATION = "VALIDATION"
     AUTHENTICATION = "AUTHENTICATION"
     AUTHORIZATION = "AUTHORIZATION"
@@ -27,6 +28,7 @@ class ErrorCategory(str, Enum):
 
 class ErrorCode(str, Enum):
     """Specific error codes for machine-readable error identification."""
+
     # Validation errors
     REQUIRED_FIELD = "REQUIRED_FIELD"
     INVALID_FORMAT = "INVALID_FORMAT"
@@ -80,46 +82,63 @@ class ErrorCode(str, Enum):
 
 class ValidationErrorDetail(BaseModel):
     """Detailed validation error information."""
+
     field: str = Field(description="The field that failed validation")
     message: str = Field(description="Human-readable error message")
     code: ErrorCode = Field(description="Machine-readable error code")
-    value: Optional[str] = Field(None, description="The invalid value that was provided")
-    constraint: Optional[str] = Field(None, description="The validation constraint that was violated")
+    value: Optional[str] = Field(
+        None, description="The invalid value that was provided"
+    )
+    constraint: Optional[str] = Field(
+        None, description="The validation constraint that was violated"
+    )
 
 
 class ErrorResponse(BaseModel):
     """Standardized error response model for all API errors."""
+
     error: ErrorCode = Field(description="Machine-readable error code")
     category: ErrorCategory = Field(description="Error category for classification")
     message: str = Field(description="Human-readable error message")
-    details: Optional[List[ValidationErrorDetail]] = Field(None, description="Detailed validation errors")
-    timestamp: datetime = Field(default_factory=datetime.utcnow, description="When the error occurred")
-    request_id: str = Field(default_factory=lambda: str(uuid.uuid4()), description="Unique request identifier")
+    details: Optional[List[ValidationErrorDetail]] = Field(
+        None, description="Detailed validation errors"
+    )
+    timestamp: datetime = Field(
+        default_factory=datetime.utcnow, description="When the error occurred"
+    )
+    request_id: str = Field(
+        default_factory=lambda: str(uuid.uuid4()),
+        description="Unique request identifier",
+    )
     path: Optional[str] = Field(None, description="API path where error occurred")
     method: Optional[str] = Field(None, description="HTTP method used")
-    user_id: Optional[str] = Field(None, description="ID of authenticated user (if applicable)")
+    user_id: Optional[str] = Field(
+        None, description="ID of authenticated user (if applicable)"
+    )
     ip_address: Optional[str] = Field(None, description="Client IP address")
 
     class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+        json_encoders = {datetime: lambda v: v.isoformat()}
 
 
 class SecurityErrorResponse(ErrorResponse):
     """Enhanced error response for security-related errors."""
-    security_event_id: Optional[str] = Field(None, description="Associated security event ID")
-    blocked_until: Optional[datetime] = Field(None, description="When the block/lock expires")
+
+    security_event_id: Optional[str] = Field(
+        None, description="Associated security event ID"
+    )
+    blocked_until: Optional[datetime] = Field(
+        None, description="When the block/lock expires"
+    )
     retry_after: Optional[int] = Field(None, description="Seconds to wait before retry")
 
     class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+        json_encoders = {datetime: lambda v: v.isoformat()}
 
 
 class ErrorContext(BaseModel):
     """Context information for error logging and debugging."""
+
     request_id: str
     user_id: Optional[str] = None
     ip_address: Optional[str] = None
@@ -132,6 +151,7 @@ class ErrorContext(BaseModel):
 
 class ErrorLogEntry(BaseModel):
     """Structured error log entry for comprehensive error tracking."""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     error_code: ErrorCode
     category: ErrorCategory
@@ -143,9 +163,7 @@ class ErrorLogEntry(BaseModel):
     resolution_notes: Optional[str] = None
 
     class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+        json_encoders = {datetime: lambda v: v.isoformat()}
 
 
 # Error code to category mapping
@@ -156,46 +174,37 @@ ERROR_CATEGORY_MAPPING = {
     ErrorCode.INVALID_LENGTH: ErrorCategory.VALIDATION,
     ErrorCode.INVALID_VALUE: ErrorCategory.VALIDATION,
     ErrorCode.DUPLICATE_VALUE: ErrorCategory.VALIDATION,
-
     # Authentication errors
     ErrorCode.INVALID_CREDENTIALS: ErrorCategory.AUTHENTICATION,
     ErrorCode.INVALID_TOKEN: ErrorCategory.AUTHENTICATION,
     ErrorCode.EXPIRED_TOKEN: ErrorCategory.AUTHENTICATION,
     ErrorCode.MISSING_TOKEN: ErrorCategory.AUTHENTICATION,
-
     # Authorization errors
     ErrorCode.INSUFFICIENT_PERMISSIONS: ErrorCategory.AUTHORIZATION,
     ErrorCode.ACCOUNT_LOCKED: ErrorCategory.AUTHORIZATION,
     ErrorCode.ACCOUNT_INACTIVE: ErrorCategory.AUTHORIZATION,
     ErrorCode.PASSWORD_CHANGE_REQUIRED: ErrorCategory.AUTHORIZATION,
-
     # Resource errors
     ErrorCode.PERSON_NOT_FOUND: ErrorCategory.NOT_FOUND,
     ErrorCode.RESOURCE_NOT_FOUND: ErrorCategory.NOT_FOUND,
-
     # Conflict errors
     ErrorCode.EMAIL_ALREADY_EXISTS: ErrorCategory.CONFLICT,
     ErrorCode.REFERENTIAL_INTEGRITY_VIOLATION: ErrorCategory.CONFLICT,
-
     # Rate limiting
     ErrorCode.RATE_LIMIT_EXCEEDED: ErrorCategory.RATE_LIMIT,
     ErrorCode.TOO_MANY_REQUESTS: ErrorCategory.RATE_LIMIT,
-
     # Security errors
     ErrorCode.SUSPICIOUS_ACTIVITY: ErrorCategory.SECURITY,
     ErrorCode.BRUTE_FORCE_DETECTED: ErrorCategory.SECURITY,
     ErrorCode.INVALID_CURRENT_PASSWORD: ErrorCategory.SECURITY,
     ErrorCode.PASSWORD_POLICY_VIOLATION: ErrorCategory.SECURITY,
-
     # Business logic errors
     ErrorCode.PASSWORD_UPDATE_FAILED: ErrorCategory.BUSINESS_LOGIC,
     ErrorCode.EMAIL_VERIFICATION_FAILED: ErrorCategory.BUSINESS_LOGIC,
     ErrorCode.DELETION_BLOCKED: ErrorCategory.BUSINESS_LOGIC,
-
     # External service errors
     ErrorCode.EMAIL_SERVICE_ERROR: ErrorCategory.EXTERNAL_SERVICE,
     ErrorCode.DATABASE_ERROR: ErrorCategory.EXTERNAL_SERVICE,
-
     # Internal server errors
     ErrorCode.INTERNAL_SERVER_ERROR: ErrorCategory.INTERNAL_SERVER,
     ErrorCode.CONFIGURATION_ERROR: ErrorCategory.INTERNAL_SERVER,
@@ -217,14 +226,12 @@ HTTP_STATUS_MAPPING = {
     ErrorCode.PASSWORD_POLICY_VIOLATION: 400,
     ErrorCode.EMAIL_VERIFICATION_FAILED: 400,
     ErrorCode.PASSWORD_UPDATE_FAILED: 400,
-
     # 401 Unauthorized
     ErrorCode.INVALID_CREDENTIALS: 401,
     ErrorCode.INVALID_TOKEN: 401,
     ErrorCode.EXPIRED_TOKEN: 401,
     ErrorCode.MISSING_TOKEN: 401,
     ErrorCode.INVALID_CURRENT_PASSWORD: 401,
-
     # 403 Forbidden
     ErrorCode.INSUFFICIENT_PERMISSIONS: 403,
     ErrorCode.ACCOUNT_LOCKED: 403,
@@ -232,21 +239,17 @@ HTTP_STATUS_MAPPING = {
     ErrorCode.PASSWORD_CHANGE_REQUIRED: 403,
     ErrorCode.SUSPICIOUS_ACTIVITY: 403,
     ErrorCode.BRUTE_FORCE_DETECTED: 403,
-
     # 404 Not Found
     ErrorCode.PERSON_NOT_FOUND: 404,
     ErrorCode.RESOURCE_NOT_FOUND: 404,
-
     # 409 Conflict
     ErrorCode.EMAIL_ALREADY_EXISTS: 409,
     ErrorCode.DUPLICATE_VALUE: 409,
     ErrorCode.REFERENTIAL_INTEGRITY_VIOLATION: 409,
     ErrorCode.DELETION_BLOCKED: 409,
-
     # 429 Too Many Requests
     ErrorCode.RATE_LIMIT_EXCEEDED: 429,
     ErrorCode.TOO_MANY_REQUESTS: 429,
-
     # 500 Internal Server Error
     ErrorCode.INTERNAL_SERVER_ERROR: 500,
     ErrorCode.CONFIGURATION_ERROR: 500,
@@ -271,7 +274,7 @@ class APIException(Exception):
         context: Optional[ErrorContext] = None,
         security_event_id: Optional[str] = None,
         blocked_until: Optional[datetime] = None,
-        retry_after: Optional[int] = None
+        retry_after: Optional[int] = None,
     ):
         self.error_code = error_code
         self.message = message
@@ -292,7 +295,9 @@ class APIException(Exception):
             "category": self.category,
             "message": self.message,
             "details": self.details,
-            "request_id": self.context.request_id if self.context else str(uuid.uuid4()),
+            "request_id": (
+                self.context.request_id if self.context else str(uuid.uuid4())
+            ),
             "path": self.context.path if self.context else None,
             "method": self.context.method if self.context else None,
             "user_id": self.context.user_id if self.context else None,
@@ -305,7 +310,7 @@ class APIException(Exception):
                 **base_data,
                 security_event_id=self.security_event_id,
                 blocked_until=self.blocked_until,
-                retry_after=self.retry_after
+                retry_after=self.retry_after,
             )
 
         return ErrorResponse(**base_data)
@@ -318,7 +323,7 @@ class APIException(Exception):
             message=self.message,
             context=self.context or ErrorContext(request_id=str(uuid.uuid4())),
             stack_trace=traceback.format_exc(),
-            severity="CRITICAL" if self.category == ErrorCategory.SECURITY else "ERROR"
+            severity="CRITICAL" if self.category == ErrorCategory.SECURITY else "ERROR",
         )
 
 
@@ -326,64 +331,59 @@ class APIException(Exception):
 def validation_error(
     message: str,
     details: List[ValidationErrorDetail],
-    context: Optional[ErrorContext] = None
+    context: Optional[ErrorContext] = None,
 ) -> APIException:
     """Create a validation error exception."""
     return APIException(
-        error_code=ErrorCode.REQUIRED_FIELD if not details else ErrorCode.INVALID_FORMAT,
+        error_code=(
+            ErrorCode.REQUIRED_FIELD if not details else ErrorCode.INVALID_FORMAT
+        ),
         message=message,
         details=details,
-        context=context
+        context=context,
     )
 
 
 def authentication_error(
-    message: str = "Authentication failed",
-    context: Optional[ErrorContext] = None
+    message: str = "Authentication failed", context: Optional[ErrorContext] = None
 ) -> APIException:
     """Create an authentication error exception."""
     return APIException(
-        error_code=ErrorCode.INVALID_CREDENTIALS,
-        message=message,
-        context=context
+        error_code=ErrorCode.INVALID_CREDENTIALS, message=message, context=context
     )
 
 
 def authorization_error(
-    message: str = "Access denied",
-    context: Optional[ErrorContext] = None
+    message: str = "Access denied", context: Optional[ErrorContext] = None
 ) -> APIException:
     """Create an authorization error exception."""
     return APIException(
-        error_code=ErrorCode.INSUFFICIENT_PERMISSIONS,
-        message=message,
-        context=context
+        error_code=ErrorCode.INSUFFICIENT_PERMISSIONS, message=message, context=context
     )
 
 
 def not_found_error(
-    resource: str = "Resource",
-    context: Optional[ErrorContext] = None
+    resource: str = "Resource", context: Optional[ErrorContext] = None
 ) -> APIException:
     """Create a not found error exception."""
     return APIException(
         error_code=ErrorCode.RESOURCE_NOT_FOUND,
         message=f"{resource} not found",
-        context=context
+        context=context,
     )
 
 
 def rate_limit_error(
     message: str = "Rate limit exceeded",
     retry_after: int = 60,
-    context: Optional[ErrorContext] = None
+    context: Optional[ErrorContext] = None,
 ) -> APIException:
     """Create a rate limit error exception."""
     return APIException(
         error_code=ErrorCode.RATE_LIMIT_EXCEEDED,
         message=message,
         context=context,
-        retry_after=retry_after
+        retry_after=retry_after,
     )
 
 
@@ -392,7 +392,7 @@ def security_error(
     message: str,
     security_event_id: Optional[str] = None,
     blocked_until: Optional[datetime] = None,
-    context: Optional[ErrorContext] = None
+    context: Optional[ErrorContext] = None,
 ) -> APIException:
     """Create a security error exception."""
     return APIException(
@@ -400,5 +400,5 @@ def security_error(
         message=message,
         context=context,
         security_event_id=security_event_id,
-        blocked_until=blocked_until
+        blocked_until=blocked_until,
     )

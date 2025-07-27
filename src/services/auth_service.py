@@ -1,12 +1,19 @@
 """
 Authentication service for handling login, security events, and account lockout.
 """
+
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any, Tuple
 import uuid
 
-from ..models.auth import LoginRequest, LoginResponse, SecurityEvent, AccountLockout, AuthenticatedUser
+from ..models.auth import (
+    LoginRequest,
+    LoginResponse,
+    SecurityEvent,
+    AccountLockout,
+    AuthenticatedUser,
+)
 from ..models.person import Person
 from ..services.dynamodb_service import DynamoDBService
 from ..utils.password_utils import PasswordHasher
@@ -29,7 +36,7 @@ class AuthService:
         self,
         login_request: LoginRequest,
         ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None
+        user_agent: Optional[str] = None,
     ) -> Tuple[bool, Optional[LoginResponse], Optional[str]]:
         """
         Authenticate a user with email and password.
@@ -52,7 +59,7 @@ class AuthService:
                     success=False,
                     ip_address=ip_address,
                     user_agent=user_agent,
-                    details={"reason": "user_not_found", "email": login_request.email}
+                    details={"reason": "user_not_found", "email": login_request.email},
                 )
                 return False, None, "Invalid email or password"
 
@@ -65,25 +72,35 @@ class AuthService:
                     success=False,
                     ip_address=ip_address,
                     user_agent=user_agent,
-                    details={"reason": "account_locked", "locked_until": lockout_info.locked_until.isoformat() if lockout_info.locked_until else None}
+                    details={
+                        "reason": "account_locked",
+                        "locked_until": (
+                            lockout_info.locked_until.isoformat()
+                            if lockout_info.locked_until
+                            else None
+                        ),
+                    },
                 )
-                return False, None, f"Account is temporarily locked. Try again after {lockout_info.locked_until.strftime('%H:%M')} UTC."
+                return (
+                    False,
+                    None,
+                    f"Account is temporarily locked. Try again after {lockout_info.locked_until.strftime('%H:%M')} UTC.",
+                )
 
             # Verify password
-            if not hasattr(person, 'password_hash') or not person.password_hash:
+            if not hasattr(person, "password_hash") or not person.password_hash:
                 await self._log_security_event(
                     person_id=person.id,
                     action="LOGIN_FAILED",
                     success=False,
                     ip_address=ip_address,
                     user_agent=user_agent,
-                    details={"reason": "no_password_set"}
+                    details={"reason": "no_password_set"},
                 )
                 return False, None, "Account not set up for login"
 
             password_valid = PasswordHasher.verify_password(
-                login_request.password,
-                person.password_hash
+                login_request.password, person.password_hash
             )
 
             if not password_valid:
@@ -96,19 +113,19 @@ class AuthService:
                     success=False,
                     ip_address=ip_address,
                     user_agent=user_agent,
-                    details={"reason": "invalid_password"}
+                    details={"reason": "invalid_password"},
                 )
                 return False, None, "Invalid email or password"
 
             # Check if account is active
-            if not getattr(person, 'is_active', True):
+            if not getattr(person, "is_active", True):
                 await self._log_security_event(
                     person_id=person.id,
                     action="LOGIN_FAILED",
                     success=False,
                     ip_address=ip_address,
                     user_agent=user_agent,
-                    details={"reason": "account_inactive"}
+                    details={"reason": "account_inactive"},
                 )
                 return False, None, "Account is deactivated"
 
@@ -123,7 +140,9 @@ class AuthService:
                 "email": person.email,
                 "first_name": person.first_name,
                 "last_name": person.last_name,
-                "require_password_change": getattr(person, 'require_password_change', False)
+                "require_password_change": getattr(
+                    person, "require_password_change", False
+                ),
             }
 
             tokens = create_tokens_for_user(person.id, user_data)
@@ -138,9 +157,11 @@ class AuthService:
                     "id": person.id,
                     "email": person.email,
                     "firstName": person.first_name,
-                    "lastName": person.last_name
+                    "lastName": person.last_name,
                 },
-                require_password_change=getattr(person, 'require_password_change', False)
+                require_password_change=getattr(
+                    person, "require_password_change", False
+                ),
             )
 
             # Log successful login
@@ -150,7 +171,11 @@ class AuthService:
                 success=True,
                 ip_address=ip_address,
                 user_agent=user_agent,
-                details={"require_password_change": getattr(person, 'require_password_change', False)}
+                details={
+                    "require_password_change": getattr(
+                        person, "require_password_change", False
+                    )
+                },
             )
 
             return True, login_response, None
@@ -159,7 +184,9 @@ class AuthService:
             logger.error(f"Authentication error: {str(e)}")
             return False, None, "Authentication failed"
 
-    async def _check_account_lockout(self, person_id: str) -> Tuple[bool, Optional[AccountLockout]]:
+    async def _check_account_lockout(
+        self, person_id: str
+    ) -> Tuple[bool, Optional[AccountLockout]]:
         """
         Check if an account is currently locked out.
 
@@ -176,7 +203,9 @@ class AuthService:
                 return False, None
 
             # Check if lockout has expired
-            if lockout_info.locked_until and lockout_info.locked_until > datetime.now(timezone.utc):
+            if lockout_info.locked_until and lockout_info.locked_until > datetime.now(
+                timezone.utc
+            ):
                 return True, lockout_info
 
             # Lockout has expired, clear it
@@ -189,7 +218,9 @@ class AuthService:
             logger.error(f"Error checking account lockout for {person_id}: {str(e)}")
             return False, None
 
-    async def _record_failed_attempt(self, person_id: str, ip_address: Optional[str] = None):
+    async def _record_failed_attempt(
+        self, person_id: str, ip_address: Optional[str] = None
+    ):
         """
         Record a failed login attempt and potentially lock the account.
 
@@ -206,7 +237,7 @@ class AuthService:
                     person_id=person_id,
                     failed_attempts=1,
                     last_attempt_at=datetime.now(timezone.utc),
-                    ip_addresses=[ip_address] if ip_address else []
+                    ip_addresses=[ip_address] if ip_address else [],
                 )
             else:
                 lockout_info.failed_attempts += 1
@@ -228,8 +259,8 @@ class AuthService:
                     ip_address=ip_address,
                     details={
                         "failed_attempts": lockout_info.failed_attempts,
-                        "locked_until": lockout_info.locked_until.isoformat()
-                    }
+                        "locked_until": lockout_info.locked_until.isoformat(),
+                    },
                 )
 
             # Save lockout info
@@ -258,7 +289,9 @@ class AuthService:
             person_id: Person ID
         """
         try:
-            await self.db_service.update_last_login(person_id, datetime.now(timezone.utc))
+            await self.db_service.update_last_login(
+                person_id, datetime.now(timezone.utc)
+            )
         except Exception as e:
             logger.error(f"Error updating last login for {person_id}: {str(e)}")
 
@@ -269,7 +302,7 @@ class AuthService:
         success: bool,
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None,
-        details: Optional[Dict[str, Any]] = None
+        details: Optional[Dict[str, Any]] = None,
     ):
         """
         Log a security event for audit purposes.
@@ -290,7 +323,7 @@ class AuthService:
                 ip_address=ip_address,
                 user_agent=user_agent,
                 success=success,
-                details=details
+                details=details,
             )
 
             await self.db_service.log_security_event(security_event)
@@ -317,7 +350,7 @@ class AuthService:
                 person_id=person_id,
                 action="ACCOUNT_UNLOCKED",
                 success=True,
-                details={"unlocked_by": admin_user_id}
+                details={"unlocked_by": admin_user_id},
             )
 
             return True

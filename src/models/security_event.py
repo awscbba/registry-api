@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import Dict, Any, Optional
 from datetime import datetime
 
+
 class SecurityEventType(Enum):
     """Types of security events for monitoring"""
 
@@ -51,12 +52,15 @@ class SecurityEventType(Enum):
     SESSION_INVALIDATED = "SESSION_INVALIDATED"
     MULTIPLE_SESSIONS_DETECTED = "MULTIPLE_SESSIONS_DETECTED"
 
+
 class SecurityEventSeverity(Enum):
     """Severity levels for security events"""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
     CRITICAL = "critical"
+
 
 @dataclass
 class SecurityEvent:
@@ -76,33 +80,34 @@ class SecurityEvent:
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for DynamoDB storage"""
         return {
-            'id': self.id,
-            'eventType': self.event_type.value,
-            'timestamp': self.timestamp.isoformat(),
-            'severity': self.severity.value,
-            'userEmail': self.user_email,
-            'userId': self.user_id,
-            'ipAddress': self.ip_address,
-            'userAgent': self.user_agent,
-            'details': self.details or {},
-            'processed': self.processed
+            "id": self.id,
+            "eventType": self.event_type.value,
+            "timestamp": self.timestamp.isoformat(),
+            "severity": self.severity.value,
+            "userEmail": self.user_email,
+            "userId": self.user_id,
+            "ipAddress": self.ip_address,
+            "userAgent": self.user_agent,
+            "details": self.details or {},
+            "processed": self.processed,
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'SecurityEvent':
+    def from_dict(cls, data: Dict[str, Any]) -> "SecurityEvent":
         """Create from dictionary (DynamoDB item)"""
         return cls(
-            id=data['id'],
-            event_type=SecurityEventType(data['eventType']),
-            timestamp=datetime.fromisoformat(data['timestamp']),
-            severity=SecurityEventSeverity(data['severity']),
-            user_email=data.get('userEmail'),
-            user_id=data.get('userId'),
-            ip_address=data.get('ipAddress'),
-            user_agent=data.get('userAgent'),
-            details=data.get('details', {}),
-            processed=data.get('processed', False)
+            id=data["id"],
+            event_type=SecurityEventType(data["eventType"]),
+            timestamp=datetime.fromisoformat(data["timestamp"]),
+            severity=SecurityEventSeverity(data["severity"]),
+            user_email=data.get("userEmail"),
+            user_id=data.get("userId"),
+            ip_address=data.get("ipAddress"),
+            user_agent=data.get("userAgent"),
+            details=data.get("details", {}),
+            processed=data.get("processed", False),
         )
+
 
 @dataclass
 class SecurityAlert:
@@ -122,17 +127,18 @@ class SecurityAlert:
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary"""
         return {
-            'id': self.id,
-            'title': self.title,
-            'message': self.message,
-            'severity': self.severity.value,
-            'eventType': self.event_type.value,
-            'timestamp': self.timestamp.isoformat(),
-            'userEmail': self.user_email,
-            'ipAddress': self.ip_address,
-            'actionRequired': self.action_required,
-            'acknowledged': self.acknowledged
+            "id": self.id,
+            "title": self.title,
+            "message": self.message,
+            "severity": self.severity.value,
+            "eventType": self.event_type.value,
+            "timestamp": self.timestamp.isoformat(),
+            "userEmail": self.user_email,
+            "ipAddress": self.ip_address,
+            "actionRequired": self.action_required,
+            "acknowledged": self.acknowledged,
         }
+
 
 @dataclass
 class DashboardMetrics:
@@ -150,15 +156,16 @@ class DashboardMetrics:
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary"""
         return {
-            'periodStart': self.period_start.isoformat(),
-            'periodEnd': self.period_end.isoformat(),
-            'totalEvents': self.total_events,
-            'failedLogins': self.failed_logins,
-            'passwordResets': self.password_resets,
-            'accountLockouts': self.account_lockouts,
-            'activeSessions': self.active_sessions,
-            'highSeverityEvents': self.high_severity_events
+            "periodStart": self.period_start.isoformat(),
+            "periodEnd": self.period_end.isoformat(),
+            "totalEvents": self.total_events,
+            "failedLogins": self.failed_logins,
+            "passwordResets": self.password_resets,
+            "accountLockouts": self.account_lockouts,
+            "activeSessions": self.active_sessions,
+            "highSeverityEvents": self.high_severity_events,
         }
+
 
 @dataclass
 class UserSecurityProfile:
@@ -177,52 +184,52 @@ class UserSecurityProfile:
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary"""
         return {
-            'userId': self.user_id,
-            'email': self.email,
-            'failedLoginAttempts': self.failed_login_attempts,
-            'lastLogin': self.last_login.isoformat() if self.last_login else None,
-            'lastPasswordChange': self.last_password_change.isoformat() if self.last_password_change else None,
-            'activeSessions': self.active_sessions,
-            'isLocked': self.is_locked,
-            'lockedUntil': self.locked_until.isoformat() if self.locked_until else None,
-            'securityEventsCount': self.security_events_count
+            "userId": self.user_id,
+            "email": self.email,
+            "failedLoginAttempts": self.failed_login_attempts,
+            "lastLogin": self.last_login.isoformat() if self.last_login else None,
+            "lastPasswordChange": (
+                self.last_password_change.isoformat()
+                if self.last_password_change
+                else None
+            ),
+            "activeSessions": self.active_sessions,
+            "isLocked": self.is_locked,
+            "lockedUntil": self.locked_until.isoformat() if self.locked_until else None,
+            "securityEventsCount": self.security_events_count,
         }
+
 
 # Security event severity mapping
 EVENT_SEVERITY_MAPPING = {
     SecurityEventType.LOGIN_SUCCESS: SecurityEventSeverity.LOW,
     SecurityEventType.LOGIN_FAILED: SecurityEventSeverity.MEDIUM,
     SecurityEventType.LOGOUT: SecurityEventSeverity.LOW,
-
     SecurityEventType.PASSWORD_CHANGED: SecurityEventSeverity.LOW,
     SecurityEventType.PASSWORD_RESET_REQUESTED: SecurityEventSeverity.MEDIUM,
     SecurityEventType.PASSWORD_RESET_COMPLETED: SecurityEventSeverity.MEDIUM,
-
     SecurityEventType.ACCOUNT_LOCKED: SecurityEventSeverity.HIGH,
     SecurityEventType.ACCOUNT_UNLOCKED: SecurityEventSeverity.MEDIUM,
     SecurityEventType.ACCOUNT_CREATED: SecurityEventSeverity.LOW,
     SecurityEventType.ACCOUNT_DEACTIVATED: SecurityEventSeverity.MEDIUM,
     SecurityEventType.PROFILE_UPDATE: SecurityEventSeverity.LOW,
-
     SecurityEventType.ADMIN_PASSWORD_RESET: SecurityEventSeverity.MEDIUM,
     SecurityEventType.ADMIN_ACCOUNT_UNLOCK: SecurityEventSeverity.MEDIUM,
     SecurityEventType.ADMIN_LOGIN: SecurityEventSeverity.MEDIUM,
-
     SecurityEventType.SUSPICIOUS_ACTIVITY: SecurityEventSeverity.HIGH,
     SecurityEventType.BRUTE_FORCE_ATTEMPT: SecurityEventSeverity.CRITICAL,
     SecurityEventType.RATE_LIMIT_EXCEEDED: SecurityEventSeverity.HIGH,
     SecurityEventType.INVALID_TOKEN: SecurityEventSeverity.MEDIUM,
-
     SecurityEventType.SESSION_CREATED: SecurityEventSeverity.LOW,
     SecurityEventType.SESSION_EXPIRED: SecurityEventSeverity.LOW,
     SecurityEventType.SESSION_INVALIDATED: SecurityEventSeverity.LOW,
     SecurityEventType.MULTIPLE_SESSIONS_DETECTED: SecurityEventSeverity.MEDIUM,
-
     SecurityEventType.DATA_ACCESS: SecurityEventSeverity.LOW,
     SecurityEventType.PERSON_ACCESS: SecurityEventSeverity.LOW,
     SecurityEventType.PERSON_LIST_ACCESS: SecurityEventSeverity.LOW,
     SecurityEventType.PERSON_SEARCH: SecurityEventSeverity.LOW,
 }
+
 
 def get_default_severity(event_type: SecurityEventType) -> SecurityEventSeverity:
     """Get default severity for an event type"""

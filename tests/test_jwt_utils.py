@@ -1,6 +1,7 @@
 """
 Tests for JWT utilities.
 """
+
 import pytest
 import jwt
 from datetime import datetime, timezone, timedelta
@@ -18,7 +19,7 @@ class TestJWTManager:
         user_data = {
             "email": "test@example.com",
             "first_name": "Test",
-            "last_name": "User"
+            "last_name": "User",
         }
 
         token = JWTManager.create_access_token(subject, user_data)
@@ -27,7 +28,9 @@ class TestJWTManager:
         assert isinstance(token, str)
 
         # Decode and verify token contents
-        payload = jwt.decode(token, JWTConfig.SECRET_KEY, algorithms=[JWTConfig.ALGORITHM])
+        payload = jwt.decode(
+            token, JWTConfig.SECRET_KEY, algorithms=[JWTConfig.ALGORITHM]
+        )
         assert payload["sub"] == subject
         assert payload["type"] == "access"
         assert payload["email"] == user_data["email"]
@@ -45,7 +48,9 @@ class TestJWTManager:
         token = JWTManager.create_access_token(subject, user_data, custom_expiry)
 
         # Decode and verify expiry
-        payload = jwt.decode(token, JWTConfig.SECRET_KEY, algorithms=[JWTConfig.ALGORITHM])
+        payload = jwt.decode(
+            token, JWTConfig.SECRET_KEY, algorithms=[JWTConfig.ALGORITHM]
+        )
         exp_time = datetime.fromtimestamp(payload["exp"], tz=timezone.utc)
         expected_exp = datetime.now(timezone.utc) + custom_expiry
 
@@ -62,7 +67,9 @@ class TestJWTManager:
         assert isinstance(token, str)
 
         # Decode and verify token contents
-        payload = jwt.decode(token, JWTConfig.SECRET_KEY, algorithms=[JWTConfig.ALGORITHM])
+        payload = jwt.decode(
+            token, JWTConfig.SECRET_KEY, algorithms=[JWTConfig.ALGORITHM]
+        )
         assert payload["sub"] == subject
         assert payload["type"] == "refresh"
         assert "exp" in payload
@@ -114,7 +121,7 @@ class TestJWTManager:
         payload = {
             "sub": "test-user-id",
             "exp": datetime.now(timezone.utc) + timedelta(hours=1),
-            "type": "access"
+            "type": "access",
         }
         wrong_token = jwt.encode(payload, "wrong-secret", algorithm=JWTConfig.ALGORITHM)
 
@@ -178,7 +185,7 @@ class TestCreateTokensForUser:
         user_data = {
             "email": "test@example.com",
             "first_name": "Test",
-            "last_name": "User"
+            "last_name": "User",
         }
 
         tokens = create_tokens_for_user(user_id, user_data)
@@ -217,12 +224,13 @@ class TestJWTConfig:
         assert JWTConfig.SECRET_KEY is not None
         assert len(JWTConfig.SECRET_KEY) > 0
 
-    @patch.dict('os.environ', {'JWT_SECRET_KEY': 'test-secret-key'})
+    @patch.dict("os.environ", {"JWT_SECRET_KEY": "test-secret-key"})
     def test_jwt_config_from_env(self):
         """Test JWT configuration from environment variable."""
         # Need to reload the module to pick up the environment variable
         import importlib
         from src.utils import jwt_utils
+
         importlib.reload(jwt_utils)
 
-        assert jwt_utils.JWTConfig.SECRET_KEY == 'test-secret-key'
+        assert jwt_utils.JWTConfig.SECRET_KEY == "test-secret-key"

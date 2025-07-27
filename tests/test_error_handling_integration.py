@@ -11,15 +11,25 @@ from fastapi.testclient import TestClient
 from fastapi import Request
 
 from src.models.error_handling import (
-    APIException, ErrorCode, ErrorCategory, ErrorContext, ValidationErrorDetail
+    APIException,
+    ErrorCode,
+    ErrorCategory,
+    ErrorContext,
+    ValidationErrorDetail,
 )
 from src.models.security_event import SecurityEventType, SecurityEventSeverity
 from src.services.logging_service import LoggingService, LogLevel, LogCategory
-from src.services.rate_limiting_service import RateLimitingService, RateLimitType, RateLimitResult
+from src.services.rate_limiting_service import (
+    RateLimitingService,
+    RateLimitType,
+    RateLimitResult,
+)
 from src.middleware.error_handler_middleware import ErrorHandlerMiddleware
 from src.utils.handler_utils import (
-    create_error_context, create_person_not_found_exception,
-    create_validation_exception_from_errors, create_authentication_exception
+    create_error_context,
+    create_person_not_found_exception,
+    create_validation_exception_from_errors,
+    create_authentication_exception,
 )
 
 
@@ -33,13 +43,13 @@ class TestErrorHandlingModels:
             user_id="user-456",
             ip_address="192.168.1.1",
             path="/test",
-            method="GET"
+            method="GET",
         )
 
         exception = APIException(
             error_code=ErrorCode.PERSON_NOT_FOUND,
             message="Person not found",
-            context=context
+            context=context,
         )
 
         assert exception.error_code == ErrorCode.PERSON_NOT_FOUND
@@ -55,19 +65,19 @@ class TestErrorHandlingModels:
                 field="email",
                 message="Invalid email format",
                 code=ErrorCode.INVALID_FORMAT,
-                value="invalid-email"
+                value="invalid-email",
             ),
             ValidationErrorDetail(
                 field="phone",
                 message="Phone number is required",
-                code=ErrorCode.REQUIRED_FIELD
-            )
+                code=ErrorCode.REQUIRED_FIELD,
+            ),
         ]
 
         exception = APIException(
             error_code=ErrorCode.INVALID_FORMAT,
             message="Validation failed",
-            details=details
+            details=details,
         )
 
         assert len(exception.details) == 2
@@ -81,7 +91,7 @@ class TestErrorHandlingModels:
             error_code=ErrorCode.RATE_LIMIT_EXCEEDED,
             message="Rate limit exceeded",
             context=context,
-            retry_after=60
+            retry_after=60,
         )
 
         response = exception.to_error_response()
@@ -106,18 +116,18 @@ class TestLoggingService:
     async def test_structured_logging(self, logging_service):
         """Test structured logging functionality."""
         context = ErrorContext(
-            request_id="test-123",
-            user_id="user-456",
-            ip_address="192.168.1.1"
+            request_id="test-123", user_id="user-456", ip_address="192.168.1.1"
         )
 
-        with patch.object(logging_service, '_persist_log_entry', new_callable=AsyncMock) as mock_persist:
+        with patch.object(
+            logging_service, "_persist_log_entry", new_callable=AsyncMock
+        ) as mock_persist:
             await logging_service.log_structured(
                 level=LogLevel.INFO,
                 category=LogCategory.PERSON_OPERATIONS,
                 message="Test log entry",
                 context=context,
-                additional_data={"test": "data"}
+                additional_data={"test": "data"},
             )
 
             # Verify log entry was created and persisted
@@ -128,13 +138,15 @@ class TestLoggingService:
         """Test person operation logging."""
         context = ErrorContext(request_id="test-123", user_id="user-456")
 
-        with patch.object(logging_service, 'log_structured', new_callable=AsyncMock) as mock_log:
+        with patch.object(
+            logging_service, "log_structured", new_callable=AsyncMock
+        ) as mock_log:
             await logging_service.log_person_operation(
                 operation="CREATE",
                 person_id="person-789",
                 context=context,
                 success=True,
-                details={"created_by": "admin"}
+                details={"created_by": "admin"},
             )
 
             mock_log.assert_called_once()
@@ -148,13 +160,17 @@ class TestLoggingService:
         """Test security event logging."""
         context = ErrorContext(request_id="test-123", user_id="user-456")
 
-        with patch.object(logging_service.db_service, 'log_security_event', new_callable=AsyncMock) as mock_db:
-            with patch.object(logging_service, 'log_structured', new_callable=AsyncMock) as mock_log:
+        with patch.object(
+            logging_service.db_service, "log_security_event", new_callable=AsyncMock
+        ) as mock_db:
+            with patch.object(
+                logging_service, "log_structured", new_callable=AsyncMock
+            ) as mock_log:
                 event_id = await logging_service.log_security_event(
                     event_type=SecurityEventType.LOGIN_FAILED,
                     context=context,
                     severity=SecurityEventSeverity.HIGH,
-                    details={"reason": "invalid_password"}
+                    details={"reason": "invalid_password"},
                 )
 
                 assert event_id is not None
@@ -168,10 +184,12 @@ class TestLoggingService:
         exception = APIException(
             error_code=ErrorCode.PERSON_NOT_FOUND,
             message="Person not found",
-            context=context
+            context=context,
         )
 
-        with patch.object(logging_service, 'log_structured', new_callable=AsyncMock) as mock_log:
+        with patch.object(
+            logging_service, "log_structured", new_callable=AsyncMock
+        ) as mock_log:
             await logging_service.log_error(exception, context)
 
             mock_log.assert_called_once()
@@ -193,11 +211,11 @@ class TestRateLimitingService:
         """Test rate limit check when request is allowed."""
         context = ErrorContext(request_id="test-123")
 
-        with patch.object(rate_limiting_service, '_get_current_count', return_value=3):
+        with patch.object(rate_limiting_service, "_get_current_count", return_value=3):
             result = await rate_limiting_service.check_rate_limit(
                 limit_type=RateLimitType.LOGIN_ATTEMPTS,
                 identifier="192.168.1.1",
-                context=context
+                context=context,
             )
 
             assert result.allowed is True
@@ -209,12 +227,14 @@ class TestRateLimitingService:
         """Test rate limit check when limit is exceeded."""
         context = ErrorContext(request_id="test-123")
 
-        with patch.object(rate_limiting_service, '_get_current_count', return_value=10):
-            with patch.object(rate_limiting_service, '_apply_block', new_callable=AsyncMock):
+        with patch.object(rate_limiting_service, "_get_current_count", return_value=10):
+            with patch.object(
+                rate_limiting_service, "_apply_block", new_callable=AsyncMock
+            ):
                 result = await rate_limiting_service.check_rate_limit(
                     limit_type=RateLimitType.LOGIN_ATTEMPTS,
                     identifier="192.168.1.1",
-                    context=context
+                    context=context,
                 )
 
                 assert result.allowed is False
@@ -226,12 +246,18 @@ class TestRateLimitingService:
         """Test recording rate limit violations."""
         context = ErrorContext(request_id="test-123")
 
-        with patch.object(rate_limiting_service, '_get_violation_count', return_value=2):
-            with patch.object(rate_limiting_service, '_increment_violation_count', new_callable=AsyncMock):
+        with patch.object(
+            rate_limiting_service, "_get_violation_count", return_value=2
+        ):
+            with patch.object(
+                rate_limiting_service,
+                "_increment_violation_count",
+                new_callable=AsyncMock,
+            ):
                 await rate_limiting_service.record_violation(
                     limit_type=RateLimitType.LOGIN_ATTEMPTS,
                     identifier="192.168.1.1",
-                    context=context
+                    context=context,
                 )
 
                 # Should increment violation count
@@ -292,13 +318,11 @@ class TestHandlerUtils:
 
         field_errors = {
             "email": "Invalid email format",
-            "phone": "Phone number is required"
+            "phone": "Phone number is required",
         }
 
         exception = create_validation_exception_from_errors(
-            field_errors=field_errors,
-            request=request,
-            user_id="user-456"
+            field_errors=field_errors, request=request, user_id="user-456"
         )
 
         assert exception.error_code == ErrorCode.INVALID_FORMAT
@@ -317,8 +341,7 @@ class TestHandlerUtils:
         request.state.request_id = "test-123"
 
         exception = create_authentication_exception(
-            message="Invalid credentials",
-            request=request
+            message="Invalid credentials", request=request
         )
 
         assert exception.error_code == ErrorCode.INVALID_CREDENTIALS
@@ -416,7 +439,7 @@ class TestIntegrationScenarios:
                 allowed=True,
                 current_count=3,
                 limit=5,
-                reset_time=datetime.now(timezone.utc)
+                reset_time=datetime.now(timezone.utc),
             )
         )
 
@@ -439,9 +462,15 @@ class TestIntegrationScenarios:
         validation_result = Mock()
         validation_result.is_valid = False
         validation_result.errors = [
-            Mock(field="email", message="Email already exists", code=ErrorCode.EMAIL_ALREADY_EXISTS)
+            Mock(
+                field="email",
+                message="Email already exists",
+                code=ErrorCode.EMAIL_ALREADY_EXISTS,
+            )
         ]
-        validation_service.validate_person_update = AsyncMock(return_value=validation_result)
+        validation_service.validate_person_update = AsyncMock(
+            return_value=validation_result
+        )
 
         # Test scenario would go here
         assert True  # Placeholder for actual integration test

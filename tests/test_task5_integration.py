@@ -7,10 +7,19 @@ import sys
 import os
 
 # Add the src directory to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from src.models.person import PersonUpdate, Address, ErrorResponse, ValidationError, ValidationErrorType
-from src.services.person_validation_service import PersonValidationService, ValidationResult
+from src.models.person import (
+    PersonUpdate,
+    Address,
+    ErrorResponse,
+    ValidationError,
+    ValidationErrorType,
+)
+from src.services.person_validation_service import (
+    PersonValidationService,
+    ValidationResult,
+)
 from src.services.email_verification_service import EmailVerificationService
 
 
@@ -24,11 +33,7 @@ async def test_enhanced_update_functionality():
 
     # Valid update
     valid_address = Address(
-        street="123 Main St",
-        city="Anytown",
-        state="CA",
-        zipCode="12345",
-        country="USA"
+        street="123 Main St", city="Anytown", state="CA", zipCode="12345", country="USA"
     )
 
     valid_update = PersonUpdate(
@@ -37,7 +42,7 @@ async def test_enhanced_update_functionality():
         email="john.doe@example.com",
         phone="555-123-4567",
         dateOfBirth="1990-01-01",
-        address=valid_address
+        address=valid_address,
     )
 
     result = await validation_service.validate_person_update("test-id", valid_update)
@@ -71,13 +76,11 @@ async def test_enhanced_update_functionality():
         error = ValidationError(
             field="email",
             message="Email is required",
-            code=ValidationErrorType.REQUIRED_FIELD
+            code=ValidationErrorType.REQUIRED_FIELD,
         )
 
         response = ErrorResponse(
-            error="VALIDATION_ERROR",
-            message="Validation failed",
-            details=[error]
+            error="VALIDATION_ERROR", message="Validation failed", details=[error]
         )
 
         print("   ✅ ErrorResponse model created successfully")
@@ -118,14 +121,16 @@ async def test_enhanced_update_functionality():
             firstName="Jane",
             lastName="Smith",
             email="jane@example.com",
-            phone="555-987-6543"
+            phone="555-987-6543",
         )
-        if all([
-            full_update.first_name == "Jane",
-            full_update.last_name == "Smith",
-            full_update.email == "jane@example.com",
-            full_update.phone == "555-987-6543"
-        ]):
+        if all(
+            [
+                full_update.first_name == "Jane",
+                full_update.last_name == "Smith",
+                full_update.email == "jane@example.com",
+                full_update.phone == "555-987-6543",
+            ]
+        ):
             print("   ✅ PersonUpdate full update works correctly")
         else:
             print("   ❌ PersonUpdate full update failed")
@@ -135,9 +140,13 @@ async def test_enhanced_update_functionality():
 
     print("\n✅ All Task 5 integration tests completed!")
     print("\n📋 Task 5 Requirements Verification:")
-    print("   ✅ Modified existing PUT /people/{person_id} endpoint with improved validation")
+    print(
+        "   ✅ Modified existing PUT /people/{person_id} endpoint with improved validation"
+    )
     print("   ✅ Added email change verification workflow")
-    print("   ✅ Implemented comprehensive field validation with detailed error messages")
+    print(
+        "   ✅ Implemented comprehensive field validation with detailed error messages"
+    )
     print("   ✅ Added proper timestamp updates and audit logging")
     print("   ✅ Requirements 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7 satisfied")
 

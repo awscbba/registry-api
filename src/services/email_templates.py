@@ -1,6 +1,7 @@
 """
 Email templates for the People Register system.
 """
+
 from typing import Dict, Any
 from ..models.email import EmailType
 
@@ -103,10 +104,7 @@ class EmailTemplates:
         © 2024 People Register. All rights reserved.
         """
 
-        return {
-            "html_body": html_body,
-            "text_body": text_body
-        }
+        return {"html_body": html_body, "text_body": text_body}
 
     @staticmethod
     def get_password_changed_template(data: Dict[str, Any]) -> Dict[str, str]:
@@ -212,13 +210,12 @@ class EmailTemplates:
         © 2024 People Register. All rights reserved.
         """
 
-        return {
-            "html_body": html_body,
-            "text_body": text_body
-        }
+        return {"html_body": html_body, "text_body": text_body}
 
     @staticmethod
-    def get_password_reset_confirmation_template(data: Dict[str, Any]) -> Dict[str, str]:
+    def get_password_reset_confirmation_template(
+        data: Dict[str, Any],
+    ) -> Dict[str, str]:
         """Generate password reset confirmation email template."""
 
         html_body = f"""
@@ -300,10 +297,7 @@ class EmailTemplates:
         © 2024 People Register. All rights reserved.
         """
 
-        return {
-            "html_body": html_body,
-            "text_body": text_body
-        }
+        return {"html_body": html_body, "text_body": text_body}
 
     @staticmethod
     def get_email_verification_template(data: Dict[str, Any]) -> Dict[str, str]:
@@ -402,10 +396,7 @@ class EmailTemplates:
         © 2024 People Register. All rights reserved.
         """
 
-        return {
-            "html_body": html_body,
-            "text_body": text_body
-        }
+        return {"html_body": html_body, "text_body": text_body}
 
     @staticmethod
     def get_email_change_notification_template(data: Dict[str, Any]) -> Dict[str, str]:
@@ -525,10 +516,7 @@ class EmailTemplates:
         © 2024 People Register. All rights reserved.
         """
 
-        return {
-            "html_body": html_body,
-            "text_body": text_body
-        }
+        return {"html_body": html_body, "text_body": text_body}
 
     @staticmethod
     def get_template(email_type: EmailType, data: Dict[str, Any]) -> Dict[str, str]:

@@ -1,6 +1,7 @@
 """
 Tests for password utilities.
 """
+
 import pytest
 import re
 from src.utils.password_utils import (
@@ -10,7 +11,7 @@ from src.utils.password_utils import (
     PasswordHistoryManager,
     PasswordPolicy,
     hash_and_validate_password,
-    generate_and_hash_password
+    generate_and_hash_password,
 )
 
 
@@ -102,7 +103,7 @@ class TestPasswordHasher:
         # Should not be the original password
         assert hashed != password
         # Should start with bcrypt identifier
-        assert hashed.startswith('$2b$')
+        assert hashed.startswith("$2b$")
 
     def test_verify_password_correct(self):
         """Test password verification with correct password."""
@@ -178,14 +179,14 @@ class TestPasswordGenerator:
         password = PasswordGenerator.generate_secure_password()
 
         # Check for uppercase
-        assert re.search(r'[A-Z]', password) is not None
+        assert re.search(r"[A-Z]", password) is not None
         # Check for lowercase
-        assert re.search(r'[a-z]', password) is not None
+        assert re.search(r"[a-z]", password) is not None
         # Check for digit
-        assert re.search(r'\d', password) is not None
+        assert re.search(r"\d", password) is not None
         # Check for special character
         special_chars = re.escape(PasswordPolicy.SPECIAL_CHARS)
-        assert re.search(f'[{special_chars}]', password) is not None
+        assert re.search(f"[{special_chars}]", password) is not None
 
 
 class TestPasswordHistoryManager:
@@ -213,7 +214,9 @@ class TestPasswordHistoryManager:
     def test_add_to_history_limit(self):
         """Test that history is limited to prevent reuse count."""
         # Create history at the limit
-        existing_history = [f"hash{i}" for i in range(PasswordPolicy.PREVENT_REUSE_COUNT)]
+        existing_history = [
+            f"hash{i}" for i in range(PasswordPolicy.PREVENT_REUSE_COUNT)
+        ]
         new_hash = "new_hash"
 
         history = PasswordHistoryManager.add_to_history(existing_history, new_hash)

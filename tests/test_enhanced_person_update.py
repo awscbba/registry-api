@@ -1,13 +1,17 @@
 """
 Test cases for the enhanced person update endpoint.
 """
+
 import pytest
 import asyncio
 from unittest.mock import Mock, AsyncMock, patch
 from datetime import datetime
 
 from src.models.person import PersonUpdate, Address, ErrorResponse
-from src.services.person_validation_service import PersonValidationService, ValidationResult
+from src.services.person_validation_service import (
+    PersonValidationService,
+    ValidationResult,
+)
 from src.services.email_verification_service import EmailVerificationService
 
 
@@ -28,7 +32,7 @@ class TestEnhancedPersonUpdate:
             city="Anytown",
             state="CA",
             zipCode="12345",
-            country="USA"
+            country="USA",
         )
 
         valid_update = PersonUpdate(
@@ -37,11 +41,13 @@ class TestEnhancedPersonUpdate:
             email="john.doe@example.com",
             phone="555-123-4567",
             dateOfBirth="1990-01-01",
-            address=valid_address
+            address=valid_address,
         )
 
         # Test validation
-        result = await self.validation_service.validate_person_update("test-id", valid_update)
+        result = await self.validation_service.validate_person_update(
+            "test-id", valid_update
+        )
 
         assert result.is_valid
         assert len(result.errors) == 0
@@ -49,11 +55,11 @@ class TestEnhancedPersonUpdate:
     @pytest.mark.asyncio
     async def test_validation_service_invalid_phone(self):
         """Test validation service with invalid phone number."""
-        invalid_update = PersonUpdate(
-            phone="123"  # Too short
-        )
+        invalid_update = PersonUpdate(phone="123")  # Too short
 
-        result = await self.validation_service.validate_person_update("test-id", invalid_update)
+        result = await self.validation_service.validate_person_update(
+            "test-id", invalid_update
+        )
 
         assert not result.is_valid
         assert len(result.errors) > 0
@@ -62,11 +68,11 @@ class TestEnhancedPersonUpdate:
     @pytest.mark.asyncio
     async def test_validation_service_invalid_date(self):
         """Test validation service with invalid date format."""
-        invalid_update = PersonUpdate(
-            dateOfBirth="invalid-date"
-        )
+        invalid_update = PersonUpdate(dateOfBirth="invalid-date")
 
-        result = await self.validation_service.validate_person_update("test-id", invalid_update)
+        result = await self.validation_service.validate_person_update(
+            "test-id", invalid_update
+        )
 
         # Note: This might pass if validation service doesn't validate empty strings
         # The actual validation happens at the Pydantic level for basic format validation
@@ -79,13 +85,11 @@ class TestEnhancedPersonUpdate:
         error = ValidationError(
             field="email",
             message="Email is required",
-            code=ValidationErrorType.REQUIRED_FIELD
+            code=ValidationErrorType.REQUIRED_FIELD,
         )
 
         response = ErrorResponse(
-            error="VALIDATION_ERROR",
-            message="Validation failed",
-            details=[error]
+            error="VALIDATION_ERROR", message="Validation failed", details=[error]
         )
 
         assert response.error == "VALIDATION_ERROR"
@@ -109,9 +113,7 @@ class TestEnhancedPersonUpdate:
 
         # Test with multiple fields
         update2 = PersonUpdate(
-            firstName="Jane",
-            lastName="Smith",
-            email="jane@example.com"
+            firstName="Jane", lastName="Smith", email="jane@example.com"
         )
         assert update2.first_name == "Jane"
         assert update2.last_name == "Smith"
@@ -124,7 +126,7 @@ class TestEnhancedPersonUpdate:
             city="Anytown",
             state="CA",
             zipCode="12345",
-            country="USA"
+            country="USA",
         )
 
         assert address.street == "123 Main St"
@@ -142,7 +144,9 @@ class TestEnhancedPersonUpdate:
         assert len(result.errors) == 0
 
         # Test adding error
-        result.add_error("email", "Email is required", ValidationErrorType.REQUIRED_FIELD)
+        result.add_error(
+            "email", "Email is required", ValidationErrorType.REQUIRED_FIELD
+        )
         assert not result.is_valid
         assert len(result.errors) == 1
         assert result.errors[0].field == "email"

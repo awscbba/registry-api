@@ -13,8 +13,12 @@ import json
 import os
 
 from src.utils.response_formatter import (
-    ResponseFormatter, CamelCaseConverter, HTTPStatusCodes, ErrorCodes,
-    create_person_response, create_validation_error
+    ResponseFormatter,
+    CamelCaseConverter,
+    HTTPStatusCodes,
+    ErrorCodes,
+    create_person_response,
+    create_validation_error,
 )
 
 
@@ -34,7 +38,7 @@ class TestResponseFormatter:
         error = ResponseFormatter.error_response(
             error_code=ErrorCodes.VALIDATION_ERROR,
             message="Test error",
-            status_code=HTTPStatusCodes.BAD_REQUEST
+            status_code=HTTPStatusCodes.BAD_REQUEST,
         )
 
         assert error.status_code == 400
@@ -46,7 +50,9 @@ class TestResponseFormatter:
     def test_validation_error_response(self):
         """Test validation error response formatting."""
         validation_errors = [
-            create_validation_error("email", "Invalid email format", ErrorCodes.EMAIL_FORMAT)
+            create_validation_error(
+                "email", "Invalid email format", ErrorCodes.EMAIL_FORMAT
+            )
         ]
 
         error = ResponseFormatter.validation_error_response(validation_errors)
@@ -80,8 +86,7 @@ class TestResponseFormatter:
     def test_conflict_response(self):
         """Test 409 conflict response formatting."""
         error = ResponseFormatter.conflict_response(
-            "Email already exists",
-            ErrorCodes.EMAIL_ALREADY_EXISTS
+            "Email already exists", ErrorCodes.EMAIL_ALREADY_EXISTS
         )
 
         assert error.status_code == 409
@@ -122,7 +127,7 @@ class TestCamelCaseConverter:
             "last_name": "Doe",
             "date_of_birth": "1990-01-15",
             "is_active": True,
-            "email_verified": False
+            "email_verified": False,
         }
 
         camel_dict = CamelCaseConverter.convert_dict_keys(snake_dict)
@@ -132,7 +137,7 @@ class TestCamelCaseConverter:
             "lastName": "Doe",
             "dateOfBirth": "1990-01-15",
             "isActive": True,
-            "emailVerified": False
+            "emailVerified": False,
         }
 
         assert camel_dict == expected
@@ -140,27 +145,15 @@ class TestCamelCaseConverter:
     def test_convert_nested_dict_keys(self):
         """Test nested dictionary key conversion."""
         nested_dict = {
-            "person_info": {
-                "first_name": "John",
-                "last_name": "Doe"
-            },
-            "address_info": {
-                "street_address": "123 Main St",
-                "zip_code": "12345"
-            }
+            "person_info": {"first_name": "John", "last_name": "Doe"},
+            "address_info": {"street_address": "123 Main St", "zip_code": "12345"},
         }
 
         camel_dict = CamelCaseConverter.convert_dict_keys(nested_dict)
 
         expected = {
-            "personInfo": {
-                "firstName": "John",
-                "lastName": "Doe"
-            },
-            "addressInfo": {
-                "streetAddress": "123 Main St",
-                "zipCode": "12345"
-            }
+            "personInfo": {"firstName": "John", "lastName": "Doe"},
+            "addressInfo": {"streetAddress": "123 Main St", "zipCode": "12345"},
         }
 
         assert camel_dict == expected
@@ -169,14 +162,14 @@ class TestCamelCaseConverter:
         """Test response data conversion for lists."""
         data_list = [
             {"first_name": "John", "last_name": "Doe"},
-            {"first_name": "Jane", "last_name": "Smith"}
+            {"first_name": "Jane", "last_name": "Smith"},
         ]
 
         converted = CamelCaseConverter.convert_response_data(data_list)
 
         expected = [
             {"firstName": "John", "lastName": "Doe"},
-            {"firstName": "Jane", "lastName": "Smith"}
+            {"firstName": "Jane", "lastName": "Smith"},
         ]
 
         assert converted == expected
@@ -188,8 +181,12 @@ class TestValidationErrorFormat:
     def test_validation_error_format(self):
         """Test validation error format matches documentation."""
         validation_errors = [
-            create_validation_error("email", "Invalid email format", ErrorCodes.EMAIL_FORMAT),
-            create_validation_error("phone", "Invalid phone format", ErrorCodes.PHONE_FORMAT)
+            create_validation_error(
+                "email", "Invalid email format", ErrorCodes.EMAIL_FORMAT
+            ),
+            create_validation_error(
+                "phone", "Invalid phone format", ErrorCodes.PHONE_FORMAT
+            ),
         ]
 
         error = ResponseFormatter.validation_error_response(validation_errors)
@@ -264,15 +261,23 @@ class TestPersonResponseFormatting:
             "created_at": "2025-01-20T10:30:00Z",
             "updated_at": "2025-01-22T10:30:00Z",
             "is_active": True,
-            "email_verified": True
+            "email_verified": True,
         }
 
         camel_case_data = CamelCaseConverter.convert_response_data(person_data)
 
         # Check that all fields are in camelCase
         expected_fields = [
-            "id", "firstName", "lastName", "email", "phone",
-            "dateOfBirth", "createdAt", "updatedAt", "isActive", "emailVerified"
+            "id",
+            "firstName",
+            "lastName",
+            "email",
+            "phone",
+            "dateOfBirth",
+            "createdAt",
+            "updatedAt",
+            "isActive",
+            "emailVerified",
         ]
 
         for field in expected_fields:
@@ -280,8 +285,13 @@ class TestPersonResponseFormatting:
 
         # Check that snake_case fields are not present
         snake_case_fields = [
-            "first_name", "last_name", "date_of_birth",
-            "created_at", "updated_at", "is_active", "email_verified"
+            "first_name",
+            "last_name",
+            "date_of_birth",
+            "created_at",
+            "updated_at",
+            "is_active",
+            "email_verified",
         ]
 
         for field in snake_case_fields:
@@ -294,7 +304,7 @@ class TestPersonResponseFormatting:
             "city": "Anytown",
             "state": "CA",
             "zip_code": "12345",
-            "country": "USA"
+            "country": "USA",
         }
 
         camel_case_data = CamelCaseConverter.convert_response_data(address_data)
@@ -312,7 +322,7 @@ class TestAPIDocumentationFile:
         doc_path = "docs/API_DOCUMENTATION.md"
         assert os.path.exists(doc_path), "API documentation file should exist"
 
-        with open(doc_path, 'r') as f:
+        with open(doc_path, "r") as f:
             content = f.read()
 
         # Check for required sections
@@ -332,16 +342,18 @@ class TestAPIDocumentationFile:
             "## Error Codes",
             "## Rate Limiting",
             "## Security Features",
-            "## Field Naming Convention"
+            "## Field Naming Convention",
         ]
 
         for section in required_sections:
-            assert section in content, f"Documentation should contain section: {section}"
+            assert (
+                section in content
+            ), f"Documentation should contain section: {section}"
 
     def test_api_documentation_examples(self):
         """Test that API documentation contains proper examples."""
         doc_path = "docs/API_DOCUMENTATION.md"
-        with open(doc_path, 'r') as f:
+        with open(doc_path, "r") as f:
             content = f.read()
 
         # Check for example responses
@@ -354,11 +366,13 @@ class TestAPIDocumentationFile:
             '"isActive": true',
             '"emailVerified": true',
             '"error": "AUTHENTICATION_FAILED"',
-            '"requestId": "req_123456789"'
+            '"requestId": "req_123456789"',
         ]
 
         for pattern in example_patterns:
-            assert pattern in content, f"Documentation should contain example: {pattern}"
+            assert (
+                pattern in content
+            ), f"Documentation should contain example: {pattern}"
 
 
 if __name__ == "__main__":

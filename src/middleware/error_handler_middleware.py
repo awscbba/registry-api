@@ -12,8 +12,13 @@ from starlette.middleware.base import BaseHTTPMiddleware
 import uuid
 
 from ..models.error_handling import (
-    APIException, ErrorResponse, SecurityErrorResponse, ErrorContext,
-    ErrorCode, ErrorCategory, get_http_status_code
+    APIException,
+    ErrorResponse,
+    SecurityErrorResponse,
+    ErrorContext,
+    ErrorCode,
+    ErrorCategory,
+    get_http_status_code,
 )
 from ..services.logging_service import logging_service
 from ..services.rate_limiting_service import rate_limiting_service, RateLimitType
@@ -30,7 +35,7 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
             "/people/{person_id}/password",
             "/auth/password/validate",
             "/admin/password/force-change",
-            "/admin/password/generate-temporary"
+            "/admin/password/generate-temporary",
         }
 
     async def dispatch(self, request: Request, call_next):
@@ -55,7 +60,9 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
 
             # Log successful API access
             response_time = (datetime.utcnow() - start_time).total_seconds() * 1000
-            await self._log_api_access(request, context, response.status_code, response_time)
+            await self._log_api_access(
+                request, context, response.status_code, response_time
+            )
 
             return response
 
@@ -75,7 +82,7 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
         """Create error context from request."""
         # Extract user ID from request state if available
         user_id = None
-        if hasattr(request.state, 'current_user') and request.state.current_user:
+        if hasattr(request.state, "current_user") and request.state.current_user:
             user_id = request.state.current_user.id
 
         return ErrorContext(
@@ -87,8 +94,8 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
             method=request.method,
             additional_data={
                 "query_params": dict(request.query_params),
-                "headers": dict(request.headers)
-            }
+                "headers": dict(request.headers),
+            },
         )
 
     def _get_client_ip(self, request: Request) -> str:
@@ -149,7 +156,7 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
                     message=f"Rate limit exceeded. Try again in {result.retry_after_seconds} seconds.",
                     context=context,
                     retry_after=result.retry_after_seconds,
-                    blocked_until=result.blocked_until
+                    blocked_until=result.blocked_until,
                 )
 
         except APIException:
@@ -160,7 +167,7 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
                 level="ERROR",
                 category="RATE_LIMITING",
                 message=f"Rate limiting check failed: {str(e)}",
-                context=context
+                context=context,
             )
 
     def _get_rate_limit_type(self, path: str) -> Optional[RateLimitType]:
@@ -180,7 +187,9 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
         else:
             return RateLimitType.API_REQUESTS
 
-    async def _handle_api_exception(self, exc: APIException, context: ErrorContext) -> JSONResponse:
+    async def _handle_api_exception(
+        self, exc: APIException, context: ErrorContext
+    ) -> JSONResponse:
         """Handle custom API exceptions."""
         try:
             # Log the exception
@@ -201,16 +210,16 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
                 headers["X-Blocked-Until"] = exc.blocked_until.isoformat()
 
             return JSONResponse(
-                status_code=exc.http_status,
-                content=response_data,
-                headers=headers
+                status_code=exc.http_status, content=response_data, headers=headers
             )
 
         except Exception as e:
             # Fallback error handling
             return await self._create_fallback_error_response(str(e), context)
 
-    async def _handle_http_exception(self, exc: HTTPException, context: ErrorContext) -> JSONResponse:
+    async def _handle_http_exception(
+        self, exc: HTTPException, context: ErrorContext
+    ) -> JSONResponse:
         """Handle FastAPI HTTP exceptions."""
         try:
             # Convert HTTP exception to API exception
@@ -219,7 +228,7 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
             api_exc = APIException(
                 error_code=error_code,
                 message=exc.detail if isinstance(exc.detail, str) else str(exc.detail),
-                context=context
+                context=context,
             )
 
             # Log the exception
@@ -229,22 +238,23 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
             error_response = api_exc.to_error_response()
 
             return JSONResponse(
-                status_code=exc.status_code,
-                content=error_response.model_dump()
+                status_code=exc.status_code, content=error_response.model_dump()
             )
 
         except Exception as e:
             # Fallback error handling
             return await self._create_fallback_error_response(str(e), context)
 
-    async def _handle_unexpected_exception(self, exc: Exception, context: ErrorContext) -> JSONResponse:
+    async def _handle_unexpected_exception(
+        self, exc: Exception, context: ErrorContext
+    ) -> JSONResponse:
         """Handle unexpected exceptions."""
         try:
             # Create API exception for unexpected error
             api_exc = APIException(
                 error_code=ErrorCode.INTERNAL_SERVER_ERROR,
                 message="An unexpected error occurred",
-                context=context
+                context=context,
             )
 
             # Log the exception with stack trace
@@ -255,8 +265,8 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
                 context=context,
                 additional_data={
                     "exception_type": type(exc).__name__,
-                    "stack_trace": traceback.format_exc()
-                }
+                    "stack_trace": traceback.format_exc(),
+                },
             )
 
             # Create error response (don't expose internal error details)
@@ -267,13 +277,10 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
                 request_id=context.request_id,
                 path=context.path,
                 method=context.method,
-                ip_address=context.ip_address
+                ip_address=context.ip_address,
             )
 
-            return JSONResponse(
-                status_code=500,
-                content=error_response.model_dump()
-            )
+            return JSONResponse(status_code=500, content=error_response.model_dump())
 
         except Exception as e:
             # Ultimate fallback
@@ -288,11 +295,13 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
             404: ErrorCode.RESOURCE_NOT_FOUND,
             409: ErrorCode.DUPLICATE_VALUE,
             429: ErrorCode.RATE_LIMIT_EXCEEDED,
-            500: ErrorCode.INTERNAL_SERVER_ERROR
+            500: ErrorCode.INTERNAL_SERVER_ERROR,
         }
         return mapping.get(status_code, ErrorCode.INTERNAL_SERVER_ERROR)
 
-    async def _create_fallback_error_response(self, error_message: str, context: ErrorContext) -> JSONResponse:
+    async def _create_fallback_error_response(
+        self, error_message: str, context: ErrorContext
+    ) -> JSONResponse:
         """Create a fallback error response when error handling fails."""
         try:
             # Log the fallback error
@@ -300,7 +309,7 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
                 level="CRITICAL",
                 category="ERROR_HANDLING",
                 message=f"Error handling failed: {error_message}",
-                context=context
+                context=context,
             )
         except Exception:
             # Even logging failed, just continue
@@ -313,8 +322,8 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
                 "error": "INTERNAL_SERVER_ERROR",
                 "message": "An unexpected error occurred",
                 "timestamp": datetime.utcnow().isoformat(),
-                "request_id": context.request_id
-            }
+                "request_id": context.request_id,
+            },
         )
 
     async def _log_api_access(
@@ -322,7 +331,7 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
         request: Request,
         context: ErrorContext,
         status_code: int,
-        response_time_ms: float
+        response_time_ms: float,
     ):
         """Log API access for monitoring."""
         try:
@@ -331,7 +340,7 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
                 method=context.method,
                 context=context,
                 status_code=status_code,
-                response_time_ms=response_time_ms
+                response_time_ms=response_time_ms,
             )
         except Exception as e:
             # Don't fail request if logging fails
@@ -341,7 +350,7 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
 # Helper functions for use in handlers
 def get_error_context(request: Request) -> ErrorContext:
     """Get error context from request state."""
-    if hasattr(request.state, 'error_context'):
+    if hasattr(request.state, "error_context"):
         return request.state.error_context
 
     # Create minimal context if not available
@@ -349,23 +358,19 @@ def get_error_context(request: Request) -> ErrorContext:
         request_id=str(uuid.uuid4()),
         ip_address="unknown",
         path=str(request.url.path),
-        method=request.method
+        method=request.method,
     )
 
 
 def create_validation_exception(
-    message: str,
-    field_errors: Dict[str, str],
-    context: ErrorContext
+    message: str, field_errors: Dict[str, str], context: ErrorContext
 ) -> APIException:
     """Create a validation exception with field-specific errors."""
     from ..models.error_handling import ValidationErrorDetail, ErrorCode
 
     details = [
         ValidationErrorDetail(
-            field=field,
-            message=error_msg,
-            code=ErrorCode.INVALID_FORMAT
+            field=field, message=error_msg, code=ErrorCode.INVALID_FORMAT
         )
         for field, error_msg in field_errors.items()
     ]
@@ -374,7 +379,7 @@ def create_validation_exception(
         error_code=ErrorCode.INVALID_FORMAT,
         message=message,
         details=details,
-        context=context
+        context=context,
     )
 
 
@@ -382,12 +387,12 @@ def create_security_exception(
     error_code: ErrorCode,
     message: str,
     context: ErrorContext,
-    security_event_id: Optional[str] = None
+    security_event_id: Optional[str] = None,
 ) -> APIException:
     """Create a security-related exception."""
     return APIException(
         error_code=error_code,
         message=message,
         context=context,
-        security_event_id=security_event_id
+        security_event_id=security_event_id,
     )

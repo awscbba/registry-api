@@ -20,22 +20,27 @@ app = FastAPI()
 # Add rate limiting middleware
 app.add_middleware(RateLimitMiddleware)
 
+
 # Test endpoint
 @app.get("/people")
 async def test_people_endpoint():
     return {"message": "Success"}
 
+
 @app.post("/people")
 async def test_create_person():
     return {"message": "Person created"}
+
 
 @app.get("/people/search")
 async def test_search_endpoint():
     return {"message": "Search results"}
 
+
 @app.put("/people/123")
 async def test_update_person():
     return {"message": "Person updated"}
+
 
 @app.put("/people/123/password")
 async def test_update_password():
@@ -49,13 +54,15 @@ client = TestClient(app)
 @pytest.fixture
 def mock_rate_limit_service():
     """Mock rate limiting service for testing."""
-    with patch("src.middleware.rate_limit_middleware.rate_limiting_service") as mock_service:
+    with patch(
+        "src.middleware.rate_limit_middleware.rate_limiting_service"
+    ) as mock_service:
         # Default to allowing requests
         result = RateLimitResult(
             allowed=True,
             current_count=1,
             limit=100,
-            reset_time=datetime.now(timezone.utc) + timedelta(hours=1)
+            reset_time=datetime.now(timezone.utc) + timedelta(hours=1),
         )
 
         # Configure the mock to properly handle the call
@@ -71,7 +78,7 @@ def mock_rate_limit_service():
             "limit": 100,
             "remaining": 99,
             "reset_time": (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
-            "window_seconds": 3600
+            "window_seconds": 3600,
         }
 
         async def mock_get_status(*args, **kwargs):
@@ -101,7 +108,7 @@ def test_rate_limit_allowed(mock_rate_limit_service):
             allowed=True,
             current_count=1,
             limit=100,
-            reset_time=datetime.now(timezone.utc) + timedelta(hours=1)
+            reset_time=datetime.now(timezone.utc) + timedelta(hours=1),
         )
 
     mock_rate_limit_service.check_rate_limit.side_effect = mock_check_rate_limit
@@ -131,7 +138,7 @@ def test_rate_limit_exceeded(mock_rate_limit_service, mock_logging_service):
         limit=100,
         reset_time=datetime.now(timezone.utc) + timedelta(hours=1),
         retry_after_seconds=300,
-        blocked_until=datetime.now(timezone.utc) + timedelta(minutes=5)
+        blocked_until=datetime.now(timezone.utc) + timedelta(minutes=5),
     )
 
     # Configure the mock to properly handle the call
@@ -165,7 +172,7 @@ def test_endpoint_specific_rate_limits(mock_rate_limit_service):
             allowed=True,
             current_count=1,
             limit=100,
-            reset_time=datetime.now(timezone.utc) + timedelta(hours=1)
+            reset_time=datetime.now(timezone.utc) + timedelta(hours=1),
         )
 
     mock_rate_limit_service.check_rate_limit.side_effect = mock_check_rate_limit
@@ -196,7 +203,9 @@ def test_suspicious_activity_detection():
     import re
 
     # SQL injection pattern
-    sql_pattern = r"(\b(select|insert|update|delete|drop|alter)\b.*\b(from|table|database)\b)"
+    sql_pattern = (
+        r"(\b(select|insert|update|delete|drop|alter)\b.*\b(from|table|database)\b)"
+    )
 
     # Test data that should match
     test_data = "SELECT * FROM users WHERE id = 1"
@@ -210,21 +219,18 @@ def test_client_ip_extraction():
     """Test client IP extraction from various headers."""
     # Test X-Forwarded-For header
     response = client.get(
-        "/people",
-        headers={"X-Forwarded-For": "192.168.1.100, 10.0.0.1"}
+        "/people", headers={"X-Forwarded-For": "192.168.1.100, 10.0.0.1"}
     )
     assert response.status_code == 200
 
     # Test X-Real-IP header
-    response = client.get(
-        "/people",
-        headers={"X-Real-IP": "192.168.1.101"}
-    )
+    response = client.get("/people", headers={"X-Real-IP": "192.168.1.101"})
     assert response.status_code == 200
 
 
 def test_non_person_endpoints_not_rate_limited(mock_rate_limit_service):
     """Test that non-person endpoints are not rate limited."""
+
     # Add a test endpoint that doesn't start with /people
     @app.get("/other/endpoint")
     def other_endpoint():

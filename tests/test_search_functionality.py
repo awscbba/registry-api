@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import Dict, Any
 
 # Add the src directory to the Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, patch, MagicMock
@@ -20,7 +20,10 @@ from unittest.mock import AsyncMock, patch, MagicMock
 from src.handlers.people_handler import app
 from src.models.person import Person, PersonResponse
 
-def create_mock_person(person_id: str, first_name: str, last_name: str, email: str, phone: str) -> Person:
+
+def create_mock_person(
+    person_id: str, first_name: str, last_name: str, email: str, phone: str
+) -> Person:
     """Create a mock person for testing"""
     return Person(
         id=person_id,
@@ -34,20 +37,23 @@ def create_mock_person(person_id: str, first_name: str, last_name: str, email: s
             "city": "Test City",
             "state": "TS",
             "zipCode": "12345",
-            "country": "Test Country"
+            "country": "Test Country",
         },
         createdAt=datetime.utcnow(),
         updatedAt=datetime.utcnow(),
         isActive=True,
-        emailVerified=True
+        emailVerified=True,
     )
+
 
 def test_search_functionality():
     """Test the person search functionality - endpoint not implemented yet"""
     client = TestClient(app)
 
     # Since the search endpoint is not implemented yet, test that it returns 404
-    response = client.get("/people/search", headers={"Authorization": "Bearer test-token"})
+    response = client.get(
+        "/people/search", headers={"Authorization": "Bearer test-token"}
+    )
     assert response.status_code == 401  # Authentication fails before route matching
     print("✓ Search endpoint correctly returns 404 (not implemented)")
     return  # Skip the rest of the test
@@ -55,9 +61,15 @@ def test_search_functionality():
     # Mock data
     mock_people = [
         create_mock_person("1", "John", "Doe", "john.doe@example.com", "+1234567890"),
-        create_mock_person("2", "Jane", "Smith", "jane.smith@example.com", "+1234567891"),
-        create_mock_person("3", "Bob", "Johnson", "bob.johnson@example.com", "+1234567892"),
-        create_mock_person("4", "Alice", "Brown", "alice.brown@example.com", "+1234567893"),
+        create_mock_person(
+            "2", "Jane", "Smith", "jane.smith@example.com", "+1234567891"
+        ),
+        create_mock_person(
+            "3", "Bob", "Johnson", "bob.johnson@example.com", "+1234567892"
+        ),
+        create_mock_person(
+            "4", "Alice", "Brown", "alice.brown@example.com", "+1234567893"
+        ),
     ]
 
     # Mock authentication
@@ -66,15 +78,24 @@ def test_search_functionality():
     mock_user.email = "auth@example.com"
     mock_user.require_password_change = False
 
-    with patch('src.middleware.auth_middleware.get_current_user', return_value=mock_user), \
-         patch('src.middleware.auth_middleware.require_no_password_change', return_value=mock_user), \
-         patch('src.handlers.people_handler.db_service') as mock_db:
+    with (
+        patch(
+            "src.middleware.auth_middleware.get_current_user", return_value=mock_user
+        ),
+        patch(
+            "src.middleware.auth_middleware.require_no_password_change",
+            return_value=mock_user,
+        ),
+        patch("src.handlers.people_handler.db_service") as mock_db,
+    ):
 
         # Test 1: Search without filters (should return all people)
         print("Test 1: Search without filters")
         mock_db.search_people.return_value = (mock_people, len(mock_people))
 
-        response = client.get("/people/search", headers={"Authorization": "Bearer test-token"})
+        response = client.get(
+            "/people/search", headers={"Authorization": "Bearer test-token"}
+        )
         assert response.status_code == 200
 
         data = response.json()
@@ -94,7 +115,7 @@ def test_search_functionality():
 
         response = client.get(
             "/people/search?email=john.doe@example.com",
-            headers={"Authorization": "Bearer test-token"}
+            headers={"Authorization": "Bearer test-token"},
         )
         assert response.status_code == 200
 
@@ -111,7 +132,7 @@ def test_search_functionality():
 
         response = client.get(
             "/people/search?firstName=Jane",
-            headers={"Authorization": "Bearer test-token"}
+            headers={"Authorization": "Bearer test-token"},
         )
         assert response.status_code == 200
 
@@ -128,7 +149,7 @@ def test_search_functionality():
 
         response = client.get(
             "/people/search?lastName=Smith",
-            headers={"Authorization": "Bearer test-token"}
+            headers={"Authorization": "Bearer test-token"},
         )
         assert response.status_code == 200
 
@@ -145,7 +166,7 @@ def test_search_functionality():
 
         response = client.get(
             "/people/search?phone=1234567890",
-            headers={"Authorization": "Bearer test-token"}
+            headers={"Authorization": "Bearer test-token"},
         )
         assert response.status_code == 200
 
@@ -161,7 +182,7 @@ def test_search_functionality():
 
         response = client.get(
             "/people/search?limit=2&offset=0",
-            headers={"Authorization": "Bearer test-token"}
+            headers={"Authorization": "Bearer test-token"},
         )
         assert response.status_code == 200
 
@@ -180,7 +201,7 @@ def test_search_functionality():
 
         response = client.get(
             "/people/search?firstName=John&lastName=Doe&isActive=true",
-            headers={"Authorization": "Bearer test-token"}
+            headers={"Authorization": "Bearer test-token"},
         )
         assert response.status_code == 200
 
@@ -194,20 +215,17 @@ def test_search_functionality():
         # Test 8: Invalid pagination parameters
         print("\nTest 8: Invalid pagination parameters")
         response = client.get(
-            "/people/search?limit=0",
-            headers={"Authorization": "Bearer test-token"}
+            "/people/search?limit=0", headers={"Authorization": "Bearer test-token"}
         )
         assert response.status_code == 400
 
         response = client.get(
-            "/people/search?limit=2000",
-            headers={"Authorization": "Bearer test-token"}
+            "/people/search?limit=2000", headers={"Authorization": "Bearer test-token"}
         )
         assert response.status_code == 400
 
         response = client.get(
-            "/people/search?offset=-1",
-            headers={"Authorization": "Bearer test-token"}
+            "/people/search?offset=-1", headers={"Authorization": "Bearer test-token"}
         )
         assert response.status_code == 400
         print("✓ Invalid pagination parameter validation works correctly")
@@ -220,14 +238,18 @@ def test_search_functionality():
 
         print("\n🎉 All search functionality tests passed!")
 
+
 def test_search_response_structure():
     """Test that the search response has the correct structure - endpoint not implemented yet"""
     client = TestClient(app)
 
     # Since the search endpoint is not implemented yet, test that it returns 404
-    response = client.get("/people/search", headers={"Authorization": "Bearer test-token"})
+    response = client.get(
+        "/people/search", headers={"Authorization": "Bearer test-token"}
+    )
     assert response.status_code == 401  # Authentication fails before route matching
     print("✓ Search endpoint correctly returns 404 (not implemented)")
+
 
 if __name__ == "__main__":
     print("Testing Person Search Functionality")
@@ -240,5 +262,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n❌ Test failed: {str(e)}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

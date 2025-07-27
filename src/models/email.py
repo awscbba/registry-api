@@ -1,6 +1,7 @@
 """
 Email service models for AWS SES integration.
 """
+
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List
 from pydantic import BaseModel, Field, EmailStr
@@ -9,6 +10,7 @@ from enum import Enum
 
 class EmailType(str, Enum):
     """Types of emails that can be sent."""
+
     PASSWORD_RESET = "password_reset"
     PASSWORD_RESET_CONFIRMATION = "password_reset_confirmation"
     PASSWORD_CHANGED = "password_changed"
@@ -27,7 +29,9 @@ class EmailTemplate(BaseModel):
     subject: str = Field(..., description="Email subject line")
     html_body: str = Field(..., description="HTML email body")
     text_body: str = Field(..., description="Plain text email body")
-    variables: Dict[str, Any] = Field(default_factory=dict, description="Template variables")
+    variables: Dict[str, Any] = Field(
+        default_factory=dict, description="Template variables"
+    )
 
 
 class EmailRequest(BaseModel):
@@ -35,7 +39,9 @@ class EmailRequest(BaseModel):
 
     to_email: EmailStr = Field(..., description="Recipient email address")
     email_type: EmailType = Field(..., description="Type of email to send")
-    variables: Dict[str, Any] = Field(default_factory=dict, description="Template variables")
+    variables: Dict[str, Any] = Field(
+        default_factory=dict, description="Template variables"
+    )
     from_name: Optional[str] = Field(None, description="Sender name")
     reply_to: Optional[EmailStr] = Field(None, description="Reply-to email address")
 
@@ -56,8 +62,12 @@ class EmailDeliveryStatus(BaseModel):
     email: EmailStr = Field(..., description="Recipient email")
     status: str = Field(..., description="Delivery status")
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    bounce_reason: Optional[str] = Field(None, description="Bounce reason if applicable")
-    complaint_reason: Optional[str] = Field(None, description="Complaint reason if applicable")
+    bounce_reason: Optional[str] = Field(
+        None, description="Bounce reason if applicable"
+    )
+    complaint_reason: Optional[str] = Field(
+        None, description="Complaint reason if applicable"
+    )
 
 
 class PasswordResetEmailData(BaseModel):
@@ -66,7 +76,9 @@ class PasswordResetEmailData(BaseModel):
     first_name: str = Field(..., description="Recipient's first name")
     reset_link: str = Field(..., description="Password reset link")
     expiry_hours: int = Field(default=1, description="Link expiry in hours")
-    support_email: str = Field(default="support@people-register.local", description="Support email")
+    support_email: str = Field(
+        default="support@people-register.local", description="Support email"
+    )
 
 
 class PasswordChangedEmailData(BaseModel):
@@ -75,7 +87,9 @@ class PasswordChangedEmailData(BaseModel):
     first_name: str = Field(..., description="Recipient's first name")
     change_time: datetime = Field(..., description="When password was changed")
     ip_address: Optional[str] = Field(None, description="IP address of change")
-    support_email: str = Field(default="support@people-register.local", description="Support email")
+    support_email: str = Field(
+        default="support@people-register.local", description="Support email"
+    )
 
 
 class SecurityAlertEmailData(BaseModel):
@@ -86,7 +100,9 @@ class SecurityAlertEmailData(BaseModel):
     alert_time: datetime = Field(..., description="When alert occurred")
     ip_address: Optional[str] = Field(None, description="IP address involved")
     location: Optional[str] = Field(None, description="Approximate location")
-    support_email: str = Field(default="support@people-register.local", description="Support email")
+    support_email: str = Field(
+        default="support@people-register.local", description="Support email"
+    )
 
 
 class WelcomeEmailData(BaseModel):
@@ -94,48 +110,52 @@ class WelcomeEmailData(BaseModel):
 
     first_name: str = Field(..., description="Recipient's first name")
     login_url: str = Field(..., description="Login URL")
-    temporary_password: Optional[str] = Field(None, description="Temporary password if applicable")
-    support_email: str = Field(default="support@people-register.local", description="Support email")
+    temporary_password: Optional[str] = Field(
+        None, description="Temporary password if applicable"
+    )
+    support_email: str = Field(
+        default="support@people-register.local", description="Support email"
+    )
 
 
 # Email template configurations
 EMAIL_TEMPLATES = {
     EmailType.PASSWORD_RESET: {
         "subject": "Reset Your Password - People Register",
-        "template_name": "password_reset"
+        "template_name": "password_reset",
     },
     EmailType.PASSWORD_RESET_CONFIRMATION: {
         "subject": "Password Reset Successful - People Register",
-        "template_name": "password_reset_confirmation"
+        "template_name": "password_reset_confirmation",
     },
     EmailType.PASSWORD_CHANGED: {
         "subject": "Password Changed - People Register",
-        "template_name": "password_changed"
+        "template_name": "password_changed",
     },
     EmailType.ADMIN_PASSWORD_RESET: {
         "subject": "Your Password Has Been Reset - People Register",
-        "template_name": "admin_password_reset"
+        "template_name": "admin_password_reset",
     },
     EmailType.SECURITY_ALERT: {
         "subject": "Security Alert - People Register",
-        "template_name": "security_alert"
+        "template_name": "security_alert",
     },
     EmailType.WELCOME: {
         "subject": "Welcome to People Register",
-        "template_name": "welcome"
+        "template_name": "welcome",
     },
     EmailType.ACCOUNT_LOCKED: {
         "subject": "Account Security Alert - People Register",
-        "template_name": "account_locked"
+        "template_name": "account_locked",
     },
     EmailType.EMAIL_VERIFICATION: {
         "subject": "Verify Your New Email Address - People Register",
-        "template_name": "email_verification"
+        "template_name": "email_verification",
     },
     EmailType.EMAIL_CHANGE_NOTIFICATION: {
         "subject": "Email Change Request - People Register",
-        "template_name": "email_change_notification"
-    }
+        "template_name": "email_change_notification",
+    },
 }
 
 
@@ -161,10 +181,12 @@ class EmailConfig:
     def get_frontend_url(cls) -> str:
         """Get frontend URL from environment or default."""
         import os
-        return os.environ.get('FRONTEND_URL', 'https://d28z2il3z2vmpc.cloudfront.net')
+
+        return os.environ.get("FRONTEND_URL", "https://d28z2il3z2vmpc.cloudfront.net")
 
     @classmethod
     def get_from_email(cls) -> str:
         """Get from email from environment or default."""
         import os
-        return os.environ.get('SES_FROM_EMAIL', 'noreply@people-register.local')
+
+        return os.environ.get("SES_FROM_EMAIL", "noreply@people-register.local")

@@ -1,6 +1,7 @@
 """
 Comprehensive tests for PasswordManagementService.
 """
+
 import pytest
 import sys
 import os
@@ -9,9 +10,14 @@ from datetime import datetime, timezone
 import asyncio
 
 # Add the src directory to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../src"))
 
-from src.models.person import Person, PasswordUpdateRequest, PasswordUpdateResponse, Address
+from src.models.person import (
+    Person,
+    PasswordUpdateRequest,
+    PasswordUpdateResponse,
+    Address,
+)
 from src.services.password_management_service import PasswordManagementService
 from src.utils.password_utils import PasswordHasher
 
@@ -34,18 +40,20 @@ class TestPasswordManagementService:
                 city="Anytown",
                 state="CA",
                 zipCode="12345",
-                country="USA"
+                country="USA",
             ),
             createdAt=datetime.now(timezone.utc),
             updatedAt=datetime.now(timezone.utc),
             password_hash=PasswordHasher.hash_password("CurrentPassword123!"),
-            password_history=[]
+            password_history=[],
         )
 
     @pytest.fixture
     def password_service(self):
         """Create PasswordManagementService instance with mocked dependencies."""
-        with patch('src.services.password_management_service.DynamoDBService') as mock_db_class:
+        with patch(
+            "src.services.password_management_service.DynamoDBService"
+        ) as mock_db_class:
             mock_db = Mock()
             mock_db.get_person = AsyncMock()
             mock_db.log_security_event = AsyncMock()
@@ -66,7 +74,7 @@ class TestPasswordManagementService:
         password_request = PasswordUpdateRequest(
             current_password="CurrentPassword123!",
             new_password="NewPassword456@",
-            confirm_password="NewPassword456@"
+            confirm_password="NewPassword456@",
         )
 
         # Execute
@@ -74,7 +82,7 @@ class TestPasswordManagementService:
             person_id="test-person-id",
             password_request=password_request,
             ip_address="127.0.0.1",
-            user_agent="test-agent"
+            user_agent="test-agent",
         )
 
         # Verify
@@ -98,13 +106,12 @@ class TestPasswordManagementService:
         password_request = PasswordUpdateRequest(
             current_password="WrongPassword123!",
             new_password="NewPassword456@",
-            confirm_password="NewPassword456@"
+            confirm_password="NewPassword456@",
         )
 
         # Execute
         success, response, error = await password_service.update_password(
-            person_id="test-person-id",
-            password_request=password_request
+            person_id="test-person-id", password_request=password_request
         )
 
         # Verify
@@ -125,13 +132,12 @@ class TestPasswordManagementService:
         password_request = PasswordUpdateRequest(
             current_password="CurrentPassword123!",
             new_password="weakpass",  # Passes length but fails complexity
-            confirm_password="weakpass"
+            confirm_password="weakpass",
         )
 
         # Execute
         success, response, error = await password_service.update_password(
-            person_id="test-person-id",
-            password_request=password_request
+            person_id="test-person-id", password_request=password_request
         )
 
         # Verify
@@ -153,13 +159,12 @@ class TestPasswordManagementService:
         password_request = PasswordUpdateRequest(
             current_password="CurrentPassword123!",
             new_password="OldPassword123!",  # Reusing old password
-            confirm_password="OldPassword123!"
+            confirm_password="OldPassword123!",
         )
 
         # Execute
         success, response, error = await password_service.update_password(
-            person_id="test-person-id",
-            password_request=password_request
+            person_id="test-person-id", password_request=password_request
         )
 
         # Verify
@@ -179,13 +184,12 @@ class TestPasswordManagementService:
         password_request = PasswordUpdateRequest(
             current_password="CurrentPassword123!",
             new_password="NewPassword456@",
-            confirm_password="NewPassword456@"
+            confirm_password="NewPassword456@",
         )
 
         # Execute
         success, response, error = await password_service.update_password(
-            person_id="nonexistent-id",
-            password_request=password_request
+            person_id="nonexistent-id", password_request=password_request
         )
 
         # Verify
@@ -195,15 +199,16 @@ class TestPasswordManagementService:
         assert error == "Person not found"
 
     @pytest.mark.asyncio
-    async def test_validate_password_change_request_success(self, password_service, mock_person):
+    async def test_validate_password_change_request_success(
+        self, password_service, mock_person
+    ):
         """Test successful password change request validation."""
         # Setup
         password_service.mock_db.get_person.return_value = mock_person
 
         # Execute
         is_valid, error_msg = await password_service.validate_password_change_request(
-            person_id="test-person-id",
-            current_password="CurrentPassword123!"
+            person_id="test-person-id", current_password="CurrentPassword123!"
         )
 
         # Verify
@@ -211,15 +216,16 @@ class TestPasswordManagementService:
         assert error_msg is None
 
     @pytest.mark.asyncio
-    async def test_validate_password_change_request_invalid(self, password_service, mock_person):
+    async def test_validate_password_change_request_invalid(
+        self, password_service, mock_person
+    ):
         """Test password change request validation with invalid password."""
         # Setup
         password_service.mock_db.get_person.return_value = mock_person
 
         # Execute
         is_valid, error_msg = await password_service.validate_password_change_request(
-            person_id="test-person-id",
-            current_password="WrongPassword123!"
+            person_id="test-person-id", current_password="WrongPassword123!"
         )
 
         # Verify
@@ -234,9 +240,7 @@ class TestPasswordManagementService:
 
         # Execute
         success, error_msg = await password_service.force_password_change(
-            person_id="test-person-id",
-            admin_user_id="admin-id",
-            ip_address="127.0.0.1"
+            person_id="test-person-id", admin_user_id="admin-id", ip_address="127.0.0.1"
         )
 
         # Verify
@@ -254,10 +258,10 @@ class TestPasswordManagementService:
         password_service.mock_db.get_person.return_value = mock_person
 
         # Execute
-        success, temp_password, error_msg = await password_service.generate_temporary_password(
-            person_id="test-person-id",
-            admin_user_id="admin-id",
-            length=12
+        success, temp_password, error_msg = (
+            await password_service.generate_temporary_password(
+                person_id="test-person-id", admin_user_id="admin-id", length=12
+            )
         )
 
         # Verify
@@ -286,8 +290,7 @@ class TestPasswordManagementService:
 
         # Test with reused password
         can_use, error_msg = await password_service.check_password_history(
-            person_id="test-person-id",
-            password="OldPassword123!"
+            person_id="test-person-id", password="OldPassword123!"
         )
 
         assert can_use is False
@@ -295,8 +298,7 @@ class TestPasswordManagementService:
 
         # Test with new password
         can_use, error_msg = await password_service.check_password_history(
-            person_id="test-person-id",
-            password="NewPassword456@"
+            person_id="test-person-id", password="NewPassword456@"
         )
 
         assert can_use is True
@@ -311,7 +313,7 @@ class TestPasswordManagementService:
         password_request = PasswordUpdateRequest(
             current_password="CurrentPassword123!",
             new_password="NewPassword456@",
-            confirm_password="NewPassword456@"
+            confirm_password="NewPassword456@",
         )
 
         # Execute
@@ -319,7 +321,7 @@ class TestPasswordManagementService:
             person_id="test-person-id",
             password_request=password_request,
             ip_address="192.168.1.1",
-            user_agent="Mozilla/5.0"
+            user_agent="Mozilla/5.0",
         )
 
         # Verify security event was logged
@@ -338,18 +340,19 @@ class TestPasswordManagementService:
         """Test handling of database errors."""
         # Setup - mock database error
         password_service.mock_db.get_person.return_value = mock_person
-        password_service.mock_db.table.update_item.side_effect = Exception("Database error")
+        password_service.mock_db.table.update_item.side_effect = Exception(
+            "Database error"
+        )
 
         password_request = PasswordUpdateRequest(
             current_password="CurrentPassword123!",
             new_password="NewPassword456@",
-            confirm_password="NewPassword456@"
+            confirm_password="NewPassword456@",
         )
 
         # Execute
         success, response, error = await password_service.update_password(
-            person_id="test-person-id",
-            password_request=password_request
+            person_id="test-person-id", password_request=password_request
         )
 
         # Verify error handling
@@ -366,7 +369,7 @@ class TestPasswordManagementService:
             PasswordUpdateRequest(
                 current_password="CurrentPassword123!",
                 new_password="NewPassword456@",
-                confirm_password="DifferentPassword789#"
+                confirm_password="DifferentPassword789#",
             )
 
     @pytest.mark.asyncio
@@ -378,7 +381,7 @@ class TestPasswordManagementService:
         password_request = PasswordUpdateRequest(
             current_password="CurrentPassword123!",
             new_password="NewPassword456@",
-            confirm_password="NewPassword456@"
+            confirm_password="NewPassword456@",
         )
 
         # Execute concurrent updates
@@ -391,7 +394,9 @@ class TestPasswordManagementService:
 
         # At least one should succeed (depending on implementation)
         # This test documents the expected behavior for concurrent updates
-        successful_updates = sum(1 for result in results if not isinstance(result, Exception) and result[0])
+        successful_updates = sum(
+            1 for result in results if not isinstance(result, Exception) and result[0]
+        )
         assert successful_updates >= 1
 
 
@@ -401,7 +406,9 @@ class TestPasswordManagementServiceEdgeCases:
     @pytest.fixture
     def password_service(self):
         """Create PasswordManagementService instance with mocked dependencies."""
-        with patch('src.services.password_management_service.DynamoDBService') as mock_db_class:
+        with patch(
+            "src.services.password_management_service.DynamoDBService"
+        ) as mock_db_class:
             mock_db = Mock()
             mock_db.get_person = AsyncMock()
             mock_db.log_security_event = AsyncMock()
@@ -429,10 +436,10 @@ class TestPasswordManagementServiceEdgeCases:
                 city="Anytown",
                 state="CA",
                 zipCode="12345",
-                country="USA"
+                country="USA",
             ),
             createdAt=datetime.now(timezone.utc),
-            updatedAt=datetime.now(timezone.utc)
+            updatedAt=datetime.now(timezone.utc),
             # No password_hash field
         )
 
@@ -441,13 +448,12 @@ class TestPasswordManagementServiceEdgeCases:
         password_request = PasswordUpdateRequest(
             current_password="AnyPassword123!",
             new_password="NewPassword456@",
-            confirm_password="NewPassword456@"
+            confirm_password="NewPassword456@",
         )
 
         # Execute
         success, response, error = await password_service.update_password(
-            person_id="test-person-id",
-            password_request=password_request
+            person_id="test-person-id", password_request=password_request
         )
 
         # Verify
@@ -469,20 +475,19 @@ class TestPasswordManagementServiceEdgeCases:
                 city="Anytown",
                 state="CA",
                 zipCode="12345",
-                country="USA"
+                country="USA",
             ),
             createdAt=datetime.now(timezone.utc),
             updatedAt=datetime.now(timezone.utc),
             password_hash=PasswordHasher.hash_password("CurrentPassword123!"),
-            password_history=[]  # Empty list instead of None
+            password_history=[],  # Empty list instead of None
         )
 
         password_service.mock_db.get_person.return_value = person
 
         # Test password history check with None history
         can_use, error_msg = await password_service.check_password_history(
-            person_id="test-person-id",
-            password="AnyPassword123!"
+            person_id="test-person-id", password="AnyPassword123!"
         )
 
         assert can_use is True
@@ -503,12 +508,12 @@ class TestPasswordManagementServiceEdgeCases:
                 city="Anytown",
                 state="CA",
                 zipCode="12345",
-                country="USA"
+                country="USA",
             ),
             createdAt=datetime.now(timezone.utc),
             updatedAt=datetime.now(timezone.utc),
             password_hash=PasswordHasher.hash_password("CurrentPassword123!"),
-            password_history=[]
+            password_history=[],
         )
 
         password_service.mock_db.get_person.return_value = person
@@ -519,18 +524,17 @@ class TestPasswordManagementServiceEdgeCases:
         password_request = PasswordUpdateRequest(
             current_password="CurrentPassword123!",
             new_password=long_password,
-            confirm_password=long_password
+            confirm_password=long_password,
         )
 
         # Execute
         success, response, error = await password_service.update_password(
-            person_id="test-person-id",
-            password_request=password_request
+            person_id="test-person-id", password_request=password_request
         )
 
         # Should handle long passwords gracefully
         assert success is True or "too long" in response.message.lower()
 
 
-if __name__ == '__main__':
-    pytest.main([__file__, '-v'])
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

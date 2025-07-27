@@ -1,6 +1,7 @@
 """
 JWT utilities for token generation and validation.
 """
+
 import jwt
 import os
 from datetime import datetime, timedelta, timezone
@@ -10,6 +11,7 @@ import secrets
 
 class JWTConfig:
     """JWT configuration settings."""
+
     # In production, this should come from environment variables or AWS Secrets Manager
     SECRET_KEY = os.getenv("JWT_SECRET_KEY", secrets.token_urlsafe(32))
     ALGORITHM = "HS256"
@@ -20,6 +22,7 @@ class JWTConfig:
 # Alias for backward compatibility
 JWTHandler = None
 
+
 class JWTManager:
     """Handles JWT token generation and validation."""
 
@@ -27,7 +30,7 @@ class JWTManager:
     def create_access_token(
         subject: str,
         user_data: Dict[str, Any],
-        expires_delta: Optional[timedelta] = None
+        expires_delta: Optional[timedelta] = None,
     ) -> str:
         """
         Create a JWT access token.
@@ -52,13 +55,11 @@ class JWTManager:
             "exp": expire,
             "iat": datetime.now(timezone.utc),
             "type": "access",
-            **user_data
+            **user_data,
         }
 
         encoded_jwt = jwt.encode(
-            to_encode,
-            JWTConfig.SECRET_KEY,
-            algorithm=JWTConfig.ALGORITHM
+            to_encode, JWTConfig.SECRET_KEY, algorithm=JWTConfig.ALGORITHM
         )
         return encoded_jwt
 
@@ -73,19 +74,19 @@ class JWTManager:
         Returns:
             JWT refresh token string
         """
-        expire = datetime.now(timezone.utc) + timedelta(days=JWTConfig.REFRESH_TOKEN_EXPIRE_DAYS)
+        expire = datetime.now(timezone.utc) + timedelta(
+            days=JWTConfig.REFRESH_TOKEN_EXPIRE_DAYS
+        )
 
         to_encode = {
             "sub": subject,
             "exp": expire,
             "iat": datetime.now(timezone.utc),
-            "type": "refresh"
+            "type": "refresh",
         }
 
         encoded_jwt = jwt.encode(
-            to_encode,
-            JWTConfig.SECRET_KEY,
-            algorithm=JWTConfig.ALGORITHM
+            to_encode, JWTConfig.SECRET_KEY, algorithm=JWTConfig.ALGORITHM
         )
         return encoded_jwt
 
@@ -102,9 +103,7 @@ class JWTManager:
         """
         try:
             payload = jwt.decode(
-                token,
-                JWTConfig.SECRET_KEY,
-                algorithms=[JWTConfig.ALGORITHM]
+                token, JWTConfig.SECRET_KEY, algorithms=[JWTConfig.ALGORITHM]
             )
             return payload
         except jwt.ExpiredSignatureError:
@@ -144,11 +143,15 @@ class JWTManager:
                 token,
                 JWTConfig.SECRET_KEY,
                 algorithms=[JWTConfig.ALGORITHM],
-                options={"verify_exp": False}  # Don't raise exception for expired tokens
+                options={
+                    "verify_exp": False
+                },  # Don't raise exception for expired tokens
             )
             exp = payload.get("exp")
             if exp:
-                return datetime.fromtimestamp(exp, tz=timezone.utc) < datetime.now(timezone.utc)
+                return datetime.fromtimestamp(exp, tz=timezone.utc) < datetime.now(
+                    timezone.utc
+                )
             return True
         except jwt.PyJWTError:
             return True
@@ -173,11 +176,12 @@ def create_tokens_for_user(user_id: str, user_data: Dict[str, Any]) -> Dict[str,
         "access_token": access_token,
         "refresh_token": refresh_token,
         "token_type": "bearer",
-        "expires_in": JWTConfig.ACCESS_TOKEN_EXPIRE_MINUTES * 60  # seconds
+        "expires_in": JWTConfig.ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # seconds
     }
 
 
 # Create JWTHandler class for backward compatibility
 class JWTHandler(JWTManager):
     """Backward compatibility alias for JWTManager."""
+
     pass

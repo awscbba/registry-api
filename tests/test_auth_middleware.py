@@ -1,6 +1,7 @@
 """
 Tests for authentication middleware functionality.
 """
+
 import pytest
 from unittest.mock import Mock, AsyncMock, patch
 from fastapi import HTTPException
@@ -25,7 +26,7 @@ class TestAuthMiddleware:
         user_data = {
             "email": "test@example.com",
             "first_name": "Test",
-            "last_name": "User"
+            "last_name": "User",
         }
         return JWTManager.create_access_token("test-user-id", user_data)
 
@@ -45,12 +46,18 @@ class TestAuthMiddleware:
         return person
 
     @pytest.mark.asyncio
-    async def test_get_current_user_valid_token(self, auth_middleware, valid_token, mock_person):
+    async def test_get_current_user_valid_token(
+        self, auth_middleware, valid_token, mock_person
+    ):
         """Test getting current user with valid token."""
-        credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=valid_token)
+        credentials = HTTPAuthorizationCredentials(
+            scheme="Bearer", credentials=valid_token
+        )
 
         # Mock the database service
-        with patch.object(auth_middleware.db_service, 'get_person', new_callable=AsyncMock) as mock_get_person:
+        with patch.object(
+            auth_middleware.db_service, "get_person", new_callable=AsyncMock
+        ) as mock_get_person:
             mock_get_person.return_value = mock_person
 
             user = await auth_middleware.get_current_user(credentials)
@@ -65,7 +72,9 @@ class TestAuthMiddleware:
     @pytest.mark.asyncio
     async def test_get_current_user_invalid_token(self, auth_middleware):
         """Test getting current user with invalid token."""
-        credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials="invalid.token.here")
+        credentials = HTTPAuthorizationCredentials(
+            scheme="Bearer", credentials="invalid.token.here"
+        )
 
         with pytest.raises(HTTPException) as exc_info:
             await auth_middleware.get_current_user(credentials)
@@ -83,11 +92,16 @@ class TestAuthMiddleware:
 
         expired_payload = {
             "sub": "test-user-id",
-            "exp": datetime.now(timezone.utc) - timedelta(hours=1),  # Expired 1 hour ago
-            "type": "access"
+            "exp": datetime.now(timezone.utc)
+            - timedelta(hours=1),  # Expired 1 hour ago
+            "type": "access",
         }
-        expired_token = jwt.encode(expired_payload, JWTConfig.SECRET_KEY, algorithm=JWTConfig.ALGORITHM)
-        credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=expired_token)
+        expired_token = jwt.encode(
+            expired_payload, JWTConfig.SECRET_KEY, algorithm=JWTConfig.ALGORITHM
+        )
+        credentials = HTTPAuthorizationCredentials(
+            scheme="Bearer", credentials=expired_token
+        )
 
         with pytest.raises(HTTPException) as exc_info:
             await auth_middleware.get_current_user(credentials)
@@ -99,7 +113,9 @@ class TestAuthMiddleware:
     async def test_get_current_user_wrong_token_type(self, auth_middleware):
         """Test getting current user with refresh token instead of access token."""
         refresh_token = JWTManager.create_refresh_token("test-user-id")
-        credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=refresh_token)
+        credentials = HTTPAuthorizationCredentials(
+            scheme="Bearer", credentials=refresh_token
+        )
 
         with pytest.raises(HTTPException) as exc_info:
             await auth_middleware.get_current_user(credentials)
@@ -110,9 +126,13 @@ class TestAuthMiddleware:
     @pytest.mark.asyncio
     async def test_get_current_user_user_not_found(self, auth_middleware, valid_token):
         """Test getting current user when user doesn't exist in database."""
-        credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=valid_token)
+        credentials = HTTPAuthorizationCredentials(
+            scheme="Bearer", credentials=valid_token
+        )
 
-        with patch.object(auth_middleware.db_service, 'get_person', new_callable=AsyncMock) as mock_get_person:
+        with patch.object(
+            auth_middleware.db_service, "get_person", new_callable=AsyncMock
+        ) as mock_get_person:
             mock_get_person.return_value = None
 
             with pytest.raises(HTTPException) as exc_info:
@@ -122,12 +142,18 @@ class TestAuthMiddleware:
             assert "User not found" in exc_info.value.detail
 
     @pytest.mark.asyncio
-    async def test_get_current_user_inactive_account(self, auth_middleware, valid_token, mock_person):
+    async def test_get_current_user_inactive_account(
+        self, auth_middleware, valid_token, mock_person
+    ):
         """Test getting current user with inactive account."""
         mock_person.is_active = False
-        credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=valid_token)
+        credentials = HTTPAuthorizationCredentials(
+            scheme="Bearer", credentials=valid_token
+        )
 
-        with patch.object(auth_middleware.db_service, 'get_person', new_callable=AsyncMock) as mock_get_person:
+        with patch.object(
+            auth_middleware.db_service, "get_person", new_callable=AsyncMock
+        ) as mock_get_person:
             mock_get_person.return_value = mock_person
 
             with pytest.raises(HTTPException) as exc_info:
@@ -137,7 +163,9 @@ class TestAuthMiddleware:
             assert "Account is deactivated" in exc_info.value.detail
 
     @pytest.mark.asyncio
-    async def test_get_optional_user_valid_token(self, auth_middleware, valid_token, mock_person):
+    async def test_get_optional_user_valid_token(
+        self, auth_middleware, valid_token, mock_person
+    ):
         """Test getting optional user with valid token."""
         from fastapi import Request
 
@@ -145,7 +173,9 @@ class TestAuthMiddleware:
         request = Mock(spec=Request)
         request.headers = {"Authorization": f"Bearer {valid_token}"}
 
-        with patch.object(auth_middleware.db_service, 'get_person', new_callable=AsyncMock) as mock_get_person:
+        with patch.object(
+            auth_middleware.db_service, "get_person", new_callable=AsyncMock
+        ) as mock_get_person:
             mock_get_person.return_value = mock_person
 
             user = await auth_middleware.get_optional_user(request)
@@ -187,7 +217,7 @@ class TestAuthDependencies:
         user_data = {
             "email": "test@example.com",
             "first_name": "Test",
-            "last_name": "User"
+            "last_name": "User",
         }
         return JWTManager.create_access_token("test-user-id", user_data)
 
@@ -217,7 +247,7 @@ class TestAuthDependencies:
             email="test@example.com",
             first_name="Test",
             last_name="User",
-            require_password_change=False
+            require_password_change=False,
         )
 
         # This should not raise an exception
@@ -235,7 +265,7 @@ class TestAuthDependencies:
             email="test@example.com",
             first_name="Test",
             last_name="User",
-            require_password_change=True
+            require_password_change=True,
         )
 
         with pytest.raises(HTTPException) as exc_info:

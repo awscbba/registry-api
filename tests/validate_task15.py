@@ -14,13 +14,18 @@ import json
 from datetime import datetime
 
 # Add src to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
 try:
     from utils.response_formatter import (
-        ResponseFormatter, CamelCaseConverter, HTTPStatusCodes, ErrorCodes,
-        create_person_response, create_validation_error
+        ResponseFormatter,
+        CamelCaseConverter,
+        HTTPStatusCodes,
+        ErrorCodes,
+        create_person_response,
+        create_validation_error,
     )
+
     print("✅ Response formatter utilities imported successfully")
 except ImportError as e:
     print(f"❌ Failed to import response formatter utilities: {e}")
@@ -40,8 +45,12 @@ def test_http_status_codes():
     assert HTTPStatusCodes.FORBIDDEN == 403, "FORBIDDEN status code should be 403"
     assert HTTPStatusCodes.NOT_FOUND == 404, "NOT_FOUND status code should be 404"
     assert HTTPStatusCodes.CONFLICT == 409, "CONFLICT status code should be 409"
-    assert HTTPStatusCodes.TOO_MANY_REQUESTS == 429, "TOO_MANY_REQUESTS status code should be 429"
-    assert HTTPStatusCodes.INTERNAL_SERVER_ERROR == 500, "INTERNAL_SERVER_ERROR status code should be 500"
+    assert (
+        HTTPStatusCodes.TOO_MANY_REQUESTS == 429
+    ), "TOO_MANY_REQUESTS status code should be 429"
+    assert (
+        HTTPStatusCodes.INTERNAL_SERVER_ERROR == 500
+    ), "INTERNAL_SERVER_ERROR status code should be 500"
 
     print("✅ All HTTP status codes are properly defined")
 
@@ -90,7 +99,7 @@ def test_camel_case_conversion():
         "last_name": "Doe",
         "date_of_birth": "1990-01-15",
         "is_active": True,
-        "email_verified": False
+        "email_verified": False,
     }
 
     camel_dict = CamelCaseConverter.convert_dict_keys(snake_dict)
@@ -100,7 +109,7 @@ def test_camel_case_conversion():
         "lastName": "Doe",
         "dateOfBirth": "1990-01-15",
         "isActive": True,
-        "emailVerified": False
+        "emailVerified": False,
     }
 
     assert camel_dict == expected, "Dictionary conversion should work correctly"
@@ -116,7 +125,7 @@ def test_response_formatting():
     error = ResponseFormatter.error_response(
         error_code=ErrorCodes.VALIDATION_ERROR,
         message="Test error",
-        status_code=HTTPStatusCodes.BAD_REQUEST
+        status_code=HTTPStatusCodes.BAD_REQUEST,
     )
 
     assert error.status_code == 400
@@ -127,7 +136,9 @@ def test_response_formatting():
 
     # Test validation error response
     validation_errors = [
-        create_validation_error("email", "Invalid email format", ErrorCodes.EMAIL_FORMAT)
+        create_validation_error(
+            "email", "Invalid email format", ErrorCodes.EMAIL_FORMAT
+        )
     ]
 
     validation_error = ResponseFormatter.validation_error_response(validation_errors)
@@ -156,7 +167,7 @@ def test_api_documentation():
         print(f"❌ API documentation file not found: {doc_path}")
         return False
 
-    with open(doc_path, 'r') as f:
+    with open(doc_path, "r") as f:
         content = f.read()
 
     # Check for required sections
@@ -176,7 +187,7 @@ def test_api_documentation():
         "## Error Codes",
         "## Rate Limiting",
         "## Security Features",
-        "## Field Naming Convention"
+        "## Field Naming Convention",
     ]
 
     missing_sections = []
@@ -196,7 +207,7 @@ def test_api_documentation():
         '"createdAt": "2025-01-22T10:30:00Z"',
         '"updatedAt": "2025-01-22T10:30:00Z"',
         '"isActive": true',
-        '"emailVerified": true'
+        '"emailVerified": true',
     ]
 
     missing_examples = []
@@ -213,7 +224,7 @@ def test_api_documentation():
         '"error": "AUTHENTICATION_FAILED"',
         '"error": "VALIDATION_ERROR"',
         '"error": "PERSON_NOT_FOUND"',
-        '"requestId": "req_123456789"'
+        '"requestId": "req_123456789"',
     ]
 
     missing_error_examples = []
@@ -239,20 +250,20 @@ def test_documented_handler():
         print(f"❌ Documented handler file not found: {handler_path}")
         return False
 
-    with open(handler_path, 'r') as f:
+    with open(handler_path, "r") as f:
         content = f.read()
 
     # Check for FastAPI app with comprehensive documentation
     required_elements = [
-        'app = FastAPI(',
+        "app = FastAPI(",
         'title="People Register API"',
-        'openapi_tags=[',
-        '@app.get(',
+        "openapi_tags=[",
+        "@app.get(",
         'tags=["health"]',
         'summary="Health Check"',
-        'responses={',
+        "responses={",
         '"application/json"',
-        '"example"'
+        '"example"',
     ]
 
     missing_elements = []

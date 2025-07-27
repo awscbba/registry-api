@@ -18,11 +18,21 @@ from mangum import Mangum
 import uuid
 
 from ..models.person import (
-    PersonCreate, PersonUpdate, PersonResponse, PasswordUpdateRequest,
-    ErrorResponse, ValidationError, EmailVerificationRequest,
-    PersonDeletionRequest, PersonDeletionInitiateRequest, PersonDeletionResponse,
-    ReferentialIntegrityError, PersonSearchRequest, PersonSearchResponse,
-    AdminUnlockRequest, AdminUnlockResponse
+    PersonCreate,
+    PersonUpdate,
+    PersonResponse,
+    PasswordUpdateRequest,
+    ErrorResponse,
+    ValidationError,
+    EmailVerificationRequest,
+    PersonDeletionRequest,
+    PersonDeletionInitiateRequest,
+    PersonDeletionResponse,
+    ReferentialIntegrityError,
+    PersonSearchRequest,
+    PersonSearchResponse,
+    AdminUnlockRequest,
+    AdminUnlockResponse,
 )
 from ..models.auth import LoginRequest, LoginResponse
 from ..services.dynamodb_service import DynamoDBService
@@ -94,52 +104,28 @@ app = FastAPI(
     All API responses use camelCase field naming for consistency with frontend JavaScript conventions.
     """,
     version="1.0.0",
-    contact={
-        "name": "API Support",
-        "email": "support@example.com"
-    },
-    license_info={
-        "name": "MIT",
-        "url": "https://opensource.org/licenses/MIT"
-    },
+    contact={"name": "API Support", "email": "support@example.com"},
+    license_info={"name": "MIT", "url": "https://opensource.org/licenses/MIT"},
     openapi_tags=[
-        {
-            "name": "health",
-            "description": "Health check endpoints"
-        },
+        {"name": "health", "description": "Health check endpoints"},
         {
             "name": "authentication",
-            "description": "Authentication and authorization endpoints"
+            "description": "Authentication and authorization endpoints",
         },
         {
             "name": "password-management",
-            "description": "Password management and security endpoints"
+            "description": "Password management and security endpoints",
         },
-        {
-            "name": "people",
-            "description": "Person CRUD operations"
-        },
-        {
-            "name": "search",
-            "description": "Person search and filtering"
-        },
+        {"name": "people", "description": "Person CRUD operations"},
+        {"name": "search", "description": "Person search and filtering"},
         {
             "name": "email-verification",
-            "description": "Email verification and change workflows"
+            "description": "Email verification and change workflows",
         },
-        {
-            "name": "admin",
-            "description": "Administrative functions"
-        },
-        {
-            "name": "projects",
-            "description": "Project management endpoints"
-        },
-        {
-            "name": "subscriptions",
-            "description": "Subscription management endpoints"
-        }
-    ]
+        {"name": "admin", "description": "Administrative functions"},
+        {"name": "projects", "description": "Project management endpoints"},
+        {"name": "subscriptions", "description": "Subscription management endpoints"},
+    ],
 )
 
 # Add CORS middleware
@@ -161,6 +147,7 @@ deletion_service = PersonDeletionService(db_service)
 
 # =================== HEALTH CHECK ENDPOINT ====================
 
+
 @app.get(
     "/health",
     tags=["health"],
@@ -175,12 +162,12 @@ deletion_service = PersonDeletionService(db_service)
                         "status": "healthy",
                         "service": "people-register-api",
                         "timestamp": "2025-01-22T10:30:00Z",
-                        "version": "1.0.0"
+                        "version": "1.0.0",
                     }
                 }
-            }
+            },
         }
-    }
+    },
 )
 async def health_check():
     """
@@ -195,10 +182,12 @@ async def health_check():
         "status": "healthy",
         "service": "people-register-api",
         "timestamp": datetime.now().isoformat(),
-        "version": "1.0.0"
+        "version": "1.0.0",
     }
 
+
 # ================ AUTHENTICATION ENDPOINTS ====================
+
 
 @app.post(
     "/auth/login",
@@ -220,11 +209,11 @@ async def health_check():
                             "id": "123e4567-e89b-12d3-a456-426614174000",
                             "email": "user@example.com",
                             "firstName": "John",
-                            "lastName": "Doe"
-                        }
+                            "lastName": "Doe",
+                        },
                     }
                 }
-            }
+            },
         },
         401: {
             "description": "Authentication failed",
@@ -234,12 +223,12 @@ async def health_check():
                         "error": "AUTHENTICATION_FAILED",
                         "message": "Invalid email or password",
                         "timestamp": "2025-01-22T10:30:00Z",
-                        "requestId": "req_123456789"
+                        "requestId": "req_123456789",
                     }
                 }
-            }
-        }
-    }
+            },
+        },
+    },
 )
 async def login(login_request: LoginRequest, request: Request):
     """
@@ -272,8 +261,8 @@ async def login(login_request: LoginRequest, request: Request):
                     "error": "AUTHENTICATION_FAILED",
                     "message": error_message or "Authentication failed",
                     "timestamp": datetime.now().isoformat(),
-                    "requestId": str(uuid.uuid4())
-                }
+                    "requestId": str(uuid.uuid4()),
+                },
             )
 
         return login_response
@@ -288,9 +277,10 @@ async def login(login_request: LoginRequest, request: Request):
                 "error": "INTERNAL_SERVER_ERROR",
                 "message": "An unexpected error occurred during authentication",
                 "timestamp": datetime.now().isoformat(),
-                "requestId": str(uuid.uuid4())
-            }
+                "requestId": str(uuid.uuid4()),
+            },
         )
+
 
 @app.put(
     "/people/{person_id}/password",
@@ -306,18 +296,18 @@ async def login(login_request: LoginRequest, request: Request):
                         "success": True,
                         "message": "Password updated successfully",
                         "requireReauth": True,
-                        "timestamp": "2025-01-22T10:30:00Z"
+                        "timestamp": "2025-01-22T10:30:00Z",
                     }
                 }
-            }
+            },
         }
-    }
+    },
 )
 async def update_person_password(
     person_id: str,
     password_request: PasswordUpdateRequest,
     request: Request,
-    current_user = Depends(get_current_user)
+    current_user=Depends(get_current_user),
 ):
     """Update password for a specific person."""
     # Implementation would go here
@@ -329,11 +319,10 @@ async def update_person_password(
     response_model=List[PersonResponse],
     tags=["people"],
     summary="List People",
-    description="Get a paginated list of all registered people"
+    description="Get a paginated list of all registered people",
 )
 async def list_people(
-    request: Request,
-    current_user = Depends(require_no_password_change)
+    request: Request, current_user=Depends(require_no_password_change)
 ):
     """Get a paginated list of all registered people."""
     # Implementation would go here
@@ -345,11 +334,10 @@ async def list_people(
     response_model=PersonSearchResponse,
     tags=["search"],
     summary="Search People",
-    description="Search for people with filtering and pagination"
+    description="Search for people with filtering and pagination",
 )
 async def search_people(
-    request: Request,
-    current_user = Depends(require_no_password_change)
+    request: Request, current_user=Depends(require_no_password_change)
 ):
     """Search for people with filtering and pagination."""
     # Implementation would go here
@@ -360,13 +348,13 @@ async def search_people(
     "/people/{person_id}/unlock",
     tags=["admin"],
     summary="Unlock User Account",
-    description="Unlock a locked user account (admin only)"
+    description="Unlock a locked user account (admin only)",
 )
 async def unlock_account(
     person_id: str,
     unlock_request: AdminUnlockRequest,
     request: Request,
-    current_user = Depends(get_current_user)
+    current_user=Depends(get_current_user),
 ):
     """Unlock a locked user account (admin only)."""
     # Implementation would go here
@@ -376,13 +364,14 @@ async def unlock_account(
 # Lambda handler
 handler = Mangum(app)
 
+
 @app.get(
     "/auth/me",
     tags=["authentication"],
     summary="Get Current User",
-    description="Get information about the currently authenticated user"
+    description="Get information about the currently authenticated user",
 )
-async def get_current_user_info(current_user = Depends(get_current_user)):
+async def get_current_user_info(current_user=Depends(get_current_user)):
     """Get information about the currently authenticated user."""
     # Implementation would go here
     pass
@@ -392,12 +381,12 @@ async def get_current_user_info(current_user = Depends(get_current_user)):
     "/auth/password",
     tags=["password-management"],
     summary="Update Current User Password",
-    description="Update the password for the currently authenticated user"
+    description="Update the password for the currently authenticated user",
 )
 async def update_password(
     password_request: PasswordUpdateRequest,
     request: Request,
-    current_user = Depends(get_current_user)
+    current_user=Depends(get_current_user),
 ):
     """Update the password for the currently authenticated user."""
     # Implementation would go here
@@ -409,12 +398,10 @@ async def update_password(
     response_model=PersonResponse,
     tags=["people"],
     summary="Get Person",
-    description="Get detailed information for a specific person by ID"
+    description="Get detailed information for a specific person by ID",
 )
 async def get_person(
-    person_id: str,
-    request: Request,
-    current_user = Depends(require_no_password_change)
+    person_id: str, request: Request, current_user=Depends(require_no_password_change)
 ):
     """Get detailed information for a specific person by ID."""
     # Implementation would go here
@@ -427,11 +414,10 @@ async def get_person(
     status_code=status.HTTP_201_CREATED,
     tags=["people"],
     summary="Create Person",
-    description="Register a new person in the system"
+    description="Register a new person in the system",
 )
 async def create_person(
-    person_data: PersonCreate,
-    current_user = Depends(require_no_password_change)
+    person_data: PersonCreate, current_user=Depends(require_no_password_change)
 ):
     """Register a new person in the system."""
     # Implementation would go here
@@ -443,13 +429,13 @@ async def create_person(
     response_model=PersonResponse,
     tags=["people"],
     summary="Update Person",
-    description="Update an existing person with enhanced validation"
+    description="Update an existing person with enhanced validation",
 )
 async def update_person(
     person_id: str,
     person_update: PersonUpdate,
     request: Request,
-    current_user = Depends(require_no_password_change)
+    current_user=Depends(require_no_password_change),
 ):
     """Update an existing person with enhanced validation."""
     # Implementation would go here
@@ -461,13 +447,13 @@ async def update_person(
     status_code=status.HTTP_204_NO_CONTENT,
     tags=["people"],
     summary="Delete Person",
-    description="Delete a person with referential integrity checks"
+    description="Delete a person with referential integrity checks",
 )
 async def delete_person(
     person_id: str,
     deletion_request: PersonDeletionRequest,
     request: Request,
-    current_user = Depends(require_no_password_change)
+    current_user=Depends(require_no_password_change),
 ):
     """Delete a person with referential integrity checks."""
     # Implementation would go here

@@ -9,7 +9,11 @@ from datetime import datetime, timedelta
 from typing import Optional, Tuple, List, Dict, Any
 
 from ..models.person import PersonDeletionResponse, ReferentialIntegrityError
-from ..models.security_event import SecurityEvent, SecurityEventType, SecurityEventSeverity
+from ..models.security_event import (
+    SecurityEvent,
+    SecurityEventType,
+    SecurityEventSeverity,
+)
 from .dynamodb_service import DynamoDBService
 
 logger = logging.getLogger(__name__)
@@ -30,7 +34,7 @@ class PersonDeletionService:
         requesting_user_id: str,
         reason: Optional[str] = None,
         ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None
+        user_agent: Optional[str] = None,
     ) -> Tuple[bool, PersonDeletionResponse, Optional[str]]:
         """
         Initiate person deletion with referential integrity checks
@@ -42,35 +46,43 @@ class PersonDeletionService:
             # Check if person exists
             person = await self.db_service.get_person(person_id)
             if not person:
-                return False, PersonDeletionResponse(
-                    success=False,
-                    message="Person not found"
-                ), "Person not found"
+                return (
+                    False,
+                    PersonDeletionResponse(success=False, message="Person not found"),
+                    "Person not found",
+                )
 
             # Check for existing subscriptions
             subscriptions = self.db_service.get_subscriptions_by_person(person_id)
             active_subscriptions = [
-                sub for sub in subscriptions
-                if sub.get('status') in ['active', 'pending']
+                sub
+                for sub in subscriptions
+                if sub.get("status") in ["active", "pending"]
             ]
 
             if active_subscriptions:
                 # Create referential integrity error response
                 related_records = []
                 for sub in active_subscriptions:
-                    project = self.db_service.get_project_by_id(sub.get('projectId', ''))
-                    related_records.append({
-                        'subscription_id': sub.get('id'),
-                        'project_id': sub.get('projectId'),
-                        'project_name': project.get('name', 'Unknown') if project else 'Unknown',
-                        'status': sub.get('status'),
-                        'created_at': sub.get('createdAt')
-                    })
+                    project = self.db_service.get_project_by_id(
+                        sub.get("projectId", "")
+                    )
+                    related_records.append(
+                        {
+                            "subscription_id": sub.get("id"),
+                            "project_id": sub.get("projectId"),
+                            "project_name": (
+                                project.get("name", "Unknown") if project else "Unknown"
+                            ),
+                            "status": sub.get("status"),
+                            "created_at": sub.get("createdAt"),
+                        }
+                    )
 
                 error_response = ReferentialIntegrityError(
                     message=f"Cannot delete person with {len(active_subscriptions)} active subscription(s). Please cancel or transfer subscriptions first.",
                     constraint_type="subscriptions",
-                    related_records=related_records
+                    related_records=related_records,
                 )
 
                 # Log the referential integrity violation
@@ -83,31 +95,37 @@ class PersonDeletionService:
                         "reason": "referential_integrity_violation",
                         "constraint_type": "subscriptions",
                         "active_subscriptions_count": len(active_subscriptions),
-                        "reason_provided": reason
+                        "reason_provided": reason,
                     },
                     ip_address=ip_address,
-                    user_agent=user_agent
+                    user_agent=user_agent,
                 )
 
-                return False, PersonDeletionResponse(
-                    success=False,
-                    message=error_response.message,
-                    subscriptions_found=len(active_subscriptions)
-                ), error_response.model_dump_json()
+                return (
+                    False,
+                    PersonDeletionResponse(
+                        success=False,
+                        message=error_response.message,
+                        subscriptions_found=len(active_subscriptions),
+                    ),
+                    error_response.model_dump_json(),
+                )
 
             # Generate confirmation token
             confirmation_token = str(uuid.uuid4())
-            expires_at = datetime.utcnow() + timedelta(minutes=self.confirmation_timeout_minutes)
+            expires_at = datetime.utcnow() + timedelta(
+                minutes=self.confirmation_timeout_minutes
+            )
 
             # Store pending deletion
             self._pending_deletions[confirmation_token] = {
-                'person_id': person_id,
-                'requesting_user_id': requesting_user_id,
-                'reason': reason,
-                'expires_at': expires_at,
-                'ip_address': ip_address,
-                'user_agent': user_agent,
-                'created_at': datetime.utcnow()
+                "person_id": person_id,
+                "requesting_user_id": requesting_user_id,
+                "reason": reason,
+                "expires_at": expires_at,
+                "ip_address": ip_address,
+                "user_agent": user_agent,
+                "created_at": datetime.utcnow(),
             }
 
             # Log deletion initiation
@@ -120,19 +138,23 @@ class PersonDeletionService:
                     "stage": "initiation",
                     "confirmation_token": confirmation_token,
                     "expires_at": expires_at.isoformat(),
-                    "reason_provided": reason
+                    "reason_provided": reason,
                 },
                 ip_address=ip_address,
-                user_agent=user_agent
+                user_agent=user_agent,
             )
 
-            return True, PersonDeletionResponse(
-                success=True,
-                message="Deletion initiated. Please confirm with the provided token within 15 minutes.",
-                confirmation_token=confirmation_token,
-                expires_at=expires_at,
-                subscriptions_found=0
-            ), None
+            return (
+                True,
+                PersonDeletionResponse(
+                    success=True,
+                    message="Deletion initiated. Please confirm with the provided token within 15 minutes.",
+                    confirmation_token=confirmation_token,
+                    expires_at=expires_at,
+                    subscriptions_found=0,
+                ),
+                None,
+            )
 
         except Exception as e:
             logger.error(f"Error initiating deletion for person {person_id}: {str(e)}")
@@ -146,16 +168,19 @@ class PersonDeletionService:
                 details={
                     "stage": "initiation",
                     "error": str(e),
-                    "reason_provided": reason
+                    "reason_provided": reason,
                 },
                 ip_address=ip_address,
-                user_agent=user_agent
+                user_agent=user_agent,
             )
 
-            return False, PersonDeletionResponse(
-                success=False,
-                message="Failed to initiate deletion"
-            ), f"Internal error: {str(e)}"
+            return (
+                False,
+                PersonDeletionResponse(
+                    success=False, message="Failed to initiate deletion"
+                ),
+                f"Internal error: {str(e)}",
+            )
 
     async def confirm_deletion(
         self,
@@ -163,7 +188,7 @@ class PersonDeletionService:
         requesting_user_id: str,
         reason: Optional[str] = None,
         ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None
+        user_agent: Optional[str] = None,
     ) -> Tuple[bool, PersonDeletionResponse, Optional[str]]:
         """
         Confirm and execute person deletion
@@ -174,47 +199,62 @@ class PersonDeletionService:
         try:
             # Validate confirmation token
             if confirmation_token not in self._pending_deletions:
-                return False, PersonDeletionResponse(
-                    success=False,
-                    message="Invalid or expired confirmation token"
-                ), "Invalid confirmation token"
+                return (
+                    False,
+                    PersonDeletionResponse(
+                        success=False, message="Invalid or expired confirmation token"
+                    ),
+                    "Invalid confirmation token",
+                )
 
             pending_deletion = self._pending_deletions[confirmation_token]
 
             # Check if token has expired
-            if datetime.utcnow() > pending_deletion['expires_at']:
+            if datetime.utcnow() > pending_deletion["expires_at"]:
                 # Clean up expired token
                 del self._pending_deletions[confirmation_token]
-                return False, PersonDeletionResponse(
-                    success=False,
-                    message="Confirmation token has expired. Please initiate deletion again."
-                ), "Token expired"
+                return (
+                    False,
+                    PersonDeletionResponse(
+                        success=False,
+                        message="Confirmation token has expired. Please initiate deletion again.",
+                    ),
+                    "Token expired",
+                )
 
-            person_id = pending_deletion['person_id']
-            original_requesting_user_id = pending_deletion['requesting_user_id']
+            person_id = pending_deletion["person_id"]
+            original_requesting_user_id = pending_deletion["requesting_user_id"]
 
             # Verify the same user is confirming
             if requesting_user_id != original_requesting_user_id:
-                return False, PersonDeletionResponse(
-                    success=False,
-                    message="Only the user who initiated the deletion can confirm it"
-                ), "User mismatch"
+                return (
+                    False,
+                    PersonDeletionResponse(
+                        success=False,
+                        message="Only the user who initiated the deletion can confirm it",
+                    ),
+                    "User mismatch",
+                )
 
             # Double-check person still exists
             person = await self.db_service.get_person(person_id)
             if not person:
                 # Clean up token
                 del self._pending_deletions[confirmation_token]
-                return False, PersonDeletionResponse(
-                    success=False,
-                    message="Person no longer exists"
-                ), "Person not found"
+                return (
+                    False,
+                    PersonDeletionResponse(
+                        success=False, message="Person no longer exists"
+                    ),
+                    "Person not found",
+                )
 
             # Final check for subscriptions (in case they were added between initiation and confirmation)
             subscriptions = self.db_service.get_subscriptions_by_person(person_id)
             active_subscriptions = [
-                sub for sub in subscriptions
-                if sub.get('status') in ['active', 'pending']
+                sub
+                for sub in subscriptions
+                if sub.get("status") in ["active", "pending"]
             ]
 
             if active_subscriptions:
@@ -223,14 +263,20 @@ class PersonDeletionService:
 
                 related_records = []
                 for sub in active_subscriptions:
-                    project = self.db_service.get_project_by_id(sub.get('projectId', ''))
-                    related_records.append({
-                        'subscription_id': sub.get('id'),
-                        'project_id': sub.get('projectId'),
-                        'project_name': project.get('name', 'Unknown') if project else 'Unknown',
-                        'status': sub.get('status'),
-                        'created_at': sub.get('createdAt')
-                    })
+                    project = self.db_service.get_project_by_id(
+                        sub.get("projectId", "")
+                    )
+                    related_records.append(
+                        {
+                            "subscription_id": sub.get("id"),
+                            "project_id": sub.get("projectId"),
+                            "project_name": (
+                                project.get("name", "Unknown") if project else "Unknown"
+                            ),
+                            "status": sub.get("status"),
+                            "created_at": sub.get("createdAt"),
+                        }
+                    )
 
                 # Log the referential integrity violation at confirmation
                 await self._log_deletion_event(
@@ -244,17 +290,21 @@ class PersonDeletionService:
                         "constraint_type": "subscriptions",
                         "active_subscriptions_count": len(active_subscriptions),
                         "confirmation_token": confirmation_token,
-                        "reason_provided": reason or pending_deletion.get('reason')
+                        "reason_provided": reason or pending_deletion.get("reason"),
                     },
                     ip_address=ip_address,
-                    user_agent=user_agent
+                    user_agent=user_agent,
                 )
 
-                return False, PersonDeletionResponse(
-                    success=False,
-                    message=f"Cannot delete person with {len(active_subscriptions)} active subscription(s) that were created after deletion initiation. Please cancel subscriptions and try again.",
-                    subscriptions_found=len(active_subscriptions)
-                ), "New subscriptions found"
+                return (
+                    False,
+                    PersonDeletionResponse(
+                        success=False,
+                        message=f"Cannot delete person with {len(active_subscriptions)} active subscription(s) that were created after deletion initiation. Please cancel subscriptions and try again.",
+                        subscriptions_found=len(active_subscriptions),
+                    ),
+                    "New subscriptions found",
+                )
 
             # Perform the actual deletion
             deletion_successful = await self.db_service.delete_person(person_id)
@@ -272,16 +322,19 @@ class PersonDeletionService:
                         "stage": "confirmation",
                         "reason": "database_deletion_failed",
                         "confirmation_token": confirmation_token,
-                        "reason_provided": reason or pending_deletion.get('reason')
+                        "reason_provided": reason or pending_deletion.get("reason"),
                     },
                     ip_address=ip_address,
-                    user_agent=user_agent
+                    user_agent=user_agent,
                 )
 
-                return False, PersonDeletionResponse(
-                    success=False,
-                    message="Failed to delete person from database"
-                ), "Database deletion failed"
+                return (
+                    False,
+                    PersonDeletionResponse(
+                        success=False, message="Failed to delete person from database"
+                    ),
+                    "Database deletion failed",
+                )
 
             # Log successful deletion
             await self._log_deletion_event(
@@ -294,29 +347,35 @@ class PersonDeletionService:
                     "confirmation_token": confirmation_token,
                     "person_email": person.email,
                     "person_name": f"{person.first_name} {person.last_name}",
-                    "reason_provided": reason or pending_deletion.get('reason'),
-                    "initiated_at": pending_deletion['created_at'].isoformat(),
-                    "confirmed_at": datetime.utcnow().isoformat()
+                    "reason_provided": reason or pending_deletion.get("reason"),
+                    "initiated_at": pending_deletion["created_at"].isoformat(),
+                    "confirmed_at": datetime.utcnow().isoformat(),
                 },
                 ip_address=ip_address,
-                user_agent=user_agent
+                user_agent=user_agent,
             )
 
             # Clean up token
             del self._pending_deletions[confirmation_token]
 
-            return True, PersonDeletionResponse(
-                success=True,
-                message=f"Person {person.email} has been successfully deleted"
-            ), None
+            return (
+                True,
+                PersonDeletionResponse(
+                    success=True,
+                    message=f"Person {person.email} has been successfully deleted",
+                ),
+                None,
+            )
 
         except Exception as e:
-            logger.error(f"Error confirming deletion with token {confirmation_token}: {str(e)}")
+            logger.error(
+                f"Error confirming deletion with token {confirmation_token}: {str(e)}"
+            )
 
             # Clean up token on error
             if confirmation_token in self._pending_deletions:
                 pending_deletion = self._pending_deletions[confirmation_token]
-                person_id = pending_deletion.get('person_id', 'unknown')
+                person_id = pending_deletion.get("person_id", "unknown")
 
                 await self._log_deletion_event(
                     person_id=person_id,
@@ -327,18 +386,21 @@ class PersonDeletionService:
                         "stage": "confirmation",
                         "error": str(e),
                         "confirmation_token": confirmation_token,
-                        "reason_provided": reason
+                        "reason_provided": reason,
                     },
                     ip_address=ip_address,
-                    user_agent=user_agent
+                    user_agent=user_agent,
                 )
 
                 del self._pending_deletions[confirmation_token]
 
-            return False, PersonDeletionResponse(
-                success=False,
-                message="Failed to confirm deletion"
-            ), f"Internal error: {str(e)}"
+            return (
+                False,
+                PersonDeletionResponse(
+                    success=False, message="Failed to confirm deletion"
+                ),
+                f"Internal error: {str(e)}",
+            )
 
     async def _log_deletion_event(
         self,
@@ -348,7 +410,7 @@ class PersonDeletionService:
         success: bool,
         details: Dict[str, Any],
         ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None
+        user_agent: Optional[str] = None,
     ):
         """Log deletion-related security events"""
         try:
@@ -356,15 +418,19 @@ class PersonDeletionService:
                 id=str(uuid.uuid4()),
                 event_type=event_type,
                 timestamp=datetime.utcnow(),
-                severity=SecurityEventSeverity.HIGH if success else SecurityEventSeverity.CRITICAL,
+                severity=(
+                    SecurityEventSeverity.HIGH
+                    if success
+                    else SecurityEventSeverity.CRITICAL
+                ),
                 user_id=requesting_user_id,
                 ip_address=ip_address,
                 user_agent=user_agent,
                 details={
                     "target_person_id": person_id,
                     "operation": "person_deletion",
-                    **details
-                }
+                    **details,
+                },
             )
 
             await self.db_service.log_security_event(security_event)
@@ -377,8 +443,9 @@ class PersonDeletionService:
         """Clean up expired confirmation tokens (should be called periodically)"""
         current_time = datetime.utcnow()
         expired_tokens = [
-            token for token, data in self._pending_deletions.items()
-            if current_time > data['expires_at']
+            token
+            for token, data in self._pending_deletions.items()
+            if current_time > data["expires_at"]
         ]
 
         for token in expired_tokens:

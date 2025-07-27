@@ -14,7 +14,10 @@ from starlette.types import ASGIApp
 
 from ..models.error_handling import ErrorContext, APIException, ErrorCode
 from ..services.rate_limiting_service import (
-    rate_limiting_service, RateLimitType, RateLimitResult, create_rate_limit_exception
+    rate_limiting_service,
+    RateLimitType,
+    RateLimitResult,
+    create_rate_limit_exception,
 )
 from ..services.logging_service import logging_service
 from ..models.security_event import SecurityEventType
@@ -61,7 +64,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             path=request.url.path,
             method=request.method,
             ip_address=self._get_client_ip(request),
-            user_agent=request.headers.get("User-Agent", "unknown")
+            user_agent=request.headers.get("User-Agent", "unknown"),
         )
 
         # Get client identifier (IP address)
@@ -74,9 +77,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             try:
                 # Check rate limit
                 result = await rate_limiting_service.check_rate_limit(
-                    limit_type=limit_type,
-                    identifier=client_ip,
-                    context=context
+                    limit_type=limit_type, identifier=client_ip, context=context
                 )
             except TypeError:
                 # Handle case where mock returns a non-awaitable in tests
@@ -88,12 +89,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                         allowed=True,
                         current_count=0,
                         limit=100,
-                        reset_time=datetime.now(timezone.utc) + timedelta(hours=1)
+                        reset_time=datetime.now(timezone.utc) + timedelta(hours=1),
                     )
 
             if not result.allowed:
                 # Log security event for rate limit exceeded
-                await self._log_rate_limit_exceeded(request, context, limit_type, client_ip)
+                await self._log_rate_limit_exceeded(
+                    request, context, limit_type, client_ip
+                )
 
                 # Return rate limit exceeded response
                 return self._create_rate_limit_response(result, context)
@@ -105,7 +108,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if limit_type:
             try:
                 # Get current rate limit status
-                status = await rate_limiting_service.get_rate_limit_status(limit_type, client_ip)
+                status = await rate_limiting_service.get_rate_limit_status(
+                    limit_type, client_ip
+                )
             except TypeError:
                 # Handle case where mock returns a non-awaitable in tests
                 if hasattr(rate_limiting_service.get_rate_limit_status, "return_value"):
@@ -118,7 +123,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                         "limit": 100,
                         "remaining": 99,
                         "reset_time": datetime.now(timezone.utc).isoformat(),
-                        "window_seconds": 3600
+                        "window_seconds": 3600,
                     }
 
             # Add headers
@@ -160,7 +165,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         request: Request,
         context: ErrorContext,
         limit_type: RateLimitType,
-        client_ip: str
+        client_ip: str,
     ):
         """Log rate limit exceeded as a security event."""
         try:
@@ -171,14 +176,16 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                     "endpoint": request.url.path,
                     "method": request.method,
                     "limit_type": limit_type.value,
-                    "ip_address": client_ip
-                }
+                    "ip_address": client_ip,
+                },
             )
         except TypeError:
             # Handle case where mock is used in tests
             pass
 
-    def _create_rate_limit_response(self, result: RateLimitResult, context: ErrorContext) -> Response:
+    def _create_rate_limit_response(
+        self, result: RateLimitResult, context: ErrorContext
+    ) -> Response:
         """Create a rate limit exceeded response with appropriate headers."""
         # Create API exception
         exception = create_rate_limit_exception(result, context)
@@ -188,15 +195,16 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             "error": exception.error_code.value,
             "message": exception.message,
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "request_id": context.request_id
+            "request_id": context.request_id,
         }
 
         import json
+
         # Create response with 429 status code
         response = Response(
             content=json.dumps(response_data),
             status_code=429,
-            media_type="application/json"
+            media_type="application/json",
         )
 
         # Add rate limit headers
@@ -204,7 +212,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             "X-RateLimit-Limit": str(result.limit),
             "X-RateLimit-Remaining": "0",
             "X-RateLimit-Reset": result.reset_time.isoformat(),
-            "Retry-After": str(result.retry_after_seconds if result.retry_after_seconds else 60)
+            "Retry-After": str(
+                result.retry_after_seconds if result.retry_after_seconds else 60
+            ),
         }
 
         for key, value in headers.items():
@@ -220,7 +230,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         headers = {
             "X-RateLimit-Limit": str(status.get("limit", 0)),
             "X-RateLimit-Remaining": str(status.get("remaining", 0)),
-            "X-RateLimit-Reset": status.get("reset_time", "")
+            "X-RateLimit-Reset": status.get("reset_time", ""),
         }
 
         for key, value in headers.items():
@@ -248,14 +258,16 @@ async def detect_suspicious_activity(request: Request, context: ErrorContext) ->
         # Path traversal
         r"(\.\./|\.\.\\\|\.\.%2f)",
         # Command injection
-        r"(;|\||\`|\$\(|\&\&|\|\|).*(\bcat\b|\bgrep\b|\becho\b|\bsh\b|\bbash\b)"
+        r"(;|\||\`|\$\(|\&\&|\|\|).*(\bcat\b|\bgrep\b|\becho\b|\bsh\b|\bbash\b)",
     ]
 
     # Check URL path
     path = request.url.path.lower()
 
     # Check query parameters
-    query_params = "&".join([f"{k}={v}" for k, v in request.query_params.items()]).lower()
+    query_params = "&".join(
+        [f"{k}={v}" for k, v in request.query_params.items()]
+    ).lower()
 
     # Check request body if available
     body = ""
@@ -281,8 +293,8 @@ async def detect_suspicious_activity(request: Request, context: ErrorContext) ->
                 details={
                     "pattern_matched": pattern,
                     "endpoint": request.url.path,
-                    "method": request.method
-                }
+                    "method": request.method,
+                },
             )
             return True
 

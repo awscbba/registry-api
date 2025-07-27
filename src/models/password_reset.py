@@ -1,6 +1,7 @@
 """
 Password reset token models for secure password reset functionality.
 """
+
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 from pydantic import BaseModel, Field
@@ -20,9 +21,7 @@ class PasswordResetToken(BaseModel):
     user_agent: Optional[str] = Field(None, description="User agent of requester")
 
     class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+        json_encoders = {datetime: lambda v: v.isoformat()}
 
 
 class PasswordResetRequest(BaseModel):
@@ -58,9 +57,7 @@ class RateLimitInfo(BaseModel):
     last_request: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Config:
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+        json_encoders = {datetime: lambda v: v.isoformat()}
 
 
 # Constants for password reset configuration
@@ -98,4 +95,4 @@ class PasswordResetConfig:
     @classmethod
     def generate_reset_token(cls) -> str:
         """Generate a secure reset token."""
-        return str(uuid.uuid4()).replace('-', '')
+        return str(uuid.uuid4()).replace("-", "")

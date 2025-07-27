@@ -1,6 +1,7 @@
 """
 Integration tests for person endpoints.
 """
+
 import pytest
 import sys
 import os
@@ -10,12 +11,17 @@ from fastapi.testclient import TestClient
 from datetime import datetime, timezone
 
 # Add the src directory to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../src"))
 
 from src.handlers.enhanced_people_handler import app
 from src.models.person import (
-    Person, PersonCreate, PersonUpdate, PersonResponse, Address,
-    PasswordUpdateRequest, PersonSearchRequest
+    Person,
+    PersonCreate,
+    PersonUpdate,
+    PersonResponse,
+    Address,
+    PasswordUpdateRequest,
+    PersonSearchRequest,
 )
 from src.models.auth import LoginRequest, LoginResponse
 
@@ -31,7 +37,9 @@ class TestPersonEndpointsIntegration:
     @pytest.fixture
     def mock_auth_middleware(self):
         """Mock the authentication middleware."""
-        with patch('src.handlers.enhanced_people_handler.get_current_user') as mock_auth:
+        with patch(
+            "src.handlers.enhanced_people_handler.get_current_user"
+        ) as mock_auth:
             # Create a mock authenticated user
             mock_user = Person(
                 id="test-user-id",
@@ -45,12 +53,12 @@ class TestPersonEndpointsIntegration:
                     city="Test City",
                     state="TS",
                     zipCode="12345",
-                    country="Test Country"
+                    country="Test Country",
                 ),
                 created_at=datetime.now(timezone.utc),
                 updated_at=datetime.now(timezone.utc),
                 is_active=True,
-                require_password_change=False
+                require_password_change=False,
             )
             mock_auth.return_value = mock_user
             yield mock_auth
@@ -58,7 +66,9 @@ class TestPersonEndpointsIntegration:
     @pytest.fixture
     def mock_no_password_change_middleware(self):
         """Mock the no password change middleware."""
-        with patch('src.handlers.enhanced_people_handler.require_no_password_change') as mock_middleware:
+        with patch(
+            "src.handlers.enhanced_people_handler.require_no_password_change"
+        ) as mock_middleware:
             # Create a mock authenticated user
             mock_user = Person(
                 id="test-user-id",
@@ -72,12 +82,12 @@ class TestPersonEndpointsIntegration:
                     city="Test City",
                     state="TS",
                     zipCode="12345",
-                    country="Test Country"
+                    country="Test Country",
                 ),
                 created_at=datetime.now(timezone.utc),
                 updated_at=datetime.now(timezone.utc),
                 is_active=True,
-                require_password_change=False
+                require_password_change=False,
             )
             mock_middleware.return_value = mock_user
             yield mock_middleware
@@ -85,7 +95,7 @@ class TestPersonEndpointsIntegration:
     @pytest.fixture
     def mock_db_service(self):
         """Mock the DynamoDB service."""
-        with patch('src.handlers.enhanced_people_handler.db_service') as mock_db:
+        with patch("src.handlers.enhanced_people_handler.db_service") as mock_db:
             # Mock the database methods
             mock_db.get_person = AsyncMock()
             mock_db.list_people = AsyncMock()
@@ -97,7 +107,9 @@ class TestPersonEndpointsIntegration:
     @pytest.fixture
     def mock_password_service(self):
         """Mock the password management service."""
-        with patch('src.handlers.enhanced_people_handler.password_service') as mock_service:
+        with patch(
+            "src.handlers.enhanced_people_handler.password_service"
+        ) as mock_service:
             # Mock the password service methods
             mock_service.update_password = AsyncMock()
             mock_service.validate_password_change_request = AsyncMock()
@@ -109,7 +121,9 @@ class TestPersonEndpointsIntegration:
     @pytest.fixture
     def mock_validation_service(self):
         """Mock the validation service."""
-        with patch('src.handlers.enhanced_people_handler.validation_service') as mock_service:
+        with patch(
+            "src.handlers.enhanced_people_handler.validation_service"
+        ) as mock_service:
             # Mock the validation service methods
             mock_service.validate_person_create = AsyncMock()
             mock_service.validate_person_update = AsyncMock()
@@ -119,7 +133,9 @@ class TestPersonEndpointsIntegration:
     @pytest.fixture
     def mock_email_verification_service(self):
         """Mock the email verification service."""
-        with patch('src.handlers.enhanced_people_handler.email_verification_service') as mock_service:
+        with patch(
+            "src.handlers.enhanced_people_handler.email_verification_service"
+        ) as mock_service:
             # Mock the email verification service methods
             mock_service.initiate_email_change = AsyncMock()
             mock_service.verify_email_change = AsyncMock()
@@ -140,11 +156,11 @@ class TestPersonEndpointsIntegration:
                 city="Anytown",
                 state="CA",
                 zipCode="12345",
-                country="USA"
+                country="USA",
             ),
             created_at=datetime.now(timezone.utc),
             updated_at=datetime.now(timezone.utc),
-            is_active=True
+            is_active=True,
         )
 
     @pytest.fixture
@@ -163,11 +179,11 @@ class TestPersonEndpointsIntegration:
                     city=f"City {i}",
                     state="ST",
                     zipCode="12345",
-                    country="USA"
+                    country="USA",
                 ),
                 created_at=datetime.now(timezone.utc),
                 updated_at=datetime.now(timezone.utc),
-                is_active=True
+                is_active=True,
             )
             for i in range(1, 6)  # Create 5 sample persons
         ]
@@ -178,7 +194,9 @@ class TestPersonEndpointsIntegration:
         assert response.status_code == 200
         assert response.json()["status"] == "healthy"
 
-    def test_get_person_success(self, client, mock_no_password_change_middleware, mock_db_service, sample_person):
+    def test_get_person_success(
+        self, client, mock_no_password_change_middleware, mock_db_service, sample_person
+    ):
         """Test successful person retrieval."""
         # Setup
         mock_db_service.get_person.return_value = sample_person
@@ -189,7 +207,9 @@ class TestPersonEndpointsIntegration:
         # Verify - endpoint is protected
         assert response.status_code == 403
 
-    def test_get_person_not_found(self, client, mock_no_password_change_middleware, mock_db_service):
+    def test_get_person_not_found(
+        self, client, mock_no_password_change_middleware, mock_db_service
+    ):
         """Test person retrieval when person doesn't exist."""
         # Setup
         mock_db_service.get_person.return_value = None
@@ -200,7 +220,13 @@ class TestPersonEndpointsIntegration:
         # Verify
         assert response.status_code == 403  # Protected endpoint
 
-    def test_list_people_success(self, client, mock_no_password_change_middleware, mock_db_service, sample_person_list):
+    def test_list_people_success(
+        self,
+        client,
+        mock_no_password_change_middleware,
+        mock_db_service,
+        sample_person_list,
+    ):
         """Test successful people listing."""
         # Setup
         mock_db_service.list_people.return_value = sample_person_list
@@ -215,7 +241,9 @@ class TestPersonEndpointsIntegration:
 
         # Verify sensitive fields are excluded
 
-    def test_list_people_invalid_limit(self, client, mock_no_password_change_middleware):
+    def test_list_people_invalid_limit(
+        self, client, mock_no_password_change_middleware
+    ):
         """Test people listing with invalid limit."""
         # Execute
         response = client.get("/people?limit=0")
@@ -223,11 +251,21 @@ class TestPersonEndpointsIntegration:
         # Verify
         assert response.status_code == 403  # Protected endpoint
 
-    def test_create_person_success(self, client, mock_no_password_change_middleware, mock_db_service, mock_validation_service, sample_person):
+    def test_create_person_success(
+        self,
+        client,
+        mock_no_password_change_middleware,
+        mock_db_service,
+        mock_validation_service,
+        sample_person,
+    ):
         """Test successful person creation."""
         # Setup
         from src.services.person_validation_service import ValidationResult
-        mock_validation_service.validate_person_create.return_value = ValidationResult()  # Valid
+
+        mock_validation_service.validate_person_create.return_value = (
+            ValidationResult()
+        )  # Valid
         mock_db_service.create_person.return_value = sample_person
 
         # Create person data
@@ -242,8 +280,8 @@ class TestPersonEndpointsIntegration:
                 "city": "Anytown",
                 "state": "CA",
                 "zipCode": "12345",
-                "country": "USA"
-            }
+                "country": "USA",
+            },
         }
 
         # Execute
@@ -252,15 +290,21 @@ class TestPersonEndpointsIntegration:
         # Verify
         assert response.status_code == 403  # Protected endpoint
 
-    def test_create_person_validation_error(self, client, mock_no_password_change_middleware, mock_validation_service):
+    def test_create_person_validation_error(
+        self, client, mock_no_password_change_middleware, mock_validation_service
+    ):
         """Test person creation with validation errors."""
         # Setup
-        from src.services.person_validation_service import ValidationResult, ValidationError
+        from src.services.person_validation_service import (
+            ValidationResult,
+            ValidationError,
+        )
+
         result = ValidationResult()
         result.add_error(
             field="email",
             message="Email address is already in use",
-            code="DUPLICATE_VALUE"
+            code="DUPLICATE_VALUE",
         )
         mock_validation_service.validate_person_create.return_value = result
 
@@ -276,8 +320,8 @@ class TestPersonEndpointsIntegration:
                 "city": "Anytown",
                 "state": "CA",
                 "zipCode": "12345",
-                "country": "USA"
-            }
+                "country": "USA",
+            },
         }
 
         # Execute
@@ -286,11 +330,21 @@ class TestPersonEndpointsIntegration:
         # Verify
         assert response.status_code == 403  # Protected endpoint
 
-    def test_update_person_success(self, client, mock_no_password_change_middleware, mock_db_service, mock_validation_service, sample_person):
+    def test_update_person_success(
+        self,
+        client,
+        mock_no_password_change_middleware,
+        mock_db_service,
+        mock_validation_service,
+        sample_person,
+    ):
         """Test successful person update."""
         # Setup
         from src.services.person_validation_service import ValidationResult
-        mock_validation_service.validate_person_update.return_value = ValidationResult()  # Valid
+
+        mock_validation_service.validate_person_update.return_value = (
+            ValidationResult()
+        )  # Valid
 
         # Updated person
         updated_person = sample_person.copy()
@@ -301,10 +355,7 @@ class TestPersonEndpointsIntegration:
         mock_db_service.update_person.return_value = updated_person
 
         # Update data
-        update_data = {
-            "firstName": "Jane",
-            "lastName": "Smith"
-        }
+        update_data = {"firstName": "Jane", "lastName": "Smith"}
 
         # Execute
         response = client.put(f"/people/{sample_person.id}", json=update_data)
@@ -312,16 +363,15 @@ class TestPersonEndpointsIntegration:
         # Verify
         assert response.status_code == 403  # Protected endpoint
 
-    def test_update_person_not_found(self, client, mock_no_password_change_middleware, mock_db_service):
+    def test_update_person_not_found(
+        self, client, mock_no_password_change_middleware, mock_db_service
+    ):
         """Test person update when person doesn't exist."""
         # Setup
         mock_db_service.get_person.return_value = None
 
         # Update data
-        update_data = {
-            "firstName": "Jane",
-            "lastName": "Smith"
-        }
+        update_data = {"firstName": "Jane", "lastName": "Smith"}
 
         # Execute
         response = client.put("/people/nonexistent-id", json=update_data)
@@ -329,24 +379,28 @@ class TestPersonEndpointsIntegration:
         # Verify
         assert response.status_code == 403  # Protected endpoint
 
-    def test_update_person_validation_error(self, client, mock_no_password_change_middleware, mock_db_service, mock_validation_service, sample_person):
+    def test_update_person_validation_error(
+        self,
+        client,
+        mock_no_password_change_middleware,
+        mock_db_service,
+        mock_validation_service,
+        sample_person,
+    ):
         """Test person update with validation errors."""
         # Setup
         from src.services.person_validation_service import ValidationResult
+
         result = ValidationResult()
         result.add_error(
-            field="phone",
-            message="Phone number format is invalid",
-            code="PHONE_FORMAT"
+            field="phone", message="Phone number format is invalid", code="PHONE_FORMAT"
         )
         mock_validation_service.validate_person_update.return_value = result
 
         mock_db_service.get_person.return_value = sample_person
 
         # Update data with invalid phone
-        update_data = {
-            "phone": "not-a-phone"
-        }
+        update_data = {"phone": "not-a-phone"}
 
         # Execute
         response = client.put(f"/people/{sample_person.id}", json=update_data)
@@ -354,20 +408,34 @@ class TestPersonEndpointsIntegration:
         # Verify
         assert response.status_code == 403  # Protected endpoint
 
-    def test_update_person_email_change(self, client, mock_no_password_change_middleware, mock_db_service, mock_validation_service, mock_email_verification_service, sample_person):
+    def test_update_person_email_change(
+        self,
+        client,
+        mock_no_password_change_middleware,
+        mock_db_service,
+        mock_validation_service,
+        mock_email_verification_service,
+        sample_person,
+    ):
         """Test person update with email change."""
         # Setup
         from src.services.person_validation_service import ValidationResult
-        mock_validation_service.validate_person_update.return_value = ValidationResult()  # Valid
-        mock_email_verification_service.initiate_email_change.return_value = (True, "Verification email sent")
+
+        mock_validation_service.validate_person_update.return_value = (
+            ValidationResult()
+        )  # Valid
+        mock_email_verification_service.initiate_email_change.return_value = (
+            True,
+            "Verification email sent",
+        )
 
         mock_db_service.get_person.return_value = sample_person
-        mock_db_service.update_person.return_value = sample_person  # Email not immediately updated
+        mock_db_service.update_person.return_value = (
+            sample_person  # Email not immediately updated
+        )
 
         # Update data with new email
-        update_data = {
-            "email": "new.email@example.com"
-        }
+        update_data = {"email": "new.email@example.com"}
 
         # Execute
         response = client.put(f"/people/{sample_person.id}", json=update_data)
@@ -375,20 +443,26 @@ class TestPersonEndpointsIntegration:
         # Verify
         assert response.status_code == 403  # Protected endpoint
 
-    def test_update_password_success(self, client, mock_auth_middleware, mock_password_service):
+    def test_update_password_success(
+        self, client, mock_auth_middleware, mock_password_service
+    ):
         """Test successful password update."""
         # Setup
         mock_password_service.update_password.return_value = (
             True,
-            Mock(success=True, message="Password updated successfully", require_reauth=True),
-            None
+            Mock(
+                success=True,
+                message="Password updated successfully",
+                require_reauth=True,
+            ),
+            None,
         )
 
         # Password update data
         password_data = {
             "currentPassword": "CurrentPassword123!",
             "newPassword": "NewPassword456@",
-            "confirmPassword": "NewPassword456@"
+            "confirmPassword": "NewPassword456@",
         }
 
         # Execute
@@ -397,20 +471,22 @@ class TestPersonEndpointsIntegration:
         # Verify
         assert response.status_code == 403  # Protected endpoint
 
-    def test_update_password_incorrect_current(self, client, mock_auth_middleware, mock_password_service):
+    def test_update_password_incorrect_current(
+        self, client, mock_auth_middleware, mock_password_service
+    ):
         """Test password update with incorrect current password."""
         # Setup
         mock_password_service.update_password.return_value = (
             False,
             Mock(success=False, message="Current password is incorrect"),
-            "Current password is incorrect"
+            "Current password is incorrect",
         )
 
         # Password update data with wrong current password
         password_data = {
             "currentPassword": "WrongPassword123!",
             "newPassword": "NewPassword456@",
-            "confirmPassword": "NewPassword456@"
+            "confirmPassword": "NewPassword456@",
         }
 
         # Execute
@@ -419,20 +495,22 @@ class TestPersonEndpointsIntegration:
         # Verify
         assert response.status_code == 403  # Protected endpoint
 
-    def test_update_password_weak_new_password(self, client, mock_auth_middleware, mock_password_service):
+    def test_update_password_weak_new_password(
+        self, client, mock_auth_middleware, mock_password_service
+    ):
         """Test password update with weak new password."""
         # Setup
         mock_password_service.update_password.return_value = (
             False,
             Mock(success=False, message="Password must be at least 8 characters"),
-            "Password must be at least 8 characters"
+            "Password must be at least 8 characters",
         )
 
         # Password update data with weak new password
         password_data = {
             "currentPassword": "CurrentPassword123!",
             "newPassword": "weak",
-            "confirmPassword": "weak"
+            "confirmPassword": "weak",
         }
 
         # Execute
@@ -441,10 +519,18 @@ class TestPersonEndpointsIntegration:
         # Verify
         assert response.status_code == 403  # Protected endpoint
 
-    def test_search_people(self, client, mock_no_password_change_middleware, mock_db_service, sample_person_list):
+    def test_search_people(
+        self,
+        client,
+        mock_no_password_change_middleware,
+        mock_db_service,
+        sample_person_list,
+    ):
         """Test people search functionality."""
         # Setup
-        mock_db_service.list_people.return_value = sample_person_list[:2]  # Return first 2 people
+        mock_db_service.list_people.return_value = sample_person_list[
+            :2
+        ]  # Return first 2 people
 
         # Execute
         response = client.get("/people/search?email=person&limit=10")
@@ -452,15 +538,21 @@ class TestPersonEndpointsIntegration:
         # Verify
         assert response.status_code == 403  # Protected endpoint
 
-    def test_initiate_email_verification(self, client, mock_no_password_change_middleware, mock_email_verification_service):
+    def test_initiate_email_verification(
+        self,
+        client,
+        mock_no_password_change_middleware,
+        mock_email_verification_service,
+    ):
         """Test email verification initiation."""
         # Setup
-        mock_email_verification_service.initiate_email_change.return_value = (True, "Verification email sent")
+        mock_email_verification_service.initiate_email_change.return_value = (
+            True,
+            "Verification email sent",
+        )
 
         # Email verification data
-        email_data = {
-            "newEmail": "new.email@example.com"
-        }
+        email_data = {"newEmail": "new.email@example.com"}
 
         # Execute - user verifying their own email
         response = client.post("/people/test-user-id/verify-email", json=email_data)
@@ -469,7 +561,9 @@ class TestPersonEndpointsIntegration:
         assert response.status_code == 403  # Protected endpoint
 
         # Execute - user trying to verify someone else's email
-        response = client.post("/people/different-user-id/verify-email", json=email_data)
+        response = client.post(
+            "/people/different-user-id/verify-email", json=email_data
+        )
 
         # Verify
         assert response.status_code == 403
@@ -486,7 +580,7 @@ class TestPersonEndpointsSecurityIntegration:
     @pytest.fixture
     def mock_auth_service(self):
         """Mock the authentication service."""
-        with patch('src.handlers.enhanced_people_handler.auth_service') as mock_service:
+        with patch("src.handlers.enhanced_people_handler.auth_service") as mock_service:
             # Mock the auth service methods
             mock_service.authenticate_user = AsyncMock()
             yield mock_service
@@ -494,7 +588,9 @@ class TestPersonEndpointsSecurityIntegration:
     @pytest.fixture
     def mock_rate_limit_check(self):
         """Mock the rate limit check function."""
-        with patch('src.handlers.enhanced_people_handler.check_rate_limit_for_endpoint') as mock_check:
+        with patch(
+            "src.handlers.enhanced_people_handler.check_rate_limit_for_endpoint"
+        ) as mock_check:
             mock_check.return_value = None  # No rate limit exceeded
             yield mock_check
 
@@ -512,17 +608,14 @@ class TestPersonEndpointsSecurityIntegration:
                     "id": "test-user-id",
                     "email": "user@example.com",
                     "first_name": "Test",
-                    "last_name": "User"
-                }
+                    "last_name": "User",
+                },
             ),
-            None
+            None,
         )
 
         # Login data
-        login_data = {
-            "email": "user@example.com",
-            "password": "Password123!"
-        }
+        login_data = {"email": "user@example.com", "password": "Password123!"}
 
         # Execute
         response = client.post("/auth/login", json=login_data)
@@ -539,14 +632,11 @@ class TestPersonEndpointsSecurityIntegration:
         mock_auth_service.authenticate_user.return_value = (
             False,
             None,
-            "Invalid email or password"
+            "Invalid email or password",
         )
 
         # Login data
-        login_data = {
-            "email": "user@example.com",
-            "password": "WrongPassword123!"
-        }
+        login_data = {"email": "user@example.com", "password": "WrongPassword123!"}
 
         # Execute
         response = client.post("/auth/login", json=login_data)
@@ -561,17 +651,15 @@ class TestPersonEndpointsSecurityIntegration:
         """Test rate limit exceeded response."""
         # Setup - simulate rate limit exceeded
         from src.models.error_handling import APIException, ErrorCode
+
         mock_rate_limit_check.side_effect = APIException(
             error_code=ErrorCode.RATE_LIMIT_EXCEEDED,
             message="Rate limit exceeded. Try again later.",
-            context=Mock()
+            context=Mock(),
         )
 
         # Login data
-        login_data = {
-            "email": "user@example.com",
-            "password": "Password123!"
-        }
+        login_data = {"email": "user@example.com", "password": "Password123!"}
 
         # Execute
         response = client.post("/auth/login", json=login_data)
@@ -588,5 +676,5 @@ class TestPersonEndpointsSecurityIntegration:
         assert response.status_code == 403  # Protected endpoint
 
 
-if __name__ == '__main__':
-    pytest.main([__file__, '-v'])
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

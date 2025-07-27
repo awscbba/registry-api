@@ -1,6 +1,7 @@
 """
 Password reset API handlers for FastAPI endpoints.
 """
+
 import logging
 from typing import Dict, Any
 from fastapi import HTTPException, Request
@@ -9,7 +10,7 @@ from fastapi.responses import JSONResponse
 from ..models.password_reset import (
     PasswordResetRequest,
     PasswordResetValidation,
-    PasswordResetResponse
+    PasswordResetResponse,
 )
 from ..services.password_reset_service import PasswordResetService
 
@@ -23,9 +24,7 @@ class PasswordResetHandler:
         self.password_reset_service = PasswordResetService()
 
     async def initiate_reset(
-        self,
-        request: PasswordResetRequest,
-        client_request: Request
+        self, request: PasswordResetRequest, client_request: Request
     ) -> JSONResponse:
         """
         Handle password reset initiation request.
@@ -57,15 +56,17 @@ class PasswordResetHandler:
                 content={
                     "success": result.success,
                     "message": result.message,
-                    "expires_at": result.expires_at.isoformat() if result.expires_at else None
-                }
+                    "expires_at": (
+                        result.expires_at.isoformat() if result.expires_at else None
+                    ),
+                },
             )
 
         except Exception as e:
             logger.error(f"Error in initiate_reset handler: {str(e)}")
             raise HTTPException(
                 status_code=500,
-                detail="Internal server error while processing password reset request"
+                detail="Internal server error while processing password reset request",
             )
 
     async def validate_token(self, token: str) -> JSONResponse:
@@ -89,21 +90,21 @@ class PasswordResetHandler:
                     "success": result.success,
                     "message": result.message,
                     "token_valid": result.token_valid,
-                    "expires_at": result.expires_at.isoformat() if result.expires_at else None
-                }
+                    "expires_at": (
+                        result.expires_at.isoformat() if result.expires_at else None
+                    ),
+                },
             )
 
         except Exception as e:
             logger.error(f"Error in validate_token handler: {str(e)}")
             raise HTTPException(
                 status_code=500,
-                detail="Internal server error while validating reset token"
+                detail="Internal server error while validating reset token",
             )
 
     async def reset_password(
-        self,
-        validation: PasswordResetValidation,
-        client_request: Request
+        self, validation: PasswordResetValidation, client_request: Request
     ) -> JSONResponse:
         """
         Handle password reset completion request.
@@ -122,26 +123,20 @@ class PasswordResetHandler:
 
             # Process password reset
             result = await self.password_reset_service.reset_password(
-                validation=validation,
-                ip_address=client_ip,
-                user_agent=user_agent
+                validation=validation, ip_address=client_ip, user_agent=user_agent
             )
 
             status_code = 200 if result.success else 400
 
             return JSONResponse(
                 status_code=status_code,
-                content={
-                    "success": result.success,
-                    "message": result.message
-                }
+                content={"success": result.success, "message": result.message},
             )
 
         except Exception as e:
             logger.error(f"Error in reset_password handler: {str(e)}")
             raise HTTPException(
-                status_code=500,
-                detail="Internal server error while resetting password"
+                status_code=500, detail="Internal server error while resetting password"
             )
 
     async def cleanup_tokens(self) -> JSONResponse:
@@ -159,15 +154,14 @@ class PasswordResetHandler:
                 content={
                     "success": True,
                     "message": f"Cleaned up {cleaned_count} expired tokens",
-                    "cleaned_count": cleaned_count
-                }
+                    "cleaned_count": cleaned_count,
+                },
             )
 
         except Exception as e:
             logger.error(f"Error in cleanup_tokens handler: {str(e)}")
             raise HTTPException(
-                status_code=500,
-                detail="Internal server error while cleaning up tokens"
+                status_code=500, detail="Internal server error while cleaning up tokens"
             )
 
     def _get_client_ip(self, request: Request) -> str:
@@ -201,17 +195,23 @@ class PasswordResetHandler:
 # Convenience functions for use in FastAPI routes
 password_reset_handler = PasswordResetHandler()
 
+
 async def handle_initiate_reset(request: PasswordResetRequest, client_request: Request):
     """Convenience function for initiating password reset."""
     return await password_reset_handler.initiate_reset(request, client_request)
+
 
 async def handle_validate_token(token: str):
     """Convenience function for validating reset token."""
     return await password_reset_handler.validate_token(token)
 
-async def handle_reset_password(validation: PasswordResetValidation, client_request: Request):
+
+async def handle_reset_password(
+    validation: PasswordResetValidation, client_request: Request
+):
     """Convenience function for resetting password."""
     return await password_reset_handler.reset_password(validation, client_request)
+
 
 async def handle_cleanup_tokens():
     """Convenience function for cleaning up expired tokens."""

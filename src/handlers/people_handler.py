@@ -8,10 +8,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from mangum import Mangum
 
 from ..models.person import (
-    PersonCreate, PersonUpdate, PersonResponse, PasswordUpdateRequest,
-    ErrorResponse, ValidationError, EmailVerificationRequest,
-    PersonDeletionRequest, PersonDeletionInitiateRequest, PersonDeletionResponse,
-    ReferentialIntegrityError, AdminUnlockRequest, AdminUnlockResponse
+    PersonCreate,
+    PersonUpdate,
+    PersonResponse,
+    PasswordUpdateRequest,
+    ErrorResponse,
+    ValidationError,
+    EmailVerificationRequest,
+    PersonDeletionRequest,
+    PersonDeletionInitiateRequest,
+    PersonDeletionResponse,
+    ReferentialIntegrityError,
+    AdminUnlockRequest,
+    AdminUnlockResponse,
 )
 from ..models.auth import LoginRequest, LoginResponse
 from ..services.dynamodb_service import DynamoDBService
@@ -80,52 +89,28 @@ app = FastAPI(
     - **500 Internal Server Error**: Unexpected server errors
     """,
     version="1.0.0",
-    contact={
-        "name": "API Support",
-        "email": "support@example.com"
-    },
-    license_info={
-        "name": "MIT",
-        "url": "https://opensource.org/licenses/MIT"
-    },
+    contact={"name": "API Support", "email": "support@example.com"},
+    license_info={"name": "MIT", "url": "https://opensource.org/licenses/MIT"},
     openapi_tags=[
-        {
-            "name": "health",
-            "description": "Health check endpoints"
-        },
+        {"name": "health", "description": "Health check endpoints"},
         {
             "name": "authentication",
-            "description": "Authentication and authorization endpoints"
+            "description": "Authentication and authorization endpoints",
         },
         {
             "name": "password-management",
-            "description": "Password management and security endpoints"
+            "description": "Password management and security endpoints",
         },
-        {
-            "name": "people",
-            "description": "Person CRUD operations"
-        },
-        {
-            "name": "search",
-            "description": "Person search and filtering"
-        },
+        {"name": "people", "description": "Person CRUD operations"},
+        {"name": "search", "description": "Person search and filtering"},
         {
             "name": "email-verification",
-            "description": "Email verification and change workflows"
+            "description": "Email verification and change workflows",
         },
-        {
-            "name": "admin",
-            "description": "Administrative functions"
-        },
-        {
-            "name": "projects",
-            "description": "Project management endpoints"
-        },
-        {
-            "name": "subscriptions",
-            "description": "Subscription management endpoints"
-        }
-    ]
+        {"name": "admin", "description": "Administrative functions"},
+        {"name": "projects", "description": "Project management endpoints"},
+        {"name": "subscriptions", "description": "Subscription management endpoints"},
+    ],
 )
 
 # Add CORS middleware
@@ -159,12 +144,12 @@ deletion_service = PersonDeletionService(db_service)
                     "example": {
                         "status": "healthy",
                         "service": "people-register-api",
-                        "timestamp": "2025-01-22T10:30:00Z"
+                        "timestamp": "2025-01-22T10:30:00Z",
                     }
                 }
-            }
+            },
         }
-    }
+    },
 )
 async def health_check():
     """
@@ -176,11 +161,12 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "people-register-api",
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now().isoformat(),
     }
 
 
 # Authentication endpoints
+
 
 @app.post(
     "/auth/login",
@@ -202,11 +188,11 @@ async def health_check():
                             "id": "123e4567-e89b-12d3-a456-426614174000",
                             "email": "user@example.com",
                             "firstName": "John",
-                            "lastName": "Doe"
-                        }
+                            "lastName": "Doe",
+                        },
                     }
                 }
-            }
+            },
         },
         400: {
             "description": "Invalid request data",
@@ -216,10 +202,10 @@ async def health_check():
                         "error": "VALIDATION_ERROR",
                         "message": "Invalid email or password format",
                         "timestamp": "2025-01-22T10:30:00Z",
-                        "requestId": "req_123456789"
+                        "requestId": "req_123456789",
                     }
                 }
-            }
+            },
         },
         401: {
             "description": "Authentication failed",
@@ -229,10 +215,10 @@ async def health_check():
                         "error": "AUTHENTICATION_FAILED",
                         "message": "Invalid email or password",
                         "timestamp": "2025-01-22T10:30:00Z",
-                        "requestId": "req_123456789"
+                        "requestId": "req_123456789",
                     }
                 }
-            }
+            },
         },
         403: {
             "description": "Account locked or requires password change",
@@ -242,10 +228,10 @@ async def health_check():
                         "error": "ACCOUNT_LOCKED",
                         "message": "Account is locked due to too many failed login attempts",
                         "timestamp": "2025-01-22T10:30:00Z",
-                        "requestId": "req_123456789"
+                        "requestId": "req_123456789",
                     }
                 }
-            }
+            },
         },
         429: {
             "description": "Too many login attempts",
@@ -255,12 +241,12 @@ async def health_check():
                         "error": "RATE_LIMIT_EXCEEDED",
                         "message": "Too many login attempts. Please try again later.",
                         "timestamp": "2025-01-22T10:30:00Z",
-                        "requestId": "req_123456789"
+                        "requestId": "req_123456789",
                     }
                 }
-            }
-        }
-    }
+            },
+        },
+    },
 )
 async def login(login_request: LoginRequest, request: Request):
     """
@@ -289,7 +275,7 @@ async def login(login_request: LoginRequest, request: Request):
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=error_message or "Authentication failed"
+                detail=error_message or "Authentication failed",
             )
 
         return login_response
@@ -300,7 +286,7 @@ async def login(login_request: LoginRequest, request: Request):
         logger.error(f"Login error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Authentication failed"
+            detail="Authentication failed",
         )
 
 
@@ -321,10 +307,10 @@ async def login(login_request: LoginRequest, request: Request):
                         "lastName": "Doe",
                         "requirePasswordChange": False,
                         "isActive": True,
-                        "lastLoginAt": "2025-01-22T10:30:00Z"
+                        "lastLoginAt": "2025-01-22T10:30:00Z",
                     }
                 }
-            }
+            },
         },
         401: {
             "description": "Authentication required",
@@ -334,14 +320,14 @@ async def login(login_request: LoginRequest, request: Request):
                         "error": "AUTHENTICATION_REQUIRED",
                         "message": "Valid authentication token required",
                         "timestamp": "2025-01-22T10:30:00Z",
-                        "requestId": "req_123456789"
+                        "requestId": "req_123456789",
                     }
                 }
-            }
-        }
-    }
+            },
+        },
+    },
 )
-async def get_current_user_info(current_user = Depends(get_current_user)):
+async def get_current_user_info(current_user=Depends(get_current_user)):
     """
     Get information about the currently authenticated user.
 
@@ -357,11 +343,16 @@ async def get_current_user_info(current_user = Depends(get_current_user)):
         "lastName": current_user.last_name,
         "requirePasswordChange": current_user.require_password_change,
         "isActive": current_user.is_active,
-        "lastLoginAt": current_user.last_login_at.isoformat() if current_user.last_login_at else None
+        "lastLoginAt": (
+            current_user.last_login_at.isoformat()
+            if current_user.last_login_at
+            else None
+        ),
     }
 
 
 # ==================== PASSWORD MANAGEMENT ENDPOINTS ====================
+
 
 @app.put(
     "/auth/password",
@@ -376,10 +367,10 @@ async def get_current_user_info(current_user = Depends(get_current_user)):
                     "example": {
                         "success": True,
                         "message": "Password updated successfully",
-                        "requireReauth": True
+                        "requireReauth": True,
                     }
                 }
-            }
+            },
         },
         400: {
             "description": "Password validation failed",
@@ -392,8 +383,8 @@ async def get_current_user_info(current_user = Depends(get_current_user)):
                                 "error": "INVALID_CURRENT_PASSWORD",
                                 "message": "Current password is incorrect",
                                 "timestamp": "2025-01-22T10:30:00Z",
-                                "requestId": "req_123456789"
-                            }
+                                "requestId": "req_123456789",
+                            },
                         },
                         "password_policy_violation": {
                             "summary": "Password policy violation",
@@ -401,8 +392,8 @@ async def get_current_user_info(current_user = Depends(get_current_user)):
                                 "error": "PASSWORD_POLICY_VIOLATION",
                                 "message": "Password must be at least 8 characters with uppercase, lowercase, number, and special character",
                                 "timestamp": "2025-01-22T10:30:00Z",
-                                "requestId": "req_123456789"
-                            }
+                                "requestId": "req_123456789",
+                            },
                         },
                         "password_reuse": {
                             "summary": "Password recently used",
@@ -410,12 +401,12 @@ async def get_current_user_info(current_user = Depends(get_current_user)):
                                 "error": "PASSWORD_RECENTLY_USED",
                                 "message": "Password has been used recently and cannot be reused",
                                 "timestamp": "2025-01-22T10:30:00Z",
-                                "requestId": "req_123456789"
-                            }
-                        }
+                                "requestId": "req_123456789",
+                            },
+                        },
                     }
                 }
-            }
+            },
         },
         401: {
             "description": "Authentication required",
@@ -425,17 +416,17 @@ async def get_current_user_info(current_user = Depends(get_current_user)):
                         "error": "AUTHENTICATION_REQUIRED",
                         "message": "Valid authentication token required",
                         "timestamp": "2025-01-22T10:30:00Z",
-                        "requestId": "req_123456789"
+                        "requestId": "req_123456789",
                     }
                 }
-            }
-        }
-    }
+            },
+        },
+    },
 )
 async def update_password(
     password_request: PasswordUpdateRequest,
     request: Request,
-    current_user = Depends(get_current_user)
+    current_user=Depends(get_current_user),
 ):
     """
     Update the password for the currently authenticated user.
@@ -469,19 +460,19 @@ async def update_password(
             person_id=current_user.id,
             password_request=password_request,
             ip_address=client_ip,
-            user_agent=user_agent
+            user_agent=user_agent,
         )
 
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=error or "Password update failed"
+                detail=error or "Password update failed",
             )
 
         return {
             "success": response.success,
             "message": response.message,
-            "require_reauth": response.require_reauth
+            "require_reauth": response.require_reauth,
         }
 
     except HTTPException:
@@ -490,7 +481,7 @@ async def update_password(
         logger.error(f"Error updating password: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to update password"
+            detail="Failed to update password",
         )
 
 
@@ -508,10 +499,10 @@ async def update_password(
                         "success": True,
                         "message": "Password updated successfully",
                         "requireReauth": True,
-                        "timestamp": "2025-01-22T10:30:00Z"
+                        "timestamp": "2025-01-22T10:30:00Z",
                     }
                 }
-            }
+            },
         },
         400: {
             "description": "Password validation failed",
@@ -524,8 +515,8 @@ async def update_password(
                                 "error": "INVALID_CURRENT_PASSWORD",
                                 "message": "Current password is incorrect",
                                 "timestamp": "2025-01-22T10:30:00Z",
-                                "requestId": "req_person123_1642857000"
-                            }
+                                "requestId": "req_person123_1642857000",
+                            },
                         },
                         "password_policy_violation": {
                             "summary": "Password policy violation",
@@ -533,12 +524,12 @@ async def update_password(
                                 "error": "PASSWORD_POLICY_VIOLATION",
                                 "message": "Password does not meet policy requirements",
                                 "timestamp": "2025-01-22T10:30:00Z",
-                                "requestId": "req_person123_1642857000"
-                            }
-                        }
+                                "requestId": "req_person123_1642857000",
+                            },
+                        },
                     }
                 }
-            }
+            },
         },
         403: {
             "description": "Insufficient permissions",
@@ -548,10 +539,10 @@ async def update_password(
                         "error": "INSUFFICIENT_PERMISSIONS",
                         "message": "You can only update your own password",
                         "timestamp": "2025-01-22T10:30:00Z",
-                        "requestId": "req_person123_1642857000"
+                        "requestId": "req_person123_1642857000",
                     }
                 }
-            }
+            },
         },
         404: {
             "description": "Person not found",
@@ -561,18 +552,18 @@ async def update_password(
                         "error": "PERSON_NOT_FOUND",
                         "message": "Person not found",
                         "timestamp": "2025-01-22T10:30:00Z",
-                        "requestId": "req_person123_1642857000"
+                        "requestId": "req_person123_1642857000",
                     }
                 }
-            }
-        }
-    }
+            },
+        },
+    },
 )
 async def update_person_password(
     person_id: str,
     password_request: PasswordUpdateRequest,
     request: Request,
-    current_user = Depends(get_current_user)
+    current_user=Depends(get_current_user),
 ):
     """
     Update password for a specific person.
@@ -590,25 +581,26 @@ async def update_person_password(
         # Authorization check: Users can only update their own password
         # TODO: Add admin role checking to allow admins to update any user's password
         if current_user.id != person_id:
-            logger.warning(f"User {current_user.id} attempted to update password for user {person_id}")
+            logger.warning(
+                f"User {current_user.id} attempted to update password for user {person_id}"
+            )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="You can only update your own password"
+                detail="You can only update your own password",
             )
 
         # Verify the person exists
         person = await db_service.get_person(person_id)
         if not person:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Person not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Person not found"
             )
 
         # Check if account is active
-        if not getattr(person, 'is_active', True):
+        if not getattr(person, "is_active", True):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Cannot update password for inactive account"
+                detail="Cannot update password for inactive account",
             )
 
         # Extract client information for audit logging
@@ -620,7 +612,7 @@ async def update_person_password(
             person_id=person_id,
             password_request=password_request,
             ip_address=client_ip,
-            user_agent=user_agent
+            user_agent=user_agent,
         )
 
         if not success:
@@ -632,18 +624,22 @@ async def update_person_password(
                         "error": "INVALID_CURRENT_PASSWORD",
                         "message": "Current password is incorrect",
                         "timestamp": datetime.now().isoformat(),
-                        "request_id": f"req_{person_id}_{int(datetime.now().timestamp())}"
-                    }
+                        "request_id": f"req_{person_id}_{int(datetime.now().timestamp())}",
+                    },
                 )
-            elif "password" in (error or "").lower() and ("policy" in (error or "").lower() or "complexity" in (error or "").lower()):
+            elif "password" in (error or "").lower() and (
+                "policy" in (error or "").lower()
+                or "complexity" in (error or "").lower()
+            ):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail={
                         "error": "PASSWORD_POLICY_VIOLATION",
-                        "message": error or "Password does not meet policy requirements",
+                        "message": error
+                        or "Password does not meet policy requirements",
                         "timestamp": datetime.now().isoformat(),
-                        "request_id": f"req_{person_id}_{int(datetime.now().timestamp())}"
-                    }
+                        "request_id": f"req_{person_id}_{int(datetime.now().timestamp())}",
+                    },
                 )
             else:
                 raise HTTPException(
@@ -652,8 +648,8 @@ async def update_person_password(
                         "error": "PASSWORD_UPDATE_FAILED",
                         "message": error or "Password update failed",
                         "timestamp": datetime.now().isoformat(),
-                        "request_id": f"req_{person_id}_{int(datetime.now().timestamp())}"
-                    }
+                        "request_id": f"req_{person_id}_{int(datetime.now().timestamp())}",
+                    },
                 )
 
         # Return success response with proper structure
@@ -661,7 +657,7 @@ async def update_person_password(
             "success": response.success,
             "message": response.message,
             "requireReauth": response.require_reauth,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
     except HTTPException:
@@ -674,15 +670,14 @@ async def update_person_password(
                 "error": "INTERNAL_SERVER_ERROR",
                 "message": "An unexpected error occurred while updating the password",
                 "timestamp": datetime.now().isoformat(),
-                "request_id": f"req_{person_id}_{int(datetime.now().timestamp())}"
-            }
+                "request_id": f"req_{person_id}_{int(datetime.now().timestamp())}",
+            },
         )
 
 
 @app.post("/auth/password/validate")
 async def validate_current_password(
-    request_data: dict,
-    current_user = Depends(get_current_user)
+    request_data: dict, current_user=Depends(get_current_user)
 ):
     """Validate current user's password"""
     try:
@@ -690,17 +685,16 @@ async def validate_current_password(
         if not current_password:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Current password is required"
+                detail="Current password is required",
             )
 
         is_valid, error_msg = await password_service.validate_password_change_request(
-            person_id=current_user.id,
-            current_password=current_password
+            person_id=current_user.id, current_password=current_password
         )
 
         return {
             "valid": is_valid,
-            "message": error_msg if error_msg else "Password validation successful"
+            "message": error_msg if error_msg else "Password validation successful",
         }
 
     except HTTPException:
@@ -709,32 +703,29 @@ async def validate_current_password(
         logger.error(f"Error validating password: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to validate password"
+            detail="Failed to validate password",
         )
 
 
 @app.post("/auth/password/check-history")
 async def check_password_history(
-    request_data: dict,
-    current_user = Depends(get_current_user)
+    request_data: dict, current_user=Depends(get_current_user)
 ):
     """Check if password has been used recently"""
     try:
         password = request_data.get("password")
         if not password:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Password is required"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Password is required"
             )
 
         can_use, error_msg = await password_service.check_password_history(
-            person_id=current_user.id,
-            password=password
+            person_id=current_user.id, password=password
         )
 
         return {
             "can_use": can_use,
-            "message": error_msg if error_msg else "Password can be used"
+            "message": error_msg if error_msg else "Password can be used",
         }
 
     except HTTPException:
@@ -743,16 +734,14 @@ async def check_password_history(
         logger.error(f"Error checking password history: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to check password history"
+            detail="Failed to check password history",
         )
 
 
 # Admin password management endpoints
 @app.post("/admin/password/force-change")
 async def force_password_change(
-    request_data: dict,
-    request: Request,
-    current_user = Depends(get_current_user)
+    request_data: dict, request: Request, current_user=Depends(get_current_user)
 ):
     """Force password change for a user (admin only)"""
     try:
@@ -760,8 +749,7 @@ async def force_password_change(
         person_id = request_data.get("person_id")
         if not person_id:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Person ID is required"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Person ID is required"
             )
 
         # Extract client information
@@ -772,19 +760,16 @@ async def force_password_change(
             person_id=person_id,
             admin_user_id=current_user.id,
             ip_address=client_ip,
-            user_agent=user_agent
+            user_agent=user_agent,
         )
 
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=error_msg or "Failed to force password change"
+                detail=error_msg or "Failed to force password change",
             )
 
-        return {
-            "success": True,
-            "message": "Password change forced successfully"
-        }
+        return {"success": True, "message": "Password change forced successfully"}
 
     except HTTPException:
         raise
@@ -792,15 +777,13 @@ async def force_password_change(
         logger.error(f"Error forcing password change: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to force password change"
+            detail="Failed to force password change",
         )
 
 
 @app.post("/admin/password/generate-temporary")
 async def generate_temporary_password(
-    request_data: dict,
-    request: Request,
-    current_user = Depends(get_current_user)
+    request_data: dict, request: Request, current_user=Depends(get_current_user)
 ):
     """Generate temporary password for a user (admin only)"""
     try:
@@ -810,33 +793,34 @@ async def generate_temporary_password(
 
         if not person_id:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Person ID is required"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Person ID is required"
             )
 
         # Extract client information
         client_ip = request.client.host if request.client else "unknown"
         user_agent = request.headers.get("user-agent")
 
-        success, temp_password, error_msg = await password_service.generate_temporary_password(
-            person_id=person_id,
-            admin_user_id=current_user.id,
-            length=length,
-            ip_address=client_ip,
-            user_agent=user_agent
+        success, temp_password, error_msg = (
+            await password_service.generate_temporary_password(
+                person_id=person_id,
+                admin_user_id=current_user.id,
+                length=length,
+                ip_address=client_ip,
+                user_agent=user_agent,
+            )
         )
 
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=error_msg or "Failed to generate temporary password"
+                detail=error_msg or "Failed to generate temporary password",
             )
 
         return {
             "success": True,
             "message": "Temporary password generated successfully",
             "temporary_password": temp_password,
-            "require_change": True
+            "require_change": True,
         }
 
     except HTTPException:
@@ -845,7 +829,7 @@ async def generate_temporary_password(
         logger.error(f"Error generating temporary password: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to generate temporary password"
+            detail="Failed to generate temporary password",
         )
 
 
@@ -862,10 +846,10 @@ async def generate_temporary_password(
                     "example": {
                         "success": True,
                         "message": "Account unlocked successfully. Reason: Administrative unlock requested by support",
-                        "unlockedAt": "2025-01-22T10:30:00Z"
+                        "unlockedAt": "2025-01-22T10:30:00Z",
                     }
                 }
-            }
+            },
         },
         400: {
             "description": "Invalid request or account not locked",
@@ -875,10 +859,10 @@ async def generate_temporary_password(
                         "error": "ACCOUNT_NOT_LOCKED",
                         "message": "Account is not currently locked",
                         "timestamp": "2025-01-22T10:30:00Z",
-                        "requestId": "req_unlock_1642857000"
+                        "requestId": "req_unlock_1642857000",
                     }
                 }
-            }
+            },
         },
         403: {
             "description": "Insufficient admin privileges",
@@ -888,10 +872,10 @@ async def generate_temporary_password(
                         "error": "INSUFFICIENT_PRIVILEGES",
                         "message": "Admin privileges required to unlock accounts",
                         "timestamp": "2025-01-22T10:30:00Z",
-                        "requestId": "req_unlock_1642857000"
+                        "requestId": "req_unlock_1642857000",
                     }
                 }
-            }
+            },
         },
         404: {
             "description": "Person not found",
@@ -901,19 +885,19 @@ async def generate_temporary_password(
                         "error": "PERSON_NOT_FOUND",
                         "message": "Person not found",
                         "timestamp": "2025-01-22T10:30:00Z",
-                        "requestId": "req_unlock_1642857000"
+                        "requestId": "req_unlock_1642857000",
                     }
                 }
-            }
-        }
-    }
+            },
+        },
+    },
 )
 async def unlock_account(
     person_id: str,
     unlock_request: AdminUnlockRequest,
     request: Request,
-    current_user = Depends(get_current_user),
-    db_service: DynamoDBService = Depends(DynamoDBService)
+    current_user=Depends(get_current_user),
+    db_service: DynamoDBService = Depends(DynamoDBService),
 ):
     """
     Unlock a locked user account (admin only).
@@ -937,16 +921,20 @@ async def unlock_account(
                     "error": "PERSON_NOT_FOUND",
                     "message": "Person not found",
                     "timestamp": datetime.now().isoformat(),
-                    "request_id": f"req_unlock_{int(datetime.now().timestamp())}"
-                }
+                    "request_id": f"req_unlock_{int(datetime.now().timestamp())}",
+                },
             )
 
         # Check if the account is actually locked
-        if not hasattr(person, 'account_locked_until') or not person.account_locked_until or person.account_locked_until < datetime.now(timezone.utc):
+        if (
+            not hasattr(person, "account_locked_until")
+            or not person.account_locked_until
+            or person.account_locked_until < datetime.now(timezone.utc)
+        ):
             return {
                 "success": True,
                 "message": "Account is not locked",
-                "unlocked_at": datetime.now().isoformat()
+                "unlocked_at": datetime.now().isoformat(),
             }
 
         # Extract client information for audit logging
@@ -966,12 +954,16 @@ async def unlock_account(
                     "error": "UPDATE_FAILED",
                     "message": "Failed to unlock account",
                     "timestamp": datetime.now().isoformat(),
-                    "request_id": f"req_unlock_{int(datetime.now().timestamp())}"
-                }
+                    "request_id": f"req_unlock_{int(datetime.now().timestamp())}",
+                },
             )
 
         # Log the admin action for audit purposes
-        from ..models.security_event import SecurityEvent, SecurityEventType, SecurityEventSeverity
+        from ..models.security_event import (
+            SecurityEvent,
+            SecurityEventType,
+            SecurityEventSeverity,
+        )
 
         security_event = SecurityEvent(
             id=str(uuid.uuid4()),
@@ -984,8 +976,8 @@ async def unlock_account(
             details={
                 "target_user_id": person_id,
                 "reason": unlock_request.reason,
-                "previous_failed_attempts": getattr(person, 'failed_login_attempts', 0)
-            }
+                "previous_failed_attempts": getattr(person, "failed_login_attempts", 0),
+            },
         )
 
         await db_service.log_security_event(security_event)
@@ -994,7 +986,7 @@ async def unlock_account(
         return AdminUnlockResponse(
             success=True,
             message=f"Account unlocked successfully. Reason: {unlock_request.reason}",
-            unlocked_at=datetime.now()
+            unlocked_at=datetime.now(),
         ).model_dump()
 
     except HTTPException:
@@ -1007,8 +999,8 @@ async def unlock_account(
                 "error": "INTERNAL_SERVER_ERROR",
                 "message": "An unexpected error occurred while unlocking the account",
                 "timestamp": datetime.now().isoformat(),
-                "request_id": f"req_unlock_{int(datetime.now().timestamp())}"
-            }
+                "request_id": f"req_unlock_{int(datetime.now().timestamp())}",
+            },
         )
 
 
@@ -1036,16 +1028,16 @@ async def unlock_account(
                                 "city": "Anytown",
                                 "state": "CA",
                                 "zipCode": "12345",
-                                "country": "USA"
+                                "country": "USA",
                             },
                             "createdAt": "2025-01-20T10:30:00Z",
                             "updatedAt": "2025-01-22T10:30:00Z",
                             "isActive": True,
-                            "emailVerified": True
+                            "emailVerified": True,
                         }
                     ]
                 }
-            }
+            },
         },
         400: {
             "description": "Invalid pagination parameters",
@@ -1055,10 +1047,10 @@ async def unlock_account(
                         "error": "INVALID_PAGINATION",
                         "message": "Limit must be between 1 and 1000",
                         "timestamp": "2025-01-22T10:30:00Z",
-                        "requestId": "req_list_1642857000"
+                        "requestId": "req_list_1642857000",
                     }
                 }
-            }
+            },
         },
         401: {
             "description": "Authentication required",
@@ -1068,17 +1060,15 @@ async def unlock_account(
                         "error": "AUTHENTICATION_REQUIRED",
                         "message": "Valid authentication token required",
                         "timestamp": "2025-01-22T10:30:00Z",
-                        "requestId": "req_list_1642857000"
+                        "requestId": "req_list_1642857000",
                     }
                 }
-            }
-        }
-    }
+            },
+        },
+    },
 )
 async def list_people(
-    request: Request,
-    limit: int = 100,
-    current_user = Depends(require_no_password_change)
+    request: Request, limit: int = 100, current_user=Depends(require_no_password_change)
 ):
     """
     Get a paginated list of all registered people.
@@ -1101,25 +1091,20 @@ async def list_people(
                     "error": "INVALID_PAGINATION",
                     "message": "Limit must be between 1 and 1000",
                     "timestamp": datetime.now().isoformat(),
-                    "request_id": f"req_list_{int(datetime.now().timestamp())}"
-                }
+                    "request_id": f"req_list_{int(datetime.now().timestamp())}",
+                },
             )
 
         # Log access event for audit purposes
         await _log_people_list_access_event(
-            user_id=current_user.id,
-            request=request,
-            limit=limit
+            user_id=current_user.id, request=request, limit=limit
         )
 
         people = await db_service.list_people(limit=limit)
 
         # Log successful retrieval
         await _log_people_list_success_event(
-            user_id=current_user.id,
-            request=request,
-            count=len(people),
-            limit=limit
+            user_id=current_user.id, request=request, count=len(people), limit=limit
         )
 
         return [PersonResponse.from_person(person) for person in people]
@@ -1131,9 +1116,7 @@ async def list_people(
 
         # Log error event
         await _log_people_list_error_event(
-            user_id=current_user.id,
-            request=request,
-            error=str(e)
+            user_id=current_user.id, request=request, error=str(e)
         )
 
         raise HTTPException(
@@ -1142,8 +1125,8 @@ async def list_people(
                 "error": "INTERNAL_SERVER_ERROR",
                 "message": "Failed to retrieve people",
                 "timestamp": datetime.now().isoformat(),
-                "request_id": f"req_list_error_{int(datetime.now().timestamp())}"
-            }
+                "request_id": f"req_list_error_{int(datetime.now().timestamp())}",
+            },
         )
 
 
@@ -1170,15 +1153,15 @@ async def list_people(
                             "city": "Anytown",
                             "state": "CA",
                             "zipCode": "12345",
-                            "country": "USA"
+                            "country": "USA",
                         },
                         "createdAt": "2025-01-20T10:30:00Z",
                         "updatedAt": "2025-01-22T10:30:00Z",
                         "isActive": True,
-                        "emailVerified": True
+                        "emailVerified": True,
                     }
                 }
-            }
+            },
         },
         400: {
             "description": "Invalid person ID format",
@@ -1188,10 +1171,10 @@ async def list_people(
                         "error": "INVALID_PERSON_ID",
                         "message": "Person ID cannot be empty",
                         "timestamp": "2025-01-22T10:30:00Z",
-                        "requestId": "req_get_1642857000"
+                        "requestId": "req_get_1642857000",
                     }
                 }
-            }
+            },
         },
         404: {
             "description": "Person not found",
@@ -1201,10 +1184,10 @@ async def list_people(
                         "error": "PERSON_NOT_FOUND",
                         "message": "Person not found",
                         "timestamp": "2025-01-22T10:30:00Z",
-                        "requestId": "req_get_notfound_1642857000"
+                        "requestId": "req_get_notfound_1642857000",
                     }
                 }
-            }
+            },
         },
         401: {
             "description": "Authentication required",
@@ -1214,17 +1197,15 @@ async def list_people(
                         "error": "AUTHENTICATION_REQUIRED",
                         "message": "Valid authentication token required",
                         "timestamp": "2025-01-22T10:30:00Z",
-                        "requestId": "req_get_1642857000"
+                        "requestId": "req_get_1642857000",
                     }
                 }
-            }
-        }
-    }
+            },
+        },
+    },
 )
 async def get_person(
-    person_id: str,
-    request: Request,
-    current_user = Depends(require_no_password_change)
+    person_id: str, request: Request, current_user=Depends(require_no_password_change)
 ):
     """
     Get detailed information for a specific person by ID.
@@ -1247,15 +1228,13 @@ async def get_person(
                     "error": "INVALID_PERSON_ID",
                     "message": "Person ID cannot be empty",
                     "timestamp": datetime.now().isoformat(),
-                    "request_id": f"req_get_{int(datetime.now().timestamp())}"
-                }
+                    "request_id": f"req_get_{int(datetime.now().timestamp())}",
+                },
             )
 
         # Log access event for audit purposes
         await _log_person_access_event(
-            person_id=person_id,
-            user_id=current_user.id,
-            request=request
+            person_id=person_id, user_id=current_user.id, request=request
         )
 
         person = await db_service.get_person(person_id)
@@ -1263,9 +1242,7 @@ async def get_person(
         if not person:
             # Log not found event
             await _log_person_not_found_event(
-                person_id=person_id,
-                user_id=current_user.id,
-                request=request
+                person_id=person_id, user_id=current_user.id, request=request
             )
 
             raise HTTPException(
@@ -1274,15 +1251,13 @@ async def get_person(
                     "error": "PERSON_NOT_FOUND",
                     "message": "Person not found",
                     "timestamp": datetime.now().isoformat(),
-                    "request_id": f"req_get_notfound_{int(datetime.now().timestamp())}"
-                }
+                    "request_id": f"req_get_notfound_{int(datetime.now().timestamp())}",
+                },
             )
 
         # Log successful retrieval
         await _log_person_access_success_event(
-            person_id=person_id,
-            user_id=current_user.id,
-            request=request
+            person_id=person_id, user_id=current_user.id, request=request
         )
 
         return PersonResponse.from_person(person)
@@ -1294,10 +1269,7 @@ async def get_person(
 
         # Log error event
         await _log_person_access_error_event(
-            person_id=person_id,
-            user_id=current_user.id,
-            request=request,
-            error=str(e)
+            person_id=person_id, user_id=current_user.id, request=request, error=str(e)
         )
 
         raise HTTPException(
@@ -1306,8 +1278,8 @@ async def get_person(
                 "error": "INTERNAL_SERVER_ERROR",
                 "message": "Failed to retrieve person",
                 "timestamp": datetime.now().isoformat(),
-                "request_id": f"req_get_error_{int(datetime.now().timestamp())}"
-            }
+                "request_id": f"req_get_error_{int(datetime.now().timestamp())}",
+            },
         )
 
 
@@ -1335,15 +1307,15 @@ async def get_person(
                             "city": "Anytown",
                             "state": "CA",
                             "zipCode": "12345",
-                            "country": "USA"
+                            "country": "USA",
                         },
                         "createdAt": "2025-01-22T10:30:00Z",
                         "updatedAt": "2025-01-22T10:30:00Z",
                         "isActive": True,
-                        "emailVerified": False
+                        "emailVerified": False,
                     }
                 }
-            }
+            },
         },
         400: {
             "description": "Validation errors",
@@ -1356,19 +1328,19 @@ async def get_person(
                             {
                                 "field": "email",
                                 "message": "Invalid email format",
-                                "code": "EMAIL_FORMAT"
+                                "code": "EMAIL_FORMAT",
                             },
                             {
                                 "field": "phone",
                                 "message": "Invalid phone format",
-                                "code": "PHONE_FORMAT"
-                            }
+                                "code": "PHONE_FORMAT",
+                            },
                         ],
                         "timestamp": "2025-01-22T10:30:00Z",
-                        "request_id": "req-123"
+                        "request_id": "req-123",
                     }
                 }
-            }
+            },
         },
         409: {
             "description": "Email already exists",
@@ -1378,10 +1350,10 @@ async def get_person(
                         "error": "EMAIL_EXISTS",
                         "message": "A person with this email already exists",
                         "timestamp": "2025-01-22T10:30:00Z",
-                        "requestId": "req_create_1642857000"
+                        "requestId": "req_create_1642857000",
                     }
                 }
-            }
+            },
         },
         401: {
             "description": "Authentication required",
@@ -1391,16 +1363,15 @@ async def get_person(
                         "error": "AUTHENTICATION_REQUIRED",
                         "message": "Valid authentication token required",
                         "timestamp": "2025-01-22T10:30:00Z",
-                        "requestId": "req_auth_1642857000"
+                        "requestId": "req_auth_1642857000",
                     }
                 }
-            }
-        }
-    }
+            },
+        },
+    },
 )
 async def create_person(
-    person_data: PersonCreate,
-    current_user = Depends(require_no_password_change)
+    person_data: PersonCreate, current_user=Depends(require_no_password_change)
 ):
     """
     Register a new person in the system.
@@ -1423,19 +1394,16 @@ async def create_person(
         person = await db_service.create_person(person_data)
         return PersonResponse.from_person(person)
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except Exception as e:
         logger.error(f"Error creating person: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
+            detail="Internal server error",
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create person"
+            detail="Failed to create person",
         )
 
 
@@ -1444,7 +1412,7 @@ async def update_person(
     person_id: str,
     person_update: PersonUpdate,
     request: Request,
-    current_user = Depends(require_no_password_change)
+    current_user=Depends(require_no_password_change),
 ):
     """Update an existing person with enhanced validation and email change verification"""
     try:
@@ -1457,12 +1425,14 @@ async def update_person(
                     "error": "PERSON_NOT_FOUND",
                     "message": "Person not found",
                     "timestamp": datetime.now().isoformat(),
-                    "request_id": f"req_{person_id}_{int(datetime.now().timestamp())}"
-                }
+                    "request_id": f"req_{person_id}_{int(datetime.now().timestamp())}",
+                },
             )
 
         # Validate the update data
-        validation_result = await validation_service.validate_person_update(person_id, person_update)
+        validation_result = await validation_service.validate_person_update(
+            person_id, person_update
+        )
 
         if not validation_result.is_valid:
             # Return detailed validation errors
@@ -1470,11 +1440,11 @@ async def update_person(
                 error="VALIDATION_ERROR",
                 message="The request contains invalid data",
                 details=validation_result.errors,
-                request_id=f"req_{person_id}_{int(datetime.now().timestamp())}"
+                request_id=f"req_{person_id}_{int(datetime.now().timestamp())}",
             )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=error_response.model_dump()
+                detail=error_response.model_dump(),
             )
 
         # Check if email is being changed
@@ -1490,17 +1460,17 @@ async def update_person(
                 error_response = ErrorResponse(
                     error="EMAIL_CHANGE_FAILED",
                     message=message,
-                    request_id=f"req_{person_id}_{int(datetime.now().timestamp())}"
+                    request_id=f"req_{person_id}_{int(datetime.now().timestamp())}",
                 )
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=error_response.model_dump()
+                    detail=error_response.model_dump(),
                 )
 
             email_change_initiated = True
             # Create a new PersonUpdate without the email field for immediate update
             update_data = person_update.model_dump(exclude_unset=True)
-            del update_data['email']
+            del update_data["email"]
             person_update = PersonUpdate(**update_data)
 
         # Update the person (excluding email if verification was initiated)
@@ -1513,8 +1483,8 @@ async def update_person(
                     "error": "UPDATE_FAILED",
                     "message": "Failed to update person",
                     "timestamp": datetime.now().isoformat(),
-                    "request_id": f"req_{person_id}_{int(datetime.now().timestamp())}"
-                }
+                    "request_id": f"req_{person_id}_{int(datetime.now().timestamp())}",
+                },
             )
 
         # Log the update event for audit purposes
@@ -1523,7 +1493,7 @@ async def update_person(
             updated_fields=list(person_update.model_dump(exclude_unset=True).keys()),
             ip_address=request.client.host if request.client else "unknown",
             user_agent=request.headers.get("user-agent"),
-            email_change_initiated=email_change_initiated
+            email_change_initiated=email_change_initiated,
         )
 
         # Create response
@@ -1546,8 +1516,8 @@ async def update_person(
                 "error": "INTERNAL_SERVER_ERROR",
                 "message": "An unexpected error occurred while updating the person",
                 "timestamp": datetime.now().isoformat(),
-                "request_id": f"req_{person_id}_{int(datetime.now().timestamp())}"
-            }
+                "request_id": f"req_{person_id}_{int(datetime.now().timestamp())}",
+            },
         )
 
 
@@ -1556,16 +1526,20 @@ async def _log_person_update_event(
     updated_fields: list,
     ip_address: str,
     user_agent: str,
-    email_change_initiated: bool = False
+    email_change_initiated: bool = False,
 ):
     """Log person update event for audit purposes"""
     try:
-        from ..models.security_event import SecurityEvent, SecurityEventType, SecurityEventSeverity
+        from ..models.security_event import (
+            SecurityEvent,
+            SecurityEventType,
+            SecurityEventSeverity,
+        )
         import uuid
 
         event_details = {
             "updated_fields": updated_fields,
-            "email_change_initiated": email_change_initiated
+            "email_change_initiated": email_change_initiated,
         }
 
         security_event = SecurityEvent(
@@ -1576,7 +1550,7 @@ async def _log_person_update_event(
             user_id=person_id,
             ip_address=ip_address,
             user_agent=user_agent,
-            details=event_details
+            details=event_details,
         )
 
         await db_service.log_security_event(security_event)
@@ -1591,21 +1565,23 @@ async def initiate_email_verification(
     person_id: str,
     email_request: EmailVerificationRequest,
     request: Request,
-    current_user = Depends(require_no_password_change)
+    current_user=Depends(require_no_password_change),
 ):
     """Initiate email change verification process"""
     try:
         # Authorization check: Users can only change their own email
         if current_user.id != person_id:
-            logger.warning(f"User {current_user.id} attempted to change email for user {person_id}")
+            logger.warning(
+                f"User {current_user.id} attempted to change email for user {person_id}"
+            )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail={
                     "error": "FORBIDDEN",
                     "message": "You can only change your own email address",
                     "timestamp": datetime.now().isoformat(),
-                    "request_id": f"req_{person_id}_{int(datetime.now().timestamp())}"
-                }
+                    "request_id": f"req_{person_id}_{int(datetime.now().timestamp())}",
+                },
             )
 
         # Initiate email change verification
@@ -1620,29 +1596,31 @@ async def initiate_email_verification(
                     "error": "EMAIL_VERIFICATION_FAILED",
                     "message": message,
                     "timestamp": datetime.now().isoformat(),
-                    "request_id": f"req_{person_id}_{int(datetime.now().timestamp())}"
-                }
+                    "request_id": f"req_{person_id}_{int(datetime.now().timestamp())}",
+                },
             )
 
         return {
             "success": True,
             "message": message,
             "verification_sent": True,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error initiating email verification for person {person_id}: {str(e)}")
+        logger.error(
+            f"Error initiating email verification for person {person_id}: {str(e)}"
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
                 "error": "INTERNAL_SERVER_ERROR",
                 "message": "Failed to initiate email verification",
                 "timestamp": datetime.now().isoformat(),
-                "request_id": f"req_{person_id}_{int(datetime.now().timestamp())}"
-            }
+                "request_id": f"req_{person_id}_{int(datetime.now().timestamp())}",
+            },
         )
 
 
@@ -1658,12 +1636,14 @@ async def verify_email_change(request_data: dict):
                     "error": "MISSING_TOKEN",
                     "message": "Verification token is required",
                     "timestamp": datetime.now().isoformat(),
-                    "request_id": f"req_verify_{int(datetime.now().timestamp())}"
-                }
+                    "request_id": f"req_verify_{int(datetime.now().timestamp())}",
+                },
             )
 
         # Verify the email change
-        success, message = await email_verification_service.verify_email_change(verification_token)
+        success, message = await email_verification_service.verify_email_change(
+            verification_token
+        )
 
         if not success:
             raise HTTPException(
@@ -1672,14 +1652,14 @@ async def verify_email_change(request_data: dict):
                     "error": "VERIFICATION_FAILED",
                     "message": message,
                     "timestamp": datetime.now().isoformat(),
-                    "request_id": f"req_verify_{int(datetime.now().timestamp())}"
-                }
+                    "request_id": f"req_verify_{int(datetime.now().timestamp())}",
+                },
             )
 
         return {
             "success": True,
             "message": message,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
     except HTTPException:
@@ -1692,8 +1672,8 @@ async def verify_email_change(request_data: dict):
                 "error": "INTERNAL_SERVER_ERROR",
                 "message": "Failed to verify email change",
                 "timestamp": datetime.now().isoformat(),
-                "request_id": f"req_verify_{int(datetime.now().timestamp())}"
-            }
+                "request_id": f"req_verify_{int(datetime.now().timestamp())}",
+            },
         )
 
 
@@ -1702,7 +1682,7 @@ async def initiate_person_deletion(
     person_id: str,
     deletion_request: PersonDeletionInitiateRequest,
     request: Request,
-    current_user = Depends(require_no_password_change)
+    current_user=Depends(require_no_password_change),
 ):
     """Initiate person deletion with referential integrity checks"""
     try:
@@ -1714,8 +1694,8 @@ async def initiate_person_deletion(
                     "error": "INVALID_PERSON_ID",
                     "message": "Person ID cannot be empty",
                     "timestamp": datetime.now().isoformat(),
-                    "request_id": f"req_delete_init_{int(datetime.now().timestamp())}"
-                }
+                    "request_id": f"req_delete_init_{int(datetime.now().timestamp())}",
+                },
             )
 
         # Extract client information for audit logging
@@ -1728,7 +1708,7 @@ async def initiate_person_deletion(
             requesting_user_id=current_user.id,
             reason=deletion_request.reason,
             ip_address=client_ip,
-            user_agent=user_agent
+            user_agent=user_agent,
         )
 
         if not success:
@@ -1737,10 +1717,10 @@ async def initiate_person_deletion(
                 # Parse the error to get structured response
                 try:
                     import json
+
                     error_data = json.loads(error)
                     raise HTTPException(
-                        status_code=status.HTTP_409_CONFLICT,
-                        detail=error_data
+                        status_code=status.HTTP_409_CONFLICT, detail=error_data
                     )
                 except (json.JSONDecodeError, TypeError):
                     # Fallback to generic conflict response
@@ -1750,8 +1730,8 @@ async def initiate_person_deletion(
                             "error": "REFERENTIAL_INTEGRITY_VIOLATION",
                             "message": "Cannot delete person with active subscriptions",
                             "timestamp": datetime.now().isoformat(),
-                            "request_id": f"req_delete_init_{int(datetime.now().timestamp())}"
-                        }
+                            "request_id": f"req_delete_init_{int(datetime.now().timestamp())}",
+                        },
                     )
             elif "not found" in error.lower():
                 raise HTTPException(
@@ -1760,8 +1740,8 @@ async def initiate_person_deletion(
                         "error": "PERSON_NOT_FOUND",
                         "message": "Person not found",
                         "timestamp": datetime.now().isoformat(),
-                        "request_id": f"req_delete_init_{int(datetime.now().timestamp())}"
-                    }
+                        "request_id": f"req_delete_init_{int(datetime.now().timestamp())}",
+                    },
                 )
             else:
                 raise HTTPException(
@@ -1770,8 +1750,8 @@ async def initiate_person_deletion(
                         "error": "DELETION_INITIATION_FAILED",
                         "message": error or "Failed to initiate deletion",
                         "timestamp": datetime.now().isoformat(),
-                        "request_id": f"req_delete_init_{int(datetime.now().timestamp())}"
-                    }
+                        "request_id": f"req_delete_init_{int(datetime.now().timestamp())}",
+                    },
                 )
 
         return response.model_dump()
@@ -1786,8 +1766,8 @@ async def initiate_person_deletion(
                 "error": "INTERNAL_SERVER_ERROR",
                 "message": "An unexpected error occurred while initiating deletion",
                 "timestamp": datetime.now().isoformat(),
-                "request_id": f"req_delete_init_error_{int(datetime.now().timestamp())}"
-            }
+                "request_id": f"req_delete_init_error_{int(datetime.now().timestamp())}",
+            },
         )
 
 
@@ -1796,7 +1776,7 @@ async def delete_person(
     person_id: str,
     deletion_request: PersonDeletionRequest,
     request: Request,
-    current_user = Depends(require_no_password_change)
+    current_user=Depends(require_no_password_change),
 ):
     """Confirm and execute person deletion with two-step confirmation"""
     try:
@@ -1808,8 +1788,8 @@ async def delete_person(
                     "error": "INVALID_PERSON_ID",
                     "message": "Person ID cannot be empty",
                     "timestamp": datetime.now().isoformat(),
-                    "request_id": f"req_delete_{int(datetime.now().timestamp())}"
-                }
+                    "request_id": f"req_delete_{int(datetime.now().timestamp())}",
+                },
             )
 
         # Extract client information for audit logging
@@ -1822,7 +1802,7 @@ async def delete_person(
             requesting_user_id=current_user.id,
             reason=deletion_request.reason,
             ip_address=client_ip,
-            user_agent=user_agent
+            user_agent=user_agent,
         )
 
         if not success:
@@ -1833,8 +1813,8 @@ async def delete_person(
                         "error": "INVALID_CONFIRMATION_TOKEN",
                         "message": error or "Invalid or expired confirmation token",
                         "timestamp": datetime.now().isoformat(),
-                        "request_id": f"req_delete_{int(datetime.now().timestamp())}"
-                    }
+                        "request_id": f"req_delete_{int(datetime.now().timestamp())}",
+                    },
                 )
             elif "not found" in error.lower():
                 raise HTTPException(
@@ -1843,8 +1823,8 @@ async def delete_person(
                         "error": "PERSON_NOT_FOUND",
                         "message": "Person not found",
                         "timestamp": datetime.now().isoformat(),
-                        "request_id": f"req_delete_{int(datetime.now().timestamp())}"
-                    }
+                        "request_id": f"req_delete_{int(datetime.now().timestamp())}",
+                    },
                 )
             elif "user mismatch" in error.lower():
                 raise HTTPException(
@@ -1853,18 +1833,19 @@ async def delete_person(
                         "error": "FORBIDDEN",
                         "message": "Only the user who initiated the deletion can confirm it",
                         "timestamp": datetime.now().isoformat(),
-                        "request_id": f"req_delete_{int(datetime.now().timestamp())}"
-                    }
+                        "request_id": f"req_delete_{int(datetime.now().timestamp())}",
+                    },
                 )
             elif "subscription" in error.lower():
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail={
                         "error": "REFERENTIAL_INTEGRITY_VIOLATION",
-                        "message": error or "Cannot delete person with active subscriptions",
+                        "message": error
+                        or "Cannot delete person with active subscriptions",
                         "timestamp": datetime.now().isoformat(),
-                        "request_id": f"req_delete_{int(datetime.now().timestamp())}"
-                    }
+                        "request_id": f"req_delete_{int(datetime.now().timestamp())}",
+                    },
                 )
             else:
                 raise HTTPException(
@@ -1873,8 +1854,8 @@ async def delete_person(
                         "error": "DELETION_FAILED",
                         "message": error or "Failed to delete person",
                         "timestamp": datetime.now().isoformat(),
-                        "request_id": f"req_delete_{int(datetime.now().timestamp())}"
-                    }
+                        "request_id": f"req_delete_{int(datetime.now().timestamp())}",
+                    },
                 )
 
         # Return 204 No Content on successful deletion
@@ -1890,12 +1871,13 @@ async def delete_person(
                 "error": "INTERNAL_SERVER_ERROR",
                 "message": "An unexpected error occurred while deleting the person",
                 "timestamp": datetime.now().isoformat(),
-                "request_id": f"req_delete_error_{int(datetime.now().timestamp())}"
-            }
+                "request_id": f"req_delete_error_{int(datetime.now().timestamp())}",
+            },
         )
 
 
 # ==================== PROJECT ENDPOINTS ====================
+
 
 @app.get("/projects")
 async def get_projects():
@@ -1907,7 +1889,7 @@ async def get_projects():
         logger.error(f"Error getting projects: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to get projects"
+            detail="Failed to get projects",
         )
 
 
@@ -1918,8 +1900,7 @@ async def get_project(project_id: str):
         project = db_service.get_project_by_id(project_id)
         if not project:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Project not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
             )
         return project
     except HTTPException:
@@ -1928,14 +1909,13 @@ async def get_project(project_id: str):
         logger.error(f"Error getting project {project_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to get project"
+            detail="Failed to get project",
         )
 
 
 @app.post("/projects", status_code=status.HTTP_201_CREATED)
 async def create_project(
-    project_data: dict,
-    current_user: dict = Depends(get_current_user)
+    project_data: dict, current_user: dict = Depends(get_current_user)
 ):
     """Create a new project"""
     try:
@@ -1945,28 +1925,26 @@ async def create_project(
         project_create = ProjectCreate(**project_data)
 
         # Create project with current user as creator
-        created_by = current_user.get('email', 'admin')
+        created_by = current_user.get("email", "admin")
         project = db_service.create_project(project_create, created_by)
 
         return project
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid project data: {str(e)}"
+            detail=f"Invalid project data: {str(e)}",
         )
     except Exception as e:
         logger.error(f"Error creating project: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create project"
+            detail="Failed to create project",
         )
 
 
 @app.put("/projects/{project_id}")
 async def update_project(
-    project_id: str,
-    project_data: dict,
-    current_user: dict = Depends(get_current_user)
+    project_id: str, project_data: dict, current_user: dict = Depends(get_current_user)
 ):
     """Update an existing project"""
     try:
@@ -1980,8 +1958,7 @@ async def update_project(
 
         if not updated_project:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Project not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
             )
 
         return updated_project
@@ -1990,28 +1967,26 @@ async def update_project(
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid project data: {str(e)}"
+            detail=f"Invalid project data: {str(e)}",
         )
     except Exception as e:
         logger.error(f"Error updating project {project_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to update project"
+            detail="Failed to update project",
         )
 
 
 @app.delete("/projects/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_project(
-    project_id: str,
-    current_user: dict = Depends(get_current_user)
+    project_id: str, current_user: dict = Depends(get_current_user)
 ):
     """Delete a project"""
     try:
         success = db_service.delete_project(project_id)
         if not success:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Project not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
             )
     except HTTPException:
         raise
@@ -2019,11 +1994,12 @@ async def delete_project(
         logger.error(f"Error deleting project {project_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete project"
+            detail="Failed to delete project",
         )
 
 
 # ==================== SUBSCRIPTION ENDPOINTS ====================
+
 
 @app.get("/subscriptions")
 async def get_subscriptions():
@@ -2035,7 +2011,7 @@ async def get_subscriptions():
         logger.error(f"Error getting subscriptions: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to get subscriptions"
+            detail="Failed to get subscriptions",
         )
 
 
@@ -2046,8 +2022,7 @@ async def get_subscription(subscription_id: str):
         subscription = db_service.get_subscription_by_id(subscription_id)
         if not subscription:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Subscription not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Subscription not found"
             )
         return subscription
     except HTTPException:
@@ -2056,7 +2031,7 @@ async def get_subscription(subscription_id: str):
         logger.error(f"Error getting subscription {subscription_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to get subscription"
+            detail="Failed to get subscription",
         )
 
 
@@ -2073,15 +2048,13 @@ async def create_subscription(subscription_data: dict):
         person = db_service.get_person_by_id(subscription_create.personId)
         if not person:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Person not found"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Person not found"
             )
 
         project = db_service.get_project_by_id(subscription_create.projectId)
         if not project:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Project not found"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Project not found"
             )
 
         # Create subscription
@@ -2093,21 +2066,18 @@ async def create_subscription(subscription_data: dict):
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid subscription data: {str(e)}"
+            detail=f"Invalid subscription data: {str(e)}",
         )
     except Exception as e:
         logger.error(f"Error creating subscription: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create subscription"
+            detail="Failed to create subscription",
         )
 
 
 @app.put("/subscriptions/{subscription_id}")
-async def update_subscription(
-    subscription_id: str,
-    subscription_data: dict
-):
+async def update_subscription(subscription_id: str, subscription_data: dict):
     """Update an existing subscription"""
     try:
         from ..models.subscription import SubscriptionUpdate
@@ -2116,12 +2086,13 @@ async def update_subscription(
         subscription_update = SubscriptionUpdate(**subscription_data)
 
         # Update subscription
-        updated_subscription = db_service.update_subscription(subscription_id, subscription_update)
+        updated_subscription = db_service.update_subscription(
+            subscription_id, subscription_update
+        )
 
         if not updated_subscription:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Subscription not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Subscription not found"
             )
 
         return updated_subscription
@@ -2130,13 +2101,13 @@ async def update_subscription(
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid subscription data: {str(e)}"
+            detail=f"Invalid subscription data: {str(e)}",
         )
     except Exception as e:
         logger.error(f"Error updating subscription {subscription_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to update subscription"
+            detail="Failed to update subscription",
         )
 
 
@@ -2147,8 +2118,7 @@ async def delete_subscription(subscription_id: str):
         success = db_service.delete_subscription(subscription_id)
         if not success:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Subscription not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Subscription not found"
             )
     except HTTPException:
         raise
@@ -2156,7 +2126,7 @@ async def delete_subscription(subscription_id: str):
         logger.error(f"Error deleting subscription {subscription_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete subscription"
+            detail="Failed to delete subscription",
         )
 
 
@@ -2168,8 +2138,7 @@ async def get_person_subscriptions(person_id: str):
         person = db_service.get_person_by_id(person_id)
         if not person:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Person not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Person not found"
             )
 
         subscriptions = db_service.get_subscriptions_by_person(person_id)
@@ -2180,7 +2149,7 @@ async def get_person_subscriptions(person_id: str):
         logger.error(f"Error getting subscriptions for person {person_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to get person subscriptions"
+            detail="Failed to get person subscriptions",
         )
 
 
@@ -2192,8 +2161,7 @@ async def get_project_subscriptions(project_id: str):
         project = db_service.get_project_by_id(project_id)
         if not project:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Project not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
             )
 
         subscriptions = db_service.get_subscriptions_by_project(project_id)
@@ -2204,26 +2172,24 @@ async def get_project_subscriptions(project_id: str):
         logger.error(f"Error getting subscriptions for project {project_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to get project subscriptions"
+            detail="Failed to get project subscriptions",
         )
 
 
 # ==================== AUDIT LOGGING FUNCTIONS ====================
 
-async def _log_people_list_access_event(
-    user_id: str,
-    request: Request,
-    limit: int
-):
+
+async def _log_people_list_access_event(user_id: str, request: Request, limit: int):
     """Log people list access event for audit purposes"""
     try:
-        from ..models.security_event import SecurityEvent, SecurityEventType, SecurityEventSeverity
+        from ..models.security_event import (
+            SecurityEvent,
+            SecurityEventType,
+            SecurityEventSeverity,
+        )
         import uuid
 
-        event_details = {
-            "action": "list_people_request",
-            "limit": limit
-        }
+        event_details = {"action": "list_people_request", "limit": limit}
 
         security_event = SecurityEvent(
             id=str(uuid.uuid4()),
@@ -2233,7 +2199,7 @@ async def _log_people_list_access_event(
             user_id=user_id,
             ip_address=request.client.host if request.client else None,
             user_agent=request.headers.get("user-agent"),
-            details=event_details
+            details=event_details,
         )
 
         await db_service.log_security_event(security_event)
@@ -2243,20 +2209,21 @@ async def _log_people_list_access_event(
 
 
 async def _log_people_list_success_event(
-    user_id: str,
-    request: Request,
-    count: int,
-    limit: int
+    user_id: str, request: Request, count: int, limit: int
 ):
     """Log successful people list retrieval for audit purposes"""
     try:
-        from ..models.security_event import SecurityEvent, SecurityEventType, SecurityEventSeverity
+        from ..models.security_event import (
+            SecurityEvent,
+            SecurityEventType,
+            SecurityEventSeverity,
+        )
         import uuid
 
         event_details = {
             "action": "list_people_success",
             "count": count,
-            "limit": limit
+            "limit": limit,
         }
 
         security_event = SecurityEvent(
@@ -2267,7 +2234,7 @@ async def _log_people_list_success_event(
             user_id=user_id,
             ip_address=request.client.host if request.client else None,
             user_agent=request.headers.get("user-agent"),
-            details=event_details
+            details=event_details,
         )
 
         await db_service.log_security_event(security_event)
@@ -2276,20 +2243,17 @@ async def _log_people_list_success_event(
         logger.error(f"Failed to log people list success event: {str(e)}")
 
 
-async def _log_people_list_error_event(
-    user_id: str,
-    request: Request,
-    error: str
-):
+async def _log_people_list_error_event(user_id: str, request: Request, error: str):
     """Log people list error event for audit purposes"""
     try:
-        from ..models.security_event import SecurityEvent, SecurityEventType, SecurityEventSeverity
+        from ..models.security_event import (
+            SecurityEvent,
+            SecurityEventType,
+            SecurityEventSeverity,
+        )
         import uuid
 
-        event_details = {
-            "action": "list_people_error",
-            "error": error
-        }
+        event_details = {"action": "list_people_error", "error": error}
 
         security_event = SecurityEvent(
             id=str(uuid.uuid4()),
@@ -2299,7 +2263,7 @@ async def _log_people_list_error_event(
             user_id=user_id,
             ip_address=request.client.host if request.client else None,
             user_agent=request.headers.get("user-agent"),
-            details=event_details
+            details=event_details,
         )
 
         await db_service.log_security_event(security_event)
@@ -2308,19 +2272,19 @@ async def _log_people_list_error_event(
         logger.error(f"Failed to log people list error event: {str(e)}")
 
 
-async def _log_person_access_event(
-    person_id: str,
-    user_id: str,
-    request: Request
-):
+async def _log_person_access_event(person_id: str, user_id: str, request: Request):
     """Log person access event for audit purposes"""
     try:
-        from ..models.security_event import SecurityEvent, SecurityEventType, SecurityEventSeverity
+        from ..models.security_event import (
+            SecurityEvent,
+            SecurityEventType,
+            SecurityEventSeverity,
+        )
         import uuid
 
         event_details = {
             "action": "person_access_request",
-            "target_person_id": person_id
+            "target_person_id": person_id,
         }
 
         security_event = SecurityEvent(
@@ -2331,7 +2295,7 @@ async def _log_person_access_event(
             user_id=user_id,
             ip_address=request.client.host if request.client else None,
             user_agent=request.headers.get("user-agent"),
-            details=event_details
+            details=event_details,
         )
 
         await db_service.log_security_event(security_event)
@@ -2340,20 +2304,17 @@ async def _log_person_access_event(
         logger.error(f"Failed to log person access event: {str(e)}")
 
 
-async def _log_person_not_found_event(
-    person_id: str,
-    user_id: str,
-    request: Request
-):
+async def _log_person_not_found_event(person_id: str, user_id: str, request: Request):
     """Log person not found event for audit purposes"""
     try:
-        from ..models.security_event import SecurityEvent, SecurityEventType, SecurityEventSeverity
+        from ..models.security_event import (
+            SecurityEvent,
+            SecurityEventType,
+            SecurityEventSeverity,
+        )
         import uuid
 
-        event_details = {
-            "action": "person_not_found",
-            "target_person_id": person_id
-        }
+        event_details = {"action": "person_not_found", "target_person_id": person_id}
 
         security_event = SecurityEvent(
             id=str(uuid.uuid4()),
@@ -2363,7 +2324,7 @@ async def _log_person_not_found_event(
             user_id=user_id,
             ip_address=request.client.host if request.client else None,
             user_agent=request.headers.get("user-agent"),
-            details=event_details
+            details=event_details,
         )
 
         await db_service.log_security_event(security_event)
@@ -2373,18 +2334,20 @@ async def _log_person_not_found_event(
 
 
 async def _log_person_access_success_event(
-    person_id: str,
-    user_id: str,
-    request: Request
+    person_id: str, user_id: str, request: Request
 ):
     """Log successful person access for audit purposes"""
     try:
-        from ..models.security_event import SecurityEvent, SecurityEventType, SecurityEventSeverity
+        from ..models.security_event import (
+            SecurityEvent,
+            SecurityEventType,
+            SecurityEventSeverity,
+        )
         import uuid
 
         event_details = {
             "action": "person_access_success",
-            "target_person_id": person_id
+            "target_person_id": person_id,
         }
 
         security_event = SecurityEvent(
@@ -2395,7 +2358,7 @@ async def _log_person_access_success_event(
             user_id=user_id,
             ip_address=request.client.host if request.client else None,
             user_agent=request.headers.get("user-agent"),
-            details=event_details
+            details=event_details,
         )
 
         await db_service.log_security_event(security_event)
@@ -2405,20 +2368,21 @@ async def _log_person_access_success_event(
 
 
 async def _log_person_access_error_event(
-    person_id: str,
-    user_id: str,
-    request: Request,
-    error: str
+    person_id: str, user_id: str, request: Request, error: str
 ):
     """Log person access error event for audit purposes"""
     try:
-        from ..models.security_event import SecurityEvent, SecurityEventType, SecurityEventSeverity
+        from ..models.security_event import (
+            SecurityEvent,
+            SecurityEventType,
+            SecurityEventSeverity,
+        )
         import uuid
 
         event_details = {
             "action": "person_access_error",
             "target_person_id": person_id,
-            "error": error
+            "error": error,
         }
 
         security_event = SecurityEvent(
@@ -2429,7 +2393,7 @@ async def _log_person_access_error_event(
             user_id=user_id,
             ip_address=request.client.host if request.client else None,
             user_agent=request.headers.get("user-agent"),
-            details=event_details
+            details=event_details,
         )
 
         await db_service.log_security_event(security_event)

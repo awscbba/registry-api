@@ -1,6 +1,7 @@
 """
 Comprehensive tests for person data validation rules.
 """
+
 import pytest
 import sys
 import os
@@ -8,15 +9,25 @@ from unittest.mock import Mock, AsyncMock, patch
 from datetime import datetime, timezone, timedelta
 
 # Add the src directory to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../src"))
 
 from src.models.person import (
-    PersonCreate, PersonUpdate, Address, ValidationError, ValidationErrorType
+    PersonCreate,
+    PersonUpdate,
+    Address,
+    ValidationError,
+    ValidationErrorType,
 )
-from src.services.person_validation_service import PersonValidationService, ValidationResult
+from src.services.person_validation_service import (
+    PersonValidationService,
+    ValidationResult,
+)
 from src.utils.validation_utils import (
-    validate_email_format, validate_phone_format, validate_date_format,
-    validate_zip_code, validate_name
+    validate_email_format,
+    validate_phone_format,
+    validate_date_format,
+    validate_zip_code,
+    validate_name,
 )
 
 
@@ -47,24 +58,27 @@ class TestComprehensiveValidation:
                 city="Anytown",
                 state="CA",
                 zipCode="12345",
-                country="USA"
-            )
+                country="USA",
+            ),
         )
 
     # Email validation tests
 
-    @pytest.mark.parametrize("email,is_valid", [
-        ("valid@example.com", True),
-        ("user.name+tag@example.co.uk", True),
-        ("user-name@example.org", True),
-        ("", False),
-        ("invalid", False),
-        ("invalid@", False),
-        ("@example.com", False),
-        ("user@.com", False),
-        ("user@example.", False),
-        ("user name@example.com", False),
-    ])
+    @pytest.mark.parametrize(
+        "email,is_valid",
+        [
+            ("valid@example.com", True),
+            ("user.name+tag@example.co.uk", True),
+            ("user-name@example.org", True),
+            ("", False),
+            ("invalid", False),
+            ("invalid@", False),
+            ("@example.com", False),
+            ("user@.com", False),
+            ("user@example.", False),
+            ("user name@example.com", False),
+        ],
+    )
     def test_email_format_validation(self, email, is_valid):
         """Test email format validation with various inputs."""
         result, _ = validate_email_format(email)
@@ -97,16 +111,19 @@ class TestComprehensiveValidation:
 
     # Phone validation tests
 
-    @pytest.mark.parametrize("phone,is_valid", [
-        ("+12345678901", True),
-        ("1234567890", True),
-        ("+44 1234 567890", True),
-        ("+1 (234) 567-8901", True),
-        ("", False),
-        ("123", False),
-        ("abcdefghij", False),
-        ("+1234567890123456", False),  # Too long
-    ])
+    @pytest.mark.parametrize(
+        "phone,is_valid",
+        [
+            ("+12345678901", True),
+            ("1234567890", True),
+            ("+44 1234 567890", True),
+            ("+1 (234) 567-8901", True),
+            ("", False),
+            ("123", False),
+            ("abcdefghij", False),
+            ("+1234567890123456", False),  # Too long
+        ],
+    )
     def test_phone_format_validation(self, phone, is_valid):
         """Test phone format validation with various inputs."""
         result, _ = validate_phone_format(phone)
@@ -114,16 +131,19 @@ class TestComprehensiveValidation:
 
     # Date validation tests
 
-    @pytest.mark.parametrize("date_str,is_valid", [
-        ("1990-01-01", True),
-        ("2000-12-31", True),
-        ("", False),
-        ("1990/01/01", False),
-        ("01-01-1990", False),
-        ("1990-13-01", False),  # Invalid month
-        ("1990-01-32", False),  # Invalid day
-        ("abcd-ef-gh", False),
-    ])
+    @pytest.mark.parametrize(
+        "date_str,is_valid",
+        [
+            ("1990-01-01", True),
+            ("2000-12-31", True),
+            ("", False),
+            ("1990/01/01", False),
+            ("01-01-1990", False),
+            ("1990-13-01", False),  # Invalid month
+            ("1990-01-32", False),  # Invalid day
+            ("abcd-ef-gh", False),
+        ],
+    )
     def test_date_format_validation(self, date_str, is_valid):
         """Test date format validation with various inputs."""
         result, _ = validate_date_format(date_str)
@@ -135,7 +155,11 @@ class TestComprehensiveValidation:
         assert validation_service.validate_date_of_birth("1990-01-01") is True
 
         # Future date
-        future_date = datetime.now(timezone.utc).replace(year=datetime.now().year + 1).strftime("%Y-%m-%d")
+        future_date = (
+            datetime.now(timezone.utc)
+            .replace(year=datetime.now().year + 1)
+            .strftime("%Y-%m-%d")
+        )
         assert validation_service.validate_date_of_birth(future_date) is False
 
         # Very old date (unreasonable)
@@ -150,15 +174,18 @@ class TestComprehensiveValidation:
 
     # Address validation tests
 
-    @pytest.mark.parametrize("zip_code,is_valid", [
-        ("12345", True),
-        ("12345-6789", True),
-        ("", False),
-        ("1234", False),
-        ("123456", False),
-        ("12345-67890", False),
-        ("abcde", False),
-    ])
+    @pytest.mark.parametrize(
+        "zip_code,is_valid",
+        [
+            ("12345", True),
+            ("12345-6789", True),
+            ("", False),
+            ("1234", False),
+            ("123456", False),
+            ("12345-67890", False),
+            ("abcde", False),
+        ],
+    )
     def test_zip_code_validation(self, zip_code, is_valid):
         """Test ZIP code validation with various inputs."""
         result, _ = validate_zip_code(zip_code)
@@ -179,7 +206,7 @@ class TestComprehensiveValidation:
             city="",  # Empty city
             state="CA",
             zipCode="12345",
-            country=""  # Empty country
+            country="",  # Empty country
         )
         validation_service._validate_address(incomplete_address, result)
         assert result.is_valid is False
@@ -192,7 +219,7 @@ class TestComprehensiveValidation:
             city="Anytown",
             state="CA",
             zipCode="invalid",  # Invalid ZIP
-            country="USA"
+            country="USA",
         )
         validation_service._validate_address(invalid_zip_address, result)
         assert result.is_valid is False
@@ -208,16 +235,19 @@ class TestComprehensiveValidation:
 
     # Name validation tests
 
-    @pytest.mark.parametrize("name,is_valid", [
-        ("John", True),
-        ("Mary-Ann", True),
-        ("O'Connor", True),
-        ("Jean-Claude", True),
-        ("", False),
-        ("A" * 101, False),  # Too long
-        ("John123", False),  # Contains numbers
-        ("John@Doe", False),  # Contains special characters
-    ])
+    @pytest.mark.parametrize(
+        "name,is_valid",
+        [
+            ("John", True),
+            ("Mary-Ann", True),
+            ("O'Connor", True),
+            ("Jean-Claude", True),
+            ("", False),
+            ("A" * 101, False),  # Too long
+            ("John123", False),  # Contains numbers
+            ("John@Doe", False),  # Contains special characters
+        ],
+    )
     def test_name_validation(self, name, is_valid):
         """Test name validation with various inputs."""
         result, _ = validate_name(name)
@@ -253,10 +283,14 @@ class TestComprehensiveValidation:
     # Comprehensive validation tests
 
     @pytest.mark.asyncio
-    async def test_comprehensive_person_create_validation(self, validation_service, valid_person_data):
+    async def test_comprehensive_person_create_validation(
+        self, validation_service, valid_person_data
+    ):
         """Test comprehensive validation for person creation."""
         # Setup - valid data
-        validation_service.mock_db.get_person_by_email.return_value = None  # Email is unique
+        validation_service.mock_db.get_person_by_email.return_value = (
+            None  # Email is unique
+        )
         result = await validation_service.validate_person_create(valid_person_data)
         assert result.is_valid is True
 
@@ -268,12 +302,8 @@ class TestComprehensiveValidation:
             phone="123",  # Too short
             dateOfBirth="2099-01-01",  # Future date
             address=Address(
-                street="",
-                city="",
-                state="",
-                zipCode="invalid",
-                country=""
-            )
+                street="", city="", state="", zipCode="invalid", country=""
+            ),
         )
         validation_service.mock_db.get_person_by_email.return_value = None
         result = await validation_service.validate_person_create(invalid_person)
@@ -302,10 +332,14 @@ class TestComprehensiveValidation:
             lastName="Smith",
             email="jane.smith@example.com",
             phone="+19876543210",
-            dateOfBirth="1985-05-15"
+            dateOfBirth="1985-05-15",
         )
-        validation_service.mock_db.get_person_by_email.return_value = None  # Email is unique
-        result = await validation_service.validate_person_update("test-person-id", valid_update)
+        validation_service.mock_db.get_person_by_email.return_value = (
+            None  # Email is unique
+        )
+        result = await validation_service.validate_person_update(
+            "test-person-id", valid_update
+        )
         assert result.is_valid is True
 
         # Setup - all fields invalid (but valid enough for Pydantic to create the object)
@@ -314,10 +348,12 @@ class TestComprehensiveValidation:
             lastName="",  # Empty
             email="invalid@email.com",  # Valid format but will be tested by validation service
             phone="123",  # Too short
-            dateOfBirth="2099-01-01"  # Future date
+            dateOfBirth="2099-01-01",  # Future date
         )
         validation_service.mock_db.get_person_by_email.return_value = None
-        result = await validation_service.validate_person_update("test-person-id", invalid_update)
+        result = await validation_service.validate_person_update(
+            "test-person-id", invalid_update
+        )
         assert result.is_valid is False
         assert len(result.errors) >= 4  # At least one error for each invalid field
 
@@ -334,18 +370,26 @@ class TestComprehensiveValidation:
         """Test validation for partial updates (only some fields provided)."""
         # Setup - only update first name (valid)
         partial_update = PersonUpdate(first_name="Jane")
-        result = await validation_service.validate_person_update("test-person-id", partial_update)
+        result = await validation_service.validate_person_update(
+            "test-person-id", partial_update
+        )
         assert result.is_valid is True
 
         # Setup - only update email (valid)
         partial_update = PersonUpdate(email="jane.doe@example.com")
-        validation_service.mock_db.get_person_by_email.return_value = None  # Email is unique
-        result = await validation_service.validate_person_update("test-person-id", partial_update)
+        validation_service.mock_db.get_person_by_email.return_value = (
+            None  # Email is unique
+        )
+        result = await validation_service.validate_person_update(
+            "test-person-id", partial_update
+        )
         assert result.is_valid is True
 
         # Setup - only update phone (invalid)
         partial_update = PersonUpdate(phone="invalid")
-        result = await validation_service.validate_person_update("test-person-id", partial_update)
+        result = await validation_service.validate_person_update(
+            "test-person-id", partial_update
+        )
         assert result.is_valid is False
         assert len(result.errors) == 1
         assert result.errors[0].field == "phone"
@@ -358,7 +402,7 @@ class TestComprehensiveValidation:
         result1.add_error(
             field="field1",
             message="Error in field1",
-            code=ValidationErrorType.REQUIRED_FIELD
+            code=ValidationErrorType.REQUIRED_FIELD,
         )
 
         # Create second validation result
@@ -366,7 +410,7 @@ class TestComprehensiveValidation:
         result2.add_error(
             field="field2",
             message="Error in field2",
-            code=ValidationErrorType.INVALID_FORMAT
+            code=ValidationErrorType.INVALID_FORMAT,
         )
 
         # Merge results
@@ -387,5 +431,5 @@ class TestComprehensiveValidation:
         assert len(result1.errors) == 2
 
 
-if __name__ == '__main__':
-    pytest.main([__file__, '-v'])
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

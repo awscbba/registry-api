@@ -9,41 +9,50 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
 from enum import Enum
 
-from ..models.security_event import SecurityEvent, SecurityEventType, SecurityEventSeverity
+from ..models.security_event import (
+    SecurityEvent,
+    SecurityEventType,
+    SecurityEventSeverity,
+)
 from .email_service import EmailService
+
 
 class AlertChannel(Enum):
     """Alert notification channels"""
+
     EMAIL = "email"
     SNS = "sns"
     SLACK = "slack"
     WEBHOOK = "webhook"
+
 
 class SecurityAlertService:
     """Service for managing security alerts and notifications"""
 
     def __init__(self):
         self.email_service = EmailService()
-        self.sns_client = boto3.client('sns')
-        self.dynamodb = boto3.resource('dynamodb')
+        self.sns_client = boto3.client("sns")
+        self.dynamodb = boto3.resource("dynamodb")
 
         # Initialize tables
-        self.audit_logs_table = self.dynamodb.Table('AuditLogsTable')
-        self.alert_config_table = self.dynamodb.Table('AlertConfigTable')  # Would need to be created
+        self.audit_logs_table = self.dynamodb.Table("AuditLogsTable")
+        self.alert_config_table = self.dynamodb.Table(
+            "AlertConfigTable"
+        )  # Would need to be created
 
         # Alert thresholds
         self.alert_thresholds = {
-            'failed_logins_per_hour': 10,
-            'failed_logins_per_ip_per_hour': 5,
-            'password_resets_per_hour': 5,
-            'account_lockouts_per_hour': 3,
-            'suspicious_activity_threshold': 1
+            "failed_logins_per_hour": 10,
+            "failed_logins_per_ip_per_hour": 5,
+            "password_resets_per_hour": 5,
+            "account_lockouts_per_hour": 3,
+            "suspicious_activity_threshold": 1,
         }
 
         # Admin notification emails (would be configurable)
         self.admin_emails = [
-            'security@people-register.local',
-            'admin@people-register.local'
+            "security@people-register.local",
+            "admin@people-register.local",
         ]
 
     def process_security_event(self, event: SecurityEvent) -> bool:
@@ -101,29 +110,34 @@ class SecurityAlertService:
             # Check for multiple failed logins from same IP
             if event.event_type == SecurityEventType.LOGIN_FAILED and event.ip_address:
                 recent_failures = self._get_recent_events_by_ip(
-                    event.ip_address,
-                    SecurityEventType.LOGIN_FAILED,
-                    hours=1
+                    event.ip_address, SecurityEventType.LOGIN_FAILED, hours=1
                 )
-                if len(recent_failures) >= self.alert_thresholds['failed_logins_per_ip_per_hour']:
+                if (
+                    len(recent_failures)
+                    >= self.alert_thresholds["failed_logins_per_ip_per_hour"]
+                ):
                     return True
 
             # Check for multiple password resets
             if event.event_type == SecurityEventType.PASSWORD_RESET_REQUESTED:
                 recent_resets = self._get_recent_events_by_type(
-                    SecurityEventType.PASSWORD_RESET_REQUESTED,
-                    hours=1
+                    SecurityEventType.PASSWORD_RESET_REQUESTED, hours=1
                 )
-                if len(recent_resets) >= self.alert_thresholds['password_resets_per_hour']:
+                if (
+                    len(recent_resets)
+                    >= self.alert_thresholds["password_resets_per_hour"]
+                ):
                     return True
 
             # Check for multiple account lockouts
             if event.event_type == SecurityEventType.ACCOUNT_LOCKED:
                 recent_lockouts = self._get_recent_events_by_type(
-                    SecurityEventType.ACCOUNT_LOCKED,
-                    hours=1
+                    SecurityEventType.ACCOUNT_LOCKED, hours=1
                 )
-                if len(recent_lockouts) >= self.alert_thresholds['account_lockouts_per_hour']:
+                if (
+                    len(recent_lockouts)
+                    >= self.alert_thresholds["account_lockouts_per_hour"]
+                ):
                     return True
 
             return False
@@ -132,46 +146,50 @@ class SecurityAlertService:
             print(f"Error checking event patterns: {str(e)}")
             return False
 
-    def _get_recent_events_by_ip(self, ip_address: str, event_type: SecurityEventType, hours: int = 1) -> List[Dict]:
+    def _get_recent_events_by_ip(
+        self, ip_address: str, event_type: SecurityEventType, hours: int = 1
+    ) -> List[Dict]:
         """Get recent events from specific IP address"""
         try:
             end_time = datetime.utcnow()
             start_time = end_time - timedelta(hours=hours)
 
             response = self.audit_logs_table.scan(
-                FilterExpression='ipAddress = :ip AND eventType = :event_type AND #ts BETWEEN :start AND :end',
-                ExpressionAttributeNames={'#ts': 'timestamp'},
+                FilterExpression="ipAddress = :ip AND eventType = :event_type AND #ts BETWEEN :start AND :end",
+                ExpressionAttributeNames={"#ts": "timestamp"},
                 ExpressionAttributeValues={
-                    ':ip': ip_address,
-                    ':event_type': event_type.value,
-                    ':start': start_time.isoformat(),
-                    ':end': end_time.isoformat()
-                }
+                    ":ip": ip_address,
+                    ":event_type": event_type.value,
+                    ":start": start_time.isoformat(),
+                    ":end": end_time.isoformat(),
+                },
             )
 
-            return response.get('Items', [])
+            return response.get("Items", [])
 
         except Exception as e:
             print(f"Error getting recent events by IP: {str(e)}")
             return []
 
-    def _get_recent_events_by_type(self, event_type: SecurityEventType, hours: int = 1) -> List[Dict]:
+    def _get_recent_events_by_type(
+        self, event_type: SecurityEventType, hours: int = 1
+    ) -> List[Dict]:
         """Get recent events of specific type"""
         try:
             end_time = datetime.utcnow()
             start_time = end_time - timedelta(hours=hours)
 
             response = self.audit_logs_table.scan(
-                FilterExpression='eventType = :event_type AND #ts BETWEEN :start AND :end',
-                ExpressionAttributeNames={'#ts': 'timestamp'},
+                FilterExpression="eventType = :event_type AND #ts BETWEEN :start AND :end",
+                ExpressionAttributeNames={"#ts": "timestamp"},
                 ExpressionAttributeValues={
-                    ':event_type': event_type.value,
-                    ':start': start_time.isoformat(),
-                    ':end': end_time.isoformat()
-                }
+                    ":event_type": event_type.value,
+                    ":start": start_time.isoformat(),
+                    ":end": end_time.isoformat(),
+                },
             )
 
-            return response.get('Items', [])
+            return response.get("Items", [])
 
         except Exception as e:
             print(f"Error getting recent events by type: {str(e)}")
@@ -199,17 +217,22 @@ class SecurityAlertService:
         }
 
         return {
-            'id': f"alert-{event.id}",
-            'title': alert_titles.get(event.event_type, f"Security Event: {event.event_type.value}"),
-            'message': alert_messages.get(event.event_type, f"Security event detected: {event.event_type.value}"),
-            'severity': event.severity.value,
-            'event_type': event.event_type.value,
-            'timestamp': event.timestamp.isoformat(),
-            'user_email': event.user_email,
-            'ip_address': event.ip_address,
-            'details': event.details,
-            'action_required': event.severity in [SecurityEventSeverity.HIGH, SecurityEventSeverity.CRITICAL],
-            'acknowledged': False
+            "id": f"alert-{event.id}",
+            "title": alert_titles.get(
+                event.event_type, f"Security Event: {event.event_type.value}"
+            ),
+            "message": alert_messages.get(
+                event.event_type, f"Security event detected: {event.event_type.value}"
+            ),
+            "severity": event.severity.value,
+            "event_type": event.event_type.value,
+            "timestamp": event.timestamp.isoformat(),
+            "user_email": event.user_email,
+            "ip_address": event.ip_address,
+            "details": event.details,
+            "action_required": event.severity
+            in [SecurityEventSeverity.HIGH, SecurityEventSeverity.CRITICAL],
+            "acknowledged": False,
         }
 
     def _send_alert_notifications(self, alert: Dict[str, Any]):
@@ -268,7 +291,7 @@ class SecurityAlertService:
                     to_email=admin_email,
                     subject=subject,
                     html_content=html_content,
-                    text_content=f"Security Alert: {alert['title']}\n\n{alert['message']}\n\nSeverity: {alert['severity']}\nTime: {alert['timestamp']}"
+                    text_content=f"Security Alert: {alert['title']}\n\n{alert['message']}\n\nSeverity: {alert['severity']}\nTime: {alert['timestamp']}",
                 )
 
         except Exception as e:
@@ -281,9 +304,9 @@ class SecurityAlertService:
             sns_topic_arn = "arn:aws:sns:us-east-1:123456789012:security-alerts"
 
             message = {
-                'default': f"Security Alert: {alert['title']}",
-                'email': f"Security Alert: {alert['title']}\n\n{alert['message']}\n\nSeverity: {alert['severity']}\nTime: {alert['timestamp']}",
-                'sms': f"Security Alert: {alert['title']} - {alert['severity']}"
+                "default": f"Security Alert: {alert['title']}",
+                "email": f"Security Alert: {alert['title']}\n\n{alert['message']}\n\nSeverity: {alert['severity']}\nTime: {alert['timestamp']}",
+                "sms": f"Security Alert: {alert['title']} - {alert['severity']}",
             }
 
             # Uncomment when SNS is configured
@@ -303,11 +326,17 @@ class SecurityAlertService:
         """Check if automated responses should be triggered"""
         try:
             # Auto-block IP after multiple brute force attempts
-            if event.event_type == SecurityEventType.BRUTE_FORCE_ATTEMPT and event.ip_address:
+            if (
+                event.event_type == SecurityEventType.BRUTE_FORCE_ATTEMPT
+                and event.ip_address
+            ):
                 self._consider_ip_blocking(event.ip_address)
 
             # Auto-disable account after suspicious activity
-            if event.event_type == SecurityEventType.SUSPICIOUS_ACTIVITY and event.user_id:
+            if (
+                event.event_type == SecurityEventType.SUSPICIOUS_ACTIVITY
+                and event.user_id
+            ):
                 self._consider_account_suspension(event.user_id)
 
         except Exception as e:
@@ -318,9 +347,7 @@ class SecurityAlertService:
         try:
             # Check recent brute force attempts from this IP
             recent_attempts = self._get_recent_events_by_ip(
-                ip_address,
-                SecurityEventType.BRUTE_FORCE_ATTEMPT,
-                hours=1
+                ip_address, SecurityEventType.BRUTE_FORCE_ATTEMPT, hours=1
             )
 
             if len(recent_attempts) >= 3:  # Threshold for auto-blocking
@@ -359,13 +386,13 @@ class SecurityAlertService:
             # This would query alert history
             # For now, return placeholder data
             return {
-                'total_alerts': 0,
-                'critical_alerts': 0,
-                'high_alerts': 0,
-                'medium_alerts': 0,
-                'low_alerts': 0,
-                'alerts_by_type': {},
-                'recent_alerts': []
+                "total_alerts": 0,
+                "critical_alerts": 0,
+                "high_alerts": 0,
+                "medium_alerts": 0,
+                "low_alerts": 0,
+                "alerts_by_type": {},
+                "recent_alerts": [],
             }
 
         except Exception as e:

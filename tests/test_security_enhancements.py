@@ -11,16 +11,21 @@ from datetime import datetime
 from unittest.mock import Mock, AsyncMock, patch
 
 # Add the src directory to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from src.handlers.people_handler import app
 from src.models.person import Person, PersonResponse
-from src.models.security_event import SecurityEvent, SecurityEventType, SecurityEventSeverity
+from src.models.security_event import (
+    SecurityEvent,
+    SecurityEventType,
+    SecurityEventSeverity,
+)
 from fastapi.testclient import TestClient
 from fastapi import Request
 
 # Create test client
 client = TestClient(app)
+
 
 def create_mock_person():
     """Create a mock person for testing"""
@@ -36,13 +41,14 @@ def create_mock_person():
             "city": "Anytown",
             "state": "CA",
             "zip_code": "12345",
-            "country": "USA"
+            "country": "USA",
         },
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow(),
         is_active=True,
-        email_verified=True
+        email_verified=True,
     )
+
 
 def create_mock_user():
     """Create a mock authenticated user"""
@@ -58,13 +64,14 @@ def create_mock_user():
             "city": "Authtown",
             "state": "NY",
             "zip_code": "54321",
-            "country": "USA"
+            "country": "USA",
         },
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow(),
         is_active=True,
-        email_verified=True
+        email_verified=True,
     )
+
 
 async def test_list_people_security_enhancements():
     """Test security enhancements for list_people endpoint"""
@@ -73,11 +80,20 @@ async def test_list_people_security_enhancements():
     mock_user = create_mock_user()
     mock_people = [create_mock_person()]
 
-    with patch('src.handlers.people_handler.db_service') as mock_db, \
-         patch('src.handlers.people_handler.get_current_user', return_value=mock_user), \
-         patch('src.handlers.people_handler.require_no_password_change', return_value=mock_user), \
-         patch('src.handlers.people_handler._log_people_list_access_event') as mock_log_access, \
-         patch('src.handlers.people_handler._log_people_list_success_event') as mock_log_success:
+    with (
+        patch("src.handlers.people_handler.db_service") as mock_db,
+        patch("src.handlers.people_handler.get_current_user", return_value=mock_user),
+        patch(
+            "src.handlers.people_handler.require_no_password_change",
+            return_value=mock_user,
+        ),
+        patch(
+            "src.handlers.people_handler._log_people_list_access_event"
+        ) as mock_log_access,
+        patch(
+            "src.handlers.people_handler._log_people_list_success_event"
+        ) as mock_log_success,
+    ):
 
         mock_db.list_people.return_value = mock_people
 
@@ -97,14 +113,20 @@ async def test_list_people_security_enhancements():
 
         print("✓ list_people security enhancements working correctly")
 
+
 async def test_list_people_validation():
     """Test input validation for list_people endpoint"""
     print("Testing list_people input validation...")
 
     mock_user = create_mock_user()
 
-    with patch('src.handlers.people_handler.get_current_user', return_value=mock_user), \
-         patch('src.handlers.people_handler.require_no_password_change', return_value=mock_user):
+    with (
+        patch("src.handlers.people_handler.get_current_user", return_value=mock_user),
+        patch(
+            "src.handlers.people_handler.require_no_password_change",
+            return_value=mock_user,
+        ),
+    ):
 
         # Test invalid limit (too high)
         response = client.get("/people?limit=2000")
@@ -121,6 +143,7 @@ async def test_list_people_validation():
 
         print("✓ list_people input validation working correctly")
 
+
 async def test_get_person_security_enhancements():
     """Test security enhancements for get_person endpoint"""
     print("Testing get_person security enhancements...")
@@ -128,11 +151,20 @@ async def test_get_person_security_enhancements():
     mock_user = create_mock_user()
     mock_person = create_mock_person()
 
-    with patch('src.handlers.people_handler.db_service') as mock_db, \
-         patch('src.handlers.people_handler.get_current_user', return_value=mock_user), \
-         patch('src.handlers.people_handler.require_no_password_change', return_value=mock_user), \
-         patch('src.handlers.people_handler._log_person_access_event') as mock_log_access, \
-         patch('src.handlers.people_handler._log_person_access_success_event') as mock_log_success:
+    with (
+        patch("src.handlers.people_handler.db_service") as mock_db,
+        patch("src.handlers.people_handler.get_current_user", return_value=mock_user),
+        patch(
+            "src.handlers.people_handler.require_no_password_change",
+            return_value=mock_user,
+        ),
+        patch(
+            "src.handlers.people_handler._log_person_access_event"
+        ) as mock_log_access,
+        patch(
+            "src.handlers.people_handler._log_person_access_success_event"
+        ) as mock_log_success,
+    ):
 
         mock_db.get_person.return_value = mock_person
 
@@ -151,17 +183,27 @@ async def test_get_person_security_enhancements():
 
         print("✓ get_person security enhancements working correctly")
 
+
 async def test_get_person_not_found():
     """Test not found handling for get_person endpoint"""
     print("Testing get_person not found handling...")
 
     mock_user = create_mock_user()
 
-    with patch('src.handlers.people_handler.db_service') as mock_db, \
-         patch('src.handlers.people_handler.get_current_user', return_value=mock_user), \
-         patch('src.handlers.people_handler.require_no_password_change', return_value=mock_user), \
-         patch('src.handlers.people_handler._log_person_access_event') as mock_log_access, \
-         patch('src.handlers.people_handler._log_person_not_found_event') as mock_log_not_found:
+    with (
+        patch("src.handlers.people_handler.db_service") as mock_db,
+        patch("src.handlers.people_handler.get_current_user", return_value=mock_user),
+        patch(
+            "src.handlers.people_handler.require_no_password_change",
+            return_value=mock_user,
+        ),
+        patch(
+            "src.handlers.people_handler._log_person_access_event"
+        ) as mock_log_access,
+        patch(
+            "src.handlers.people_handler._log_person_not_found_event"
+        ) as mock_log_not_found,
+    ):
 
         mock_db.get_person.return_value = None
 
@@ -179,14 +221,20 @@ async def test_get_person_not_found():
 
         print("✓ get_person not found handling working correctly")
 
+
 async def test_get_person_validation():
     """Test input validation for get_person endpoint"""
     print("Testing get_person input validation...")
 
     mock_user = create_mock_user()
 
-    with patch('src.handlers.people_handler.get_current_user', return_value=mock_user), \
-         patch('src.handlers.people_handler.require_no_password_change', return_value=mock_user):
+    with (
+        patch("src.handlers.people_handler.get_current_user", return_value=mock_user),
+        patch(
+            "src.handlers.people_handler.require_no_password_change",
+            return_value=mock_user,
+        ),
+    ):
 
         # Test empty person_id
         response = client.get("/people/ ")
@@ -196,14 +244,15 @@ async def test_get_person_validation():
 
         print("✓ get_person input validation working correctly")
 
+
 async def test_security_event_logging():
     """Test that security events are properly structured"""
     print("Testing security event logging...")
 
     # Test that security event types are properly defined
-    assert hasattr(SecurityEventType, 'PERSON_ACCESS')
-    assert hasattr(SecurityEventType, 'PERSON_LIST_ACCESS')
-    assert hasattr(SecurityEventType, 'PERSON_SEARCH')
+    assert hasattr(SecurityEventType, "PERSON_ACCESS")
+    assert hasattr(SecurityEventType, "PERSON_LIST_ACCESS")
+    assert hasattr(SecurityEventType, "PERSON_SEARCH")
 
     # Test security event creation
     event = SecurityEvent(
@@ -214,7 +263,7 @@ async def test_security_event_logging():
         user_id="test-user",
         ip_address="192.168.1.1",
         user_agent="Test Agent",
-        details={"action": "person_access_request"}
+        details={"action": "person_access_request"},
     )
 
     assert event.event_type == SecurityEventType.PERSON_ACCESS
@@ -222,6 +271,7 @@ async def test_security_event_logging():
     assert event.details["action"] == "person_access_request"
 
     print("✓ Security event logging structure working correctly")
+
 
 async def test_response_structure():
     """Test that responses exclude sensitive fields"""
@@ -239,7 +289,7 @@ async def test_response_structure():
             "city": "Anytown",
             "state": "CA",
             "zip_code": "12345",
-            "country": "USA"
+            "country": "USA",
         },
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow(),
@@ -248,7 +298,7 @@ async def test_response_structure():
         password_hash="secret_hash",  # This should be excluded
         password_salt="secret_salt",  # This should be excluded
         password_history=["old_hash1", "old_hash2"],  # This should be excluded
-        email_verification_token="secret_token"  # This should be excluded
+        email_verification_token="secret_token",  # This should be excluded
     )
 
     # Test PersonResponse excludes sensitive fields
@@ -257,9 +307,14 @@ async def test_response_structure():
 
     # Check that sensitive fields are not included
     sensitive_fields = [
-        'password_hash', 'password_salt', 'password_history',
-        'email_verification_token', 'failed_login_attempts',
-        'account_locked_until', 'last_login_at', 'require_password_change'
+        "password_hash",
+        "password_salt",
+        "password_history",
+        "email_verification_token",
+        "failed_login_attempts",
+        "account_locked_until",
+        "last_login_at",
+        "require_password_change",
     ]
 
     for field in sensitive_fields:
@@ -267,15 +322,24 @@ async def test_response_structure():
 
     # Check that expected fields are included
     expected_fields = [
-        'id', 'firstName', 'lastName', 'email', 'phone',
-        'dateOfBirth', 'address', 'createdAt', 'updatedAt',
-        'isActive', 'emailVerified'
+        "id",
+        "firstName",
+        "lastName",
+        "email",
+        "phone",
+        "dateOfBirth",
+        "address",
+        "createdAt",
+        "updatedAt",
+        "isActive",
+        "emailVerified",
     ]
 
     for field in expected_fields:
         assert field in response_dict, f"Expected field {field} not found in response"
 
     print("✓ Response structure correctly excludes sensitive fields")
+
 
 async def main():
     """Run all security enhancement tests"""
@@ -302,10 +366,12 @@ async def main():
     except Exception as e:
         print(f"\n❌ Test failed: {str(e)}")
         import traceback
+
         traceback.print_exc()
         return False
 
     return True
+
 
 if __name__ == "__main__":
     success = asyncio.run(main())

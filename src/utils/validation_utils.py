@@ -1,6 +1,7 @@
 """
 Validation utilities for common validation patterns and functions.
 """
+
 import re
 from datetime import datetime, date
 from typing import List, Optional, Pattern
@@ -22,7 +23,7 @@ def validate_email_format(email: str) -> tuple[bool, Optional[str]]:
     email = email.strip()
 
     # Basic email regex pattern
-    email_pattern = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+    email_pattern = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
 
     if not email_pattern.match(email):
         return False, "Invalid email format"
@@ -37,20 +38,22 @@ class ValidationPatterns:
     """Common regex patterns for validation."""
 
     # Phone number patterns
-    US_PHONE = re.compile(r'^\+?1?[-.\s]?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})$')
-    INTERNATIONAL_PHONE = re.compile(r'^\+?[1-9]\d{6,14}$')
+    US_PHONE = re.compile(
+        r"^\+?1?[-.\s]?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})$"
+    )
+    INTERNATIONAL_PHONE = re.compile(r"^\+?[1-9]\d{6,14}$")
 
     # Name patterns
-    NAME = re.compile(r'^[a-zA-Z\s\-\'\.]+$')
+    NAME = re.compile(r"^[a-zA-Z\s\-\'\.]+$")
 
     # Address patterns
-    ZIP_CODE_US = re.compile(r'^\d{5}(-\d{4})?$')
-    ZIP_CODE_CANADA = re.compile(r'^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$')
+    ZIP_CODE_US = re.compile(r"^\d{5}(-\d{4})?$")
+    ZIP_CODE_CANADA = re.compile(r"^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$")
 
     # General patterns
-    ALPHANUMERIC = re.compile(r'^[a-zA-Z0-9]+$')
-    ALPHA_ONLY = re.compile(r'^[a-zA-Z]+$')
-    NUMERIC_ONLY = re.compile(r'^\d+$')
+    ALPHANUMERIC = re.compile(r"^[a-zA-Z0-9]+$")
+    ALPHA_ONLY = re.compile(r"^[a-zA-Z]+$")
+    NUMERIC_ONLY = re.compile(r"^\d+$")
 
 
 class PhoneValidator:
@@ -78,8 +81,8 @@ class PhoneValidator:
             return True, None
 
         # Check international format (7-15 digits, may start with +)
-        if phone.startswith('+'):
-            digits_only = re.sub(r'\D', '', phone[1:])  # Remove + and non-digits
+        if phone.startswith("+"):
+            digits_only = re.sub(r"\D", "", phone[1:])  # Remove + and non-digits
             if 7 <= len(digits_only) <= 15:
                 return True, None
 
@@ -87,7 +90,10 @@ class PhoneValidator:
         if 7 <= len(cleaned_phone) <= 15 and cleaned_phone.isdigit():
             return True, None
 
-        return False, "Phone number must be 10 digits for US numbers or 7-15 digits for international numbers"
+        return (
+            False,
+            "Phone number must be 10 digits for US numbers or 7-15 digits for international numbers",
+        )
 
     @staticmethod
     def clean_phone_number(phone: str) -> str:
@@ -104,17 +110,19 @@ class PhoneValidator:
             return ""
 
         # Remove all non-digit characters except +
-        if phone.startswith('+'):
-            return '+' + re.sub(r'\D', '', phone[1:])
+        if phone.startswith("+"):
+            return "+" + re.sub(r"\D", "", phone[1:])
         else:
-            return re.sub(r'\D', '', phone)
+            return re.sub(r"\D", "", phone)
 
 
 class DateValidator:
     """Date validation with comprehensive checks."""
 
     @staticmethod
-    def validate_date_format(date_str: str, format_str: str = '%Y-%m-%d') -> tuple[bool, Optional[str]]:
+    def validate_date_format(
+        date_str: str, format_str: str = "%Y-%m-%d"
+    ) -> tuple[bool, Optional[str]]:
         """
         Validate date format.
 
@@ -151,7 +159,7 @@ class DateValidator:
             return False, format_error
 
         try:
-            birth_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            birth_date = datetime.strptime(date_str, "%Y-%m-%d").date()
             today = date.today()
 
             # Check if date is in the future
@@ -173,7 +181,9 @@ class NameValidator:
     """Name validation with cultural sensitivity."""
 
     @staticmethod
-    def validate_name(name: str, field_name: str = "Name") -> tuple[bool, Optional[str]]:
+    def validate_name(
+        name: str, field_name: str = "Name"
+    ) -> tuple[bool, Optional[str]]:
         """
         Validate name field.
 
@@ -197,10 +207,13 @@ class NameValidator:
 
         # Allow letters, spaces, hyphens, apostrophes, and periods
         if not ValidationPatterns.NAME.match(name):
-            return False, f"{field_name} can only contain letters, spaces, hyphens, apostrophes, and periods"
+            return (
+                False,
+                f"{field_name} can only contain letters, spaces, hyphens, apostrophes, and periods",
+            )
 
         # Check for reasonable content (not just spaces/punctuation)
-        if not re.search(r'[a-zA-Z]', name):
+        if not re.search(r"[a-zA-Z]", name):
             return False, f"{field_name} must contain at least one letter"
 
         return True, None
@@ -210,7 +223,9 @@ class AddressValidator:
     """Address validation with country-specific rules."""
 
     @staticmethod
-    def validate_zip_code(zip_code: str, country: str = 'US') -> tuple[bool, Optional[str]]:
+    def validate_zip_code(
+        zip_code: str, country: str = "US"
+    ) -> tuple[bool, Optional[str]]:
         """
         Validate ZIP/postal code based on country.
 
@@ -226,13 +241,13 @@ class AddressValidator:
 
         zip_code = zip_code.strip()
 
-        if country.upper() == 'US':
+        if country.upper() == "US":
             if ValidationPatterns.ZIP_CODE_US.match(zip_code):
                 return True, None
             else:
                 return False, "US ZIP code must be in format 12345 or 12345-6789"
 
-        elif country.upper() == 'CA':
+        elif country.upper() == "CA":
             if ValidationPatterns.ZIP_CODE_CANADA.match(zip_code):
                 return True, None
             else:
@@ -270,12 +285,14 @@ def validate_phone_format(phone: str) -> tuple[bool, Optional[str]]:
     return PhoneValidator.validate_phone_format(phone)
 
 
-def validate_date_format(date_str: str, format_str: str = '%Y-%m-%d') -> tuple[bool, Optional[str]]:
+def validate_date_format(
+    date_str: str, format_str: str = "%Y-%m-%d"
+) -> tuple[bool, Optional[str]]:
     """Alias for DateValidator.validate_date_format for backward compatibility."""
     return DateValidator.validate_date_format(date_str, format_str)
 
 
-def validate_zip_code(zip_code: str, country: str = 'US') -> tuple[bool, Optional[str]]:
+def validate_zip_code(zip_code: str, country: str = "US") -> tuple[bool, Optional[str]]:
     """Alias for AddressValidator.validate_zip_code for backward compatibility."""
     return AddressValidator.validate_zip_code(zip_code, country)
 

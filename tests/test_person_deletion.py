@@ -10,7 +10,8 @@ import uuid
 
 import sys
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from src.services.person_deletion_service import PersonDeletionService
 from src.models.person import PersonDeletionResponse, ReferentialIntegrityError
@@ -44,7 +45,7 @@ class TestPersonDeletionService:
         success, response, error = await self.deletion_service.initiate_deletion(
             person_id=self.test_person_id,
             requesting_user_id=self.test_user_id,
-            reason="Test deletion"
+            reason="Test deletion",
         )
 
         assert not success
@@ -61,22 +62,26 @@ class TestPersonDeletionService:
         # Mock active subscriptions
         mock_subscriptions = [
             {
-                'id': 'sub-1',
-                'projectId': 'proj-1',
-                'status': 'active',
-                'createdAt': '2024-01-01T00:00:00Z'
+                "id": "sub-1",
+                "projectId": "proj-1",
+                "status": "active",
+                "createdAt": "2024-01-01T00:00:00Z",
             },
             {
-                'id': 'sub-2',
-                'projectId': 'proj-2',
-                'status': 'pending',
-                'createdAt': '2024-01-02T00:00:00Z'
-            }
+                "id": "sub-2",
+                "projectId": "proj-2",
+                "status": "pending",
+                "createdAt": "2024-01-02T00:00:00Z",
+            },
         ]
-        self.mock_db_service.get_subscriptions_by_person = Mock(return_value=mock_subscriptions)
+        self.mock_db_service.get_subscriptions_by_person = Mock(
+            return_value=mock_subscriptions
+        )
 
         # Mock projects
-        self.mock_db_service.get_project_by_id = Mock(return_value={'name': 'Test Project'})
+        self.mock_db_service.get_project_by_id = Mock(
+            return_value={"name": "Test Project"}
+        )
 
         # Mock audit logging
         self.mock_db_service.log_security_event = AsyncMock()
@@ -84,7 +89,7 @@ class TestPersonDeletionService:
         success, response, error = await self.deletion_service.initiate_deletion(
             person_id=self.test_person_id,
             requesting_user_id=self.test_user_id,
-            reason="Test deletion"
+            reason="Test deletion",
         )
 
         assert not success
@@ -105,13 +110,15 @@ class TestPersonDeletionService:
         # Mock no active subscriptions
         mock_subscriptions = [
             {
-                'id': 'sub-1',
-                'projectId': 'proj-1',
-                'status': 'cancelled',
-                'createdAt': '2024-01-01T00:00:00Z'
+                "id": "sub-1",
+                "projectId": "proj-1",
+                "status": "cancelled",
+                "createdAt": "2024-01-01T00:00:00Z",
             }
         ]
-        self.mock_db_service.get_subscriptions_by_person = Mock(return_value=mock_subscriptions)
+        self.mock_db_service.get_subscriptions_by_person = Mock(
+            return_value=mock_subscriptions
+        )
 
         # Mock audit logging
         self.mock_db_service.log_security_event = AsyncMock()
@@ -119,7 +126,7 @@ class TestPersonDeletionService:
         success, response, error = await self.deletion_service.initiate_deletion(
             person_id=self.test_person_id,
             requesting_user_id=self.test_user_id,
-            reason="Test deletion"
+            reason="Test deletion",
         )
 
         assert success
@@ -139,8 +146,7 @@ class TestPersonDeletionService:
     async def test_confirm_deletion_invalid_token(self):
         """Test deletion confirmation with invalid token"""
         success, response, error = await self.deletion_service.confirm_deletion(
-            confirmation_token="invalid-token",
-            requesting_user_id=self.test_user_id
+            confirmation_token="invalid-token", requesting_user_id=self.test_user_id
         )
 
         assert not success
@@ -156,16 +162,15 @@ class TestPersonDeletionService:
         expired_time = datetime.utcnow() - timedelta(minutes=1)
 
         self.deletion_service._pending_deletions[token] = {
-            'person_id': self.test_person_id,
-            'requesting_user_id': self.test_user_id,
-            'reason': 'Test',
-            'expires_at': expired_time,
-            'created_at': datetime.utcnow()
+            "person_id": self.test_person_id,
+            "requesting_user_id": self.test_user_id,
+            "reason": "Test",
+            "expires_at": expired_time,
+            "created_at": datetime.utcnow(),
         }
 
         success, response, error = await self.deletion_service.confirm_deletion(
-            confirmation_token=token,
-            requesting_user_id=self.test_user_id
+            confirmation_token=token, requesting_user_id=self.test_user_id
         )
 
         assert not success
@@ -184,16 +189,15 @@ class TestPersonDeletionService:
         future_time = datetime.utcnow() + timedelta(minutes=10)
 
         self.deletion_service._pending_deletions[token] = {
-            'person_id': self.test_person_id,
-            'requesting_user_id': 'different-user',
-            'reason': 'Test',
-            'expires_at': future_time,
-            'created_at': datetime.utcnow()
+            "person_id": self.test_person_id,
+            "requesting_user_id": "different-user",
+            "reason": "Test",
+            "expires_at": future_time,
+            "created_at": datetime.utcnow(),
         }
 
         success, response, error = await self.deletion_service.confirm_deletion(
-            confirmation_token=token,
-            requesting_user_id=self.test_user_id
+            confirmation_token=token, requesting_user_id=self.test_user_id
         )
 
         assert not success
@@ -209,11 +213,11 @@ class TestPersonDeletionService:
         future_time = datetime.utcnow() + timedelta(minutes=10)
 
         self.deletion_service._pending_deletions[token] = {
-            'person_id': self.test_person_id,
-            'requesting_user_id': self.test_user_id,
-            'reason': 'Test',
-            'expires_at': future_time,
-            'created_at': datetime.utcnow()
+            "person_id": self.test_person_id,
+            "requesting_user_id": self.test_user_id,
+            "reason": "Test",
+            "expires_at": future_time,
+            "created_at": datetime.utcnow(),
         }
 
         # Mock person exists
@@ -229,8 +233,7 @@ class TestPersonDeletionService:
         self.mock_db_service.log_security_event = AsyncMock()
 
         success, response, error = await self.deletion_service.confirm_deletion(
-            confirmation_token=token,
-            requesting_user_id=self.test_user_id
+            confirmation_token=token, requesting_user_id=self.test_user_id
         )
 
         assert success
@@ -257,17 +260,17 @@ class TestPersonDeletionService:
         future_time = datetime.utcnow() + timedelta(minutes=10)
 
         self.deletion_service._pending_deletions[expired_token] = {
-            'person_id': 'person-1',
-            'requesting_user_id': 'user-1',
-            'expires_at': expired_time,
-            'created_at': datetime.utcnow()
+            "person_id": "person-1",
+            "requesting_user_id": "user-1",
+            "expires_at": expired_time,
+            "created_at": datetime.utcnow(),
         }
 
         self.deletion_service._pending_deletions[valid_token] = {
-            'person_id': 'person-2',
-            'requesting_user_id': 'user-2',
-            'expires_at': future_time,
-            'created_at': datetime.utcnow()
+            "person_id": "person-2",
+            "requesting_user_id": "user-2",
+            "expires_at": future_time,
+            "created_at": datetime.utcnow(),
         }
 
         # Run cleanup
@@ -284,10 +287,10 @@ class TestPersonDeletionService:
         # Add a pending deletion
         token = str(uuid.uuid4())
         self.deletion_service._pending_deletions[token] = {
-            'person_id': 'person-1',
-            'requesting_user_id': 'user-1',
-            'expires_at': datetime.utcnow() + timedelta(minutes=10),
-            'created_at': datetime.utcnow()
+            "person_id": "person-1",
+            "requesting_user_id": "user-1",
+            "expires_at": datetime.utcnow() + timedelta(minutes=10),
+            "created_at": datetime.utcnow(),
         }
 
         assert self.deletion_service.get_pending_deletions_count() == 1

@@ -7,6 +7,7 @@ import pytest
 import sys
 import os
 from unittest.mock import Mock, patch, MagicMock
+
 try:
     from unittest.mock import AsyncMock
 except ImportError:
@@ -15,21 +16,28 @@ except ImportError:
     class AsyncMock(MagicMock):
         async def __call__(self, *args, **kwargs):
             return super(AsyncMock, self).__call__(*args, **kwargs)
+
+
 from datetime import datetime, timedelta
 import json
 import bcrypt
 import jwt
 
 # Add the src directory to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../src"))
 
 # Import API modules
 from src.services.password_management_service import PasswordManagementService
 from src.services.auth_service import AuthService
 from src.models.auth import LoginRequest
-from src.utils.password_utils import PasswordValidator, PasswordHasher, PasswordGenerator
+from src.utils.password_utils import (
+    PasswordValidator,
+    PasswordHasher,
+    PasswordGenerator,
+)
 from src.utils.jwt_utils import create_tokens_for_user
 from src.models.person import Person
+
 
 class TestPasswordValidationComprehensive:
     """Comprehensive password validation tests"""
@@ -39,7 +47,10 @@ class TestPasswordValidationComprehensive:
         # Too short
         is_valid, errors = PasswordValidator.validate_password("short")
         assert not is_valid
-        assert any('length' in error.lower() or 'characters' in error.lower() for error in errors)
+        assert any(
+            "length" in error.lower() or "characters" in error.lower()
+            for error in errors
+        )
 
         # Minimum length
         is_valid, errors = PasswordValidator.validate_password("ValidPass123!")
@@ -57,7 +68,7 @@ class TestPasswordValidationComprehensive:
             ("UPPERCASE123!", False, "missing lowercase"),
             ("Password!", False, "missing number"),
             ("Password123", False, "missing special character"),
-            ("ValidPassword123!", True, "meets all requirements")
+            ("ValidPassword123!", True, "meets all requirements"),
         ]
 
         for password, should_be_valid, description in test_cases:
@@ -83,7 +94,7 @@ class TestPasswordValidationComprehensive:
             "Password123!",
             "Welcome123!",
             "Admin123!",
-            "Qwerty123!"
+            "Qwerty123!",
         ]
 
         for password in common_passwords:
@@ -92,6 +103,7 @@ class TestPasswordValidationComprehensive:
             # Note: Current implementation may not have dictionary check
             # This test documents the requirement for future enhancement
             # For now, these passwords pass basic complexity requirements
+
 
 class TestPasswordHashingComprehensive:
     """Comprehensive password hashing tests"""
@@ -106,7 +118,7 @@ class TestPasswordHashingComprehensive:
         # Verify hash properties
         assert hashed != password  # Should be hashed
         assert len(hashed) > 50  # bcrypt hashes are long
-        assert hashed.startswith('$2b$')  # bcrypt format$')  # bcrypt format
+        assert hashed.startswith("$2b$")  # bcrypt format$')  # bcrypt format
 
         # Verify password
         assert PasswordHasher.verify_password(password, hashed)
@@ -143,23 +155,25 @@ class TestPasswordHashingComprehensive:
         time_difference = abs(correct_time - incorrect_time)
         assert time_difference < 0.1  # Allow some variance
 
+
 class TestAuthenticationFlowsComprehensive:
     """Comprehensive authentication flow tests"""
 
-    @patch('src.services.auth_service.DynamoDBService')
+    @patch("src.services.auth_service.DynamoDBService")
     @pytest.mark.asyncio
     async def test_complete_login_flow(self, mock_db):
         """Test complete login authentication flow"""
+
         # Mock user data - create a simple object that can be serialized
         class MockUser:
             def __init__(self):
-                self.id = 'test-user-id'
-                self.email = 'test@example.com'
-                self.password_hash = PasswordHasher.hash_password('TestPassword123!')
+                self.id = "test-user-id"
+                self.email = "test@example.com"
+                self.password_hash = PasswordHasher.hash_password("TestPassword123!")
                 self.is_active = True
                 self.failed_login_attempts = 0
-                self.first_name = 'Test'
-                self.last_name = 'User'
+                self.first_name = "Test"
+                self.last_name = "User"
 
         mock_user = MockUser()
 
@@ -173,22 +187,24 @@ class TestAuthenticationFlowsComprehensive:
         auth_service = AuthService()
 
         # Test successful login
-        login_request = LoginRequest(email='test@example.com', password='TestPassword123!')
+        login_request = LoginRequest(
+            email="test@example.com", password="TestPassword123!"
+        )
         success, result, error = await auth_service.authenticate_user(login_request)
 
         assert success
         assert result is not None
-        assert result.user['email'] == 'test@example.com'
+        assert result.user["email"] == "test@example.com"
 
-    @patch('src.services.auth_service.DynamoDBService')
+    @patch("src.services.auth_service.DynamoDBService")
     @pytest.mark.asyncio
     async def test_failed_login_attempts_tracking(self, mock_db):
         """Test failed login attempts tracking"""
         # Mock user with some failed attempts
         mock_user = Mock()
-        mock_user.id = 'test-user-id'
-        mock_user.email = 'test@example.com'
-        mock_user.password_hash = PasswordHasher.hash_password('TestPassword123!')
+        mock_user.id = "test-user-id"
+        mock_user.email = "test@example.com"
+        mock_user.password_hash = PasswordHasher.hash_password("TestPassword123!")
         mock_user.is_active = True
         mock_user.failed_login_attempts = 2
 
@@ -201,7 +217,7 @@ class TestAuthenticationFlowsComprehensive:
         auth_service = AuthService()
 
         # Test failed login
-        login_request = LoginRequest(email='test@example.com', password='WrongPassword')
+        login_request = LoginRequest(email="test@example.com", password="WrongPassword")
         success, result, error = await auth_service.authenticate_user(login_request)
 
         assert not success
@@ -209,15 +225,15 @@ class TestAuthenticationFlowsComprehensive:
         # Verify authentication failed
         assert error == "Invalid email or password"
 
-    @patch('src.services.auth_service.DynamoDBService')
+    @patch("src.services.auth_service.DynamoDBService")
     @pytest.mark.asyncio
     async def test_account_lockout_mechanism(self, mock_db):
         """Test account lockout after multiple failed attempts"""
         # Mock user with maximum failed attempts
         mock_user = Mock()
-        mock_user.id = 'test-user-id'
-        mock_user.email = 'test@example.com'
-        mock_user.password_hash = PasswordHasher.hash_password('TestPassword123!')
+        mock_user.id = "test-user-id"
+        mock_user.email = "test@example.com"
+        mock_user.password_hash = PasswordHasher.hash_password("TestPassword123!")
         mock_user.is_active = True
         mock_user.failed_login_attempts = 5  # At lockout threshold
 
@@ -230,7 +246,7 @@ class TestAuthenticationFlowsComprehensive:
         auth_service = AuthService()
 
         # Test login attempt on locked account
-        login_request = LoginRequest(email='test@example.com', password='WrongPassword')
+        login_request = LoginRequest(email="test@example.com", password="WrongPassword")
         success, result, error = await auth_service.authenticate_user(login_request)
 
         assert not success
@@ -239,20 +255,21 @@ class TestAuthenticationFlowsComprehensive:
         # The auth service returns generic error message for security
         assert error == "Invalid email or password"
 
+
 class TestJWTTokenManagementComprehensive:
     """Comprehensive JWT token management tests"""
 
     def test_jwt_token_generation(self):
         """Test JWT token generation"""
         user_data = {
-            'id': 'test-user-id',
-            'email': 'test@example.com',
-            'firstName': 'Test',
-            'lastName': 'User'
+            "id": "test-user-id",
+            "email": "test@example.com",
+            "firstName": "Test",
+            "lastName": "User",
         }
 
-        tokens = create_tokens_for_user(user_data['id'], user_data)
-        token = tokens['access_token']
+        tokens = create_tokens_for_user(user_data["id"], user_data)
+        token = tokens["access_token"]
 
         assert token is not None
         assert isinstance(token, str)
@@ -260,14 +277,11 @@ class TestJWTTokenManagementComprehensive:
 
     def test_jwt_token_verification(self):
         """Test JWT token verification"""
-        user_data = {
-            'id': 'test-user-id',
-            'email': 'test@example.com'
-        }
+        user_data = {"id": "test-user-id", "email": "test@example.com"}
 
         # Generate token
-        tokens = create_tokens_for_user(user_data['id'], user_data)
-        token = tokens['access_token']
+        tokens = create_tokens_for_user(user_data["id"], user_data)
+        token = tokens["access_token"]
 
         # Verify token - this would require importing the JWT verification function
         # For now, just test that token was created
@@ -276,11 +290,11 @@ class TestJWTTokenManagementComprehensive:
 
     def test_jwt_token_expiration(self):
         """Test JWT token expiration"""
-        user_data = {'id': 'test-user-id', 'email': 'test@example.com'}
+        user_data = {"id": "test-user-id", "email": "test@example.com"}
 
         # Generate token - expiration is handled by the JWT utility
-        tokens = create_tokens_for_user(user_data['id'], user_data)
-        token = tokens['access_token']
+        tokens = create_tokens_for_user(user_data["id"], user_data)
+        token = tokens["access_token"]
 
         # Token should be created
         assert token is not None
@@ -291,10 +305,10 @@ class TestJWTTokenManagementComprehensive:
 
     def test_jwt_token_tampering_detection(self):
         """Test JWT token tampering detection"""
-        user_data = {'id': 'test-user-id', 'email': 'test@example.com'}
+        user_data = {"id": "test-user-id", "email": "test@example.com"}
 
-        tokens = create_tokens_for_user(user_data['id'], user_data)
-        token = tokens['access_token']
+        tokens = create_tokens_for_user(user_data["id"], user_data)
+        token = tokens["access_token"]
 
         # Tamper with token
         tampered_token = token[:-10] + "tampered123"
@@ -302,17 +316,18 @@ class TestJWTTokenManagementComprehensive:
         # Verification would fail - this test documents the requirement
         assert token != tampered_token
 
+
 class TestPasswordResetFlowComprehensive:
     """Comprehensive password reset flow tests"""
 
-    @patch('src.services.password_management_service.DynamoDBService')
+    @patch("src.services.password_management_service.DynamoDBService")
     def test_password_reset_request_flow(self, mock_db):
         """Test password management service functionality"""
         # Mock user exists
         mock_user = {
-            'id': 'test-user-id',
-            'email': 'test@example.com',
-            'isActive': True
+            "id": "test-user-id",
+            "email": "test@example.com",
+            "isActive": True,
         }
 
         mock_db.return_value.get_person.return_value = mock_user
@@ -323,7 +338,7 @@ class TestPasswordResetFlowComprehensive:
         # Test service initialization
         assert password_service is not None
 
-    @patch('src.services.password_management_service.DynamoDBService')
+    @patch("src.services.password_management_service.DynamoDBService")
     def test_password_history_validation(self, mock_db):
         """Test password history validation"""
         # Mock person with password history
@@ -337,14 +352,14 @@ class TestPasswordResetFlowComprehensive:
         # Test service functionality
         assert password_service is not None
 
-    @patch('src.services.password_management_service.DynamoDBService')
+    @patch("src.services.password_management_service.DynamoDBService")
     def test_password_management_service_integration(self, mock_db):
         """Test password management service integration"""
         # Mock person
         mock_person = Mock()
-        mock_person.id = 'test-user-id'
-        mock_person.email = 'test@example.com'
-        mock_person.password_hash = PasswordHasher.hash_password('TestPassword123!')
+        mock_person.id = "test-user-id"
+        mock_person.email = "test@example.com"
+        mock_person.password_hash = PasswordHasher.hash_password("TestPassword123!")
         mock_person.password_history = []
 
         mock_db.return_value.get_person.return_value = mock_person
@@ -357,6 +372,7 @@ class TestPasswordResetFlowComprehensive:
         # Test service integration
         assert password_service is not None
 
+
 class TestSecurityFeaturesComprehensive:
     """Comprehensive security features tests"""
 
@@ -366,7 +382,7 @@ class TestSecurityFeaturesComprehensive:
             "'; DROP TABLE users; --",
             "' OR '1'='1",
             "admin'--",
-            "' UNION SELECT * FROM users--"
+            "' UNION SELECT * FROM users--",
         ]
 
         for malicious_input in malicious_inputs:
@@ -381,7 +397,7 @@ class TestSecurityFeaturesComprehensive:
         xss_payloads = [
             "<script>alert('xss')</script>",
             "javascript:alert('xss')",
-            "<img src=x onerror=alert('xss')>"
+            "<img src=x onerror=alert('xss')>",
         ]
 
         for payload in xss_payloads:
@@ -390,8 +406,8 @@ class TestSecurityFeaturesComprehensive:
 
             # Response should not contain executable script
             response_str = json.dumps({"valid": is_valid, "errors": errors})
-            assert '<script>' not in response_str
-            assert 'javascript:' not in response_str
+            assert "<script>" not in response_str
+            assert "javascript:" not in response_str
 
     def test_rate_limiting_simulation(self):
         """Test rate limiting mechanisms (simulation)"""
@@ -439,5 +455,6 @@ class TestSecurityFeaturesComprehensive:
         time_diff = abs(existing_time - nonexisting_time)
         assert time_diff < 0.1  # Allow reasonable difference for timing variations
 
-if __name__ == '__main__':
-    pytest.main([__file__, '-v'])
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])
