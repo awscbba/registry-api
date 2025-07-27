@@ -1,5 +1,6 @@
 """
 Main entry point for the People Registry API Lambda function.
+Updated: 2025-01-27 - Deploy after CDK handler update
 """
 
 from mangum import Mangum
