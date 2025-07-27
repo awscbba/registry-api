@@ -1,1 +1,0 @@
-# People Register API Package

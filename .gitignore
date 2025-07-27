@@ -44,6 +44,10 @@ htmlcov/
 .aws-sam/
 samconfig.toml
 
+# Deployment artifacts
+deployment-package/
+api-deployment.zip
+
 # Environment variables
 .env
 .env.local
