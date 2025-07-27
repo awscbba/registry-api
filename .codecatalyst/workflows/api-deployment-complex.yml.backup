@@ -1,0 +1,115 @@
+Name: API_Deployment_Pipeline
+SchemaVersion: "1.0"
+
+Triggers:
+  - Type: PUSH
+    Branches:
+      - main
+
+Actions:
+  DeployAPI:
+    Identifier: aws/build@v1
+    Compute:
+      Type: EC2
+    Environment:
+      Connections:
+        - Role: CodeCatalystWorkflowDevelopmentRole-AWSCocha
+          Name: "142728997126"
+      Name: AWS
+    Inputs:
+      Sources:
+        - WorkflowSource
+    Configuration:
+      Steps:
+        - Run: |
+            echo "🚀 API Deployment"
+            echo "================"
+            echo "📅 Start: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            
+            # Install Python and uv
+            echo "📦 Installing Python and uv..."
+            curl -LsSf https://astral.sh/uv/install.sh | sh
+            export PATH="$HOME/.cargo/bin:$PATH"
+            
+            # Setup environment
+            echo "📦 Setting up environment..."
+            uv venv --python=python3.13 --clear
+            source .venv/bin/activate
+            uv pip install -r requirements.txt
+            uv pip install pytest flake8 black
+            
+            # Run tests
+            echo "🧪 Running tests..."
+            export PYTHONPATH="${PYTHONPATH}:$(pwd)/src"
+            python -m pytest tests/ --verbose || {
+                echo "❌ Tests failed"
+                exit 1
+            }
+            
+            # Run linting
+            echo "🔍 Running linting..."
+            flake8 src/ tests/ --max-line-length=88 || {
+                echo "❌ Linting failed"
+                exit 1
+            }
+            
+            # Deploy - sync code to infrastructure repo
+            echo "🔄 Syncing code to infrastructure..."
+            
+            # Install git
+            git config --global user.name "CodeCatalyst API Sync"
+            git config --global user.email "codecatalyst@aws.com"
+            
+            # Clone infrastructure repo
+            INFRA_REPO="https://git.us-west-2.codecatalyst.aws/v1/AWSCocha/people-registry/registry-infrastructure"
+            
+            if git clone "$INFRA_REPO" ../registry-infrastructure; then
+                echo "✅ Infrastructure repo cloned"
+                cd ../registry-infrastructure
+                
+                # Create sync branch
+                SYNC_BRANCH="api-sync-$(date +%Y%m%d-%H%M%S)"
+                git checkout -b "$SYNC_BRANCH"
+                
+                # Sync API code
+                rm -rf lambda/src/
+                rm -f lambda/main.py
+                cp -r ../registry-api/src lambda/
+                cp ../registry-api/main.py lambda/
+                
+                # Update requirements
+                cp ../registry-api/requirements.txt lambda/
+                
+                # Commit and push
+                git add .
+                git commit -m "Sync API code from registry-api"
+                git push origin "$SYNC_BRANCH"
+                
+                echo "✅ Code synchronized to branch: $SYNC_BRANCH"
+            else
+                echo "❌ Failed to clone infrastructure repo"
+                exit 1
+            fi
+            
+            # Basic health check
+            echo "🏥 Running health check..."
+            API_URL="https://2t9blvt2c1.execute-api.us-east-1.amazonaws.com/prod"
+            
+            sleep 30  # Wait for deployment
+            
+            if curl -s "$API_URL/health" | grep -q "healthy"; then
+                echo "✅ Health check passed"
+            else
+                echo "⚠️ Health check failed (may need time to deploy)"
+            fi
+            
+            echo "✅ Deployment completed"
+            echo "⏱️ End: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+      Container:
+        Registry: CODECATALYST
+        Image: CodeCatalystLinux_x86_64:2024_03
+    Outputs:
+      Artifacts:
+        - Name: deploymentResults
+          Files:
+            - "src/**/*"

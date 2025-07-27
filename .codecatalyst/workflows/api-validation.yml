@@ -1,0 +1,111 @@
+Name: API_Validation_Pipeline
+SchemaVersion: "1.0"
+
+Triggers:
+  - Type: PUSH
+  - Type: PULLREQUEST
+    Branches:
+      - main
+    Events:
+      - OPEN
+      - REVISION
+
+Actions:
+  ValidateAPI:
+    Identifier: aws/build@v1
+    Compute:
+      Type: EC2
+    Environment:
+      Connections:
+        - Role: CodeCatalystWorkflowDevelopmentRole-AWSCocha
+          Name: "142728997126"
+      Name: AWS
+    Inputs:
+      Sources:
+        - WorkflowSource
+    Configuration:
+      Steps:
+        - Run: |
+            echo "⚡ API Validation"
+            echo "================"
+            echo "📅 Start: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            
+            # Skip main branch pushes (deployment workflow handles those)
+            BRANCH_NAME="${CODECATALYST_SOURCE_BRANCH_NAME:-unknown}"
+            TRIGGER_TYPE="${CODECATALYST_TRIGGER_TYPE:-PUSH}"
+            
+            if [ "$TRIGGER_TYPE" = "PUSH" ] && [ "$BRANCH_NAME" = "main" ]; then
+                echo "⏭️ Skipping validation for main branch push"
+                echo "📋 Main branch uses deployment workflow"
+                exit 0
+            fi
+            
+            echo "🎯 Mode: validation ($TRIGGER_TYPE on $BRANCH_NAME)"
+            
+            # Install Python and uv
+            echo "📦 Installing Python and uv..."
+            curl -LsSf https://astral.sh/uv/install.sh | sh
+            export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+            
+            # Verify uv installation
+            which uv || echo "uv not found in PATH"
+            uv --version || echo "uv version check failed"
+            
+            # Setup environment
+            echo "📦 Setting up environment..."
+            uv venv --python=python3.13 --clear
+            source .venv/bin/activate
+            uv pip install -r requirements.txt
+            uv pip install pytest flake8 black
+            
+            # Validate critical dependencies are installed
+            echo "🔍 Validating dependencies..."
+            python -c "
+            import sys
+            try:
+                import fastapi, boto3, pytest
+                print('✅ All critical dependencies installed successfully')
+            except ImportError as e:
+                print(f'❌ Missing critical dependency: {e}')
+                sys.exit(1)
+            "
+            
+            # Set AWS environment variables for testing
+            export AWS_DEFAULT_REGION=us-east-1
+            export AWS_REGION=us-east-1
+            export AWS_ACCESS_KEY_ID=testing
+            export AWS_SECRET_ACCESS_KEY=testing
+            
+            # Run tests
+            echo "🧪 Running tests..."
+            export PYTHONPATH="${PYTHONPATH}:$(pwd)/src"
+            python -m pytest tests/ --verbose || {
+                echo "❌ Tests failed"
+                exit 1
+            }
+            
+            # Run linting
+            echo "🔍 Running linting..."
+            flake8 src/ tests/ --max-line-length=88 || {
+                echo "❌ Linting failed"
+                exit 1
+            }
+            
+            # Check formatting
+            echo "🎨 Checking formatting..."
+            black --check src/ tests/ || {
+                echo "❌ Formatting issues found"
+                exit 1
+            }
+            
+            echo "✅ Validation completed successfully"
+            echo "⏱️ End: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+      Container:
+        Registry: CODECATALYST
+        Image: CodeCatalystLinux_x86_64:2024_03
+    Outputs:
+      Artifacts:
+        - Name: validationResults
+          Files:
+            - "src/**/*"
+            - "tests/**/*"
