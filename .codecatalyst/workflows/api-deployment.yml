@@ -35,18 +35,16 @@ Actions:
             which uv || echo "uv not found in PATH"
             uv --version || echo "uv version check failed"
             
-            # Setup environment
+            # Setup environment using modern uv workflow
             echo "📦 Setting up deployment environment..."
-            uv venv --python=python3.13 --clear
-            source .venv/bin/activate
-            uv pip install -r requirements.txt
+            uv sync --frozen
             
             # Validate critical dependencies for deployment
             echo "🔍 Validating deployment dependencies..."
-            python -c "
+            uv run python -c "
             import sys
             try:
-                import fastapi, boto3
+                import fastapi, boto3, mangum
                 print('✅ Deployment dependencies validated')
             except ImportError as e:
                 print(f'❌ Missing deployment dependency: {e}')
@@ -62,11 +60,13 @@ Actions:
             mkdir -p deployment-package
             cp -r src/* deployment-package/
             cp main.py deployment-package/
-            cp requirements.txt deployment-package/
+            cp pyproject.toml deployment-package/
+            cp uv.lock deployment-package/
             
-            # Install dependencies in package
+            # Install dependencies in package using uv
             cd deployment-package
-            pip install -r requirements.txt -t .
+            uv export --format requirements-txt --no-hashes > requirements.txt
+            uv pip install -r requirements.txt --target . --python python3.13
             
             # Create deployment zip
             zip -r ../api-deployment.zip .
