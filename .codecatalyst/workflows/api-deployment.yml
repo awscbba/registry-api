@@ -63,10 +63,12 @@ Actions:
             cp pyproject.toml deployment-package/
             cp uv.lock deployment-package/
             
-            # Install dependencies in package using uv
+            # Install dependencies in package for Lambda Python 3.9 compatibility
             cd deployment-package
             uv export --format requirements-txt --no-hashes > requirements.txt
-            uv pip install -r requirements.txt --target . --python python3.13
+            
+            # Install dependencies using pip with Lambda-compatible approach
+            pip install -r requirements.txt --target . --upgrade --no-user
             
             # Create deployment zip
             zip -r ../api-deployment.zip .
