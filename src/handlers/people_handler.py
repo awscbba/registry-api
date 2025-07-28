@@ -2130,6 +2130,77 @@ async def delete_subscription(subscription_id: str):
         )
 
 
+@app.post("/public/subscribe", status_code=status.HTTP_201_CREATED)
+async def create_subscription_with_person(subscription_data: dict):
+    """Create a subscription with person creation (public endpoint for frontend forms)"""
+    try:
+        from ..models.person import PersonCreate
+        from ..models.subscription import SubscriptionCreate
+
+        # Extract person and subscription data
+        person_data = subscription_data.get("person")
+        project_id = subscription_data.get("projectId")
+        notes = subscription_data.get("notes")
+
+        if not person_data or not project_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Both person data and projectId are required"
+            )
+
+        # Validate person data
+        person_create = PersonCreate(**person_data)
+
+        # Verify project exists
+        project = db_service.get_project_by_id(project_id)
+        if not project:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Project not found"
+            )
+
+        # Check if person already exists by email
+        existing_person = db_service.get_person_by_email(person_create.email)
+        
+        if existing_person:
+            # Use existing person
+            person_id = existing_person["id"]
+        else:
+            # Create new person
+            person_dict = person_create.model_dump()
+            person_dict["isActive"] = True
+            person_dict["emailVerified"] = False
+            person_dict["passwordChangeRequired"] = False
+            
+            created_person = db_service.create_person(person_dict)
+            person_id = created_person["id"]
+
+        # Create subscription
+        subscription_create = SubscriptionCreate(
+            projectId=project_id,
+            personId=person_id,
+            status="pending",
+            notes=notes
+        )
+
+        subscription_dict = subscription_create.model_dump()
+        created_subscription = db_service.create_subscription(subscription_dict)
+
+        return {
+            "message": "Subscription created successfully",
+            "subscription": created_subscription,
+            "person_created": existing_person is None
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating subscription with person: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create subscription"
+        )
+
+
 @app.get("/people/{person_id}/subscriptions")
 async def get_person_subscriptions(person_id: str):
     """Get all subscriptions for a specific person"""
