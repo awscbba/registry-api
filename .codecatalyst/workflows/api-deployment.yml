@@ -26,10 +26,15 @@ Actions:
             echo "================"
             echo "📅 Start: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
             
-            # Install Python and uv
-            echo "📦 Installing Python and uv..."
+            # Install Python, uv, and Docker
+            echo "📦 Installing Python, uv, and Docker..."
             curl -LsSf https://astral.sh/uv/install.sh | sh
             export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+            
+            # Install Docker
+            yum update -y
+            yum install -y docker
+            service docker start
             
             # Verify uv installation
             which uv || echo "uv not found in PATH"
@@ -53,25 +58,23 @@ Actions:
             
             echo "ℹ️ Skipping tests and linting - already validated in PR/merge pipeline"
             
-            # Package for deployment
-            echo "📦 Packaging application for deployment..."
+            # Container-based deployment for Lambda
+            echo "🐳 Building Lambda container for deployment..."
             
-            # Create deployment package
-            mkdir -p deployment-package
-            cp -r src deployment-package/
-            cp main.py deployment-package/
-            cp pyproject.toml deployment-package/
-            cp uv.lock deployment-package/
+            # Create Lambda-compatible requirements
+            uv export --format requirements-txt --no-hashes > requirements-lambda.txt
             
-            # Install dependencies in package for Lambda Python 3.9 compatibility
+            # Build Docker container with Lambda Python 3.9 base
+            docker build -f Dockerfile.lambda -t registry-api-lambda .
+            
+            # Extract deployment package from container (temporary until infrastructure supports containers)
+            docker create --name temp-container registry-api-lambda
+            docker cp temp-container:/var/task ./deployment-package
+            docker rm temp-container
+            
+            # Create deployment zip from extracted container
             cd deployment-package
-            uv export --format requirements-txt --no-hashes > requirements.txt
-            
-            # Install dependencies using pip with Lambda-compatible approach
-            pip install -r requirements.txt --target . --upgrade --no-user
-            
-            # Create deployment zip
-            zip -r ../api-deployment.zip .
+            zip -r ../api-deployment.zip . -x "*.pyc" "__pycache__/*"
             cd ..
             
             echo "✅ Application packaged successfully"
