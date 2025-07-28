@@ -2151,33 +2151,34 @@ async def create_subscription_with_person(subscription_data: dict):
         # Validate person data
         person_create = PersonCreate(**person_data)
 
-        # Verify project exists
+        # Verify project exists (this method is NOT async)
         project = db_service.get_project_by_id(project_id)
         if not project:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Project not found"
             )
 
-        # Check if person already exists by email
+        # Check if person already exists by email (this method IS async)
         existing_person = await db_service.get_person_by_email(person_create.email)
 
         if existing_person:
-            # Use existing person
-            person_id = existing_person["id"]
+            # Use existing person - existing_person is a Person object
+            person_id = existing_person.id
         else:
-            # Create new person - modify the PersonCreate object directly
-            # Note: PersonCreate doesn't have these fields, so we'll pass the original object
-            # and let the Person.create_new() method handle the defaults
+            # Create new person (this method IS async)
             created_person = await db_service.create_person(person_create)
             person_id = created_person.id
 
         # Create subscription
         subscription_create = SubscriptionCreate(
-            projectId=project_id, personId=person_id, status="pending", notes=notes
+            projectId=project_id, 
+            personId=person_id, 
+            status="active",  # Changed from "pending" to "active"
+            notes=notes
         )
 
-        subscription_dict = subscription_create.model_dump()
-        created_subscription = db_service.create_subscription(subscription_dict)
+        # Create subscription (this method is NOT async, but expects SubscriptionCreate object)
+        created_subscription = db_service.create_subscription(subscription_create)
 
         return {
             "message": "Subscription created successfully",
