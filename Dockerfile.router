@@ -1,0 +1,10 @@
+FROM public.ecr.aws/lambda/python:3.9
+
+# Install minimal dependencies for router (just boto3 which is already included in Lambda runtime)
+# Router function only needs boto3 for Lambda invocation, which is included in the base image
+
+# Copy router code
+COPY router_main.py ./
+
+# Set the CMD to the router handler
+CMD ["router_main.lambda_handler"]

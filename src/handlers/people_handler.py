@@ -2159,20 +2159,17 @@ async def create_subscription_with_person(subscription_data: dict):
             )
 
         # Check if person already exists by email
-        existing_person = db_service.get_person_by_email(person_create.email)
+        existing_person = await db_service.get_person_by_email(person_create.email)
 
         if existing_person:
             # Use existing person
             person_id = existing_person["id"]
         else:
-            # Create new person
-            person_dict = person_create.model_dump()
-            person_dict["isActive"] = True
-            person_dict["emailVerified"] = False
-            person_dict["passwordChangeRequired"] = False
-
-            created_person = db_service.create_person(person_dict)
-            person_id = created_person["id"]
+            # Create new person - modify the PersonCreate object directly
+            # Note: PersonCreate doesn't have these fields, so we'll pass the original object
+            # and let the Person.create_new() method handle the defaults
+            created_person = await db_service.create_person(person_create)
+            person_id = created_person.id
 
         # Create subscription
         subscription_create = SubscriptionCreate(
