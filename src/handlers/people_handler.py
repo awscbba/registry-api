@@ -2171,8 +2171,8 @@ async def create_subscription_with_person(subscription_data: dict):
 
         # Create subscription
         subscription_create = SubscriptionCreate(
-            projectId=project_id, 
-            personId=person_id, 
+            projectId=project_id,
+            personId=person_id,
             status="active",  # Changed from "pending" to "active"
             notes=notes
         )
