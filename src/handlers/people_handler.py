@@ -2145,7 +2145,7 @@ async def create_subscription_with_person(subscription_data: dict):
         if not person_data or not project_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Both person data and projectId are required"
+                detail="Both person data and projectId are required",
             )
 
         # Validate person data
@@ -2176,10 +2176,7 @@ async def create_subscription_with_person(subscription_data: dict):
 
         # Create subscription
         subscription_create = SubscriptionCreate(
-            projectId=project_id,
-            personId=person_id,
-            status="pending",
-            notes=notes
+            projectId=project_id, personId=person_id, status="pending", notes=notes
         )
 
         subscription_dict = subscription_create.model_dump()
@@ -2188,7 +2185,7 @@ async def create_subscription_with_person(subscription_data: dict):
         return {
             "message": "Subscription created successfully",
             "subscription": created_subscription,
-            "person_created": existing_person is None
+            "person_created": existing_person is None,
         }
 
     except HTTPException:
@@ -2197,7 +2194,7 @@ async def create_subscription_with_person(subscription_data: dict):
         logger.error(f"Error creating subscription with person: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create subscription"
+            detail="Failed to create subscription",
         )
 
 
