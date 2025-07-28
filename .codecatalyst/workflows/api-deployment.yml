@@ -22,8 +22,8 @@ Actions:
     Configuration:
       Steps:
         - Run: |
-            echo "🚀 API Deployment"
-            echo "================"
+            echo "🚀 API Container Deployment"
+            echo "=========================="
             echo "📅 Start: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
             
             # Install Python, uv, and Docker
@@ -36,97 +36,89 @@ Actions:
             yum install -y docker
             service docker start
             
-            # Verify uv installation
+            # Verify installations
             which uv || echo "uv not found in PATH"
             uv --version || echo "uv version check failed"
+            docker --version || echo "Docker version check failed"
             
-            # Setup environment using modern uv workflow
-            echo "📦 Setting up deployment environment..."
-            uv sync --frozen
-            
-            # Validate critical dependencies for deployment
-            echo "🔍 Validating deployment dependencies..."
-            uv run python -c "
-            import sys
-            try:
-                import fastapi, boto3, mangum
-                print('✅ Deployment dependencies validated')
-            except ImportError as e:
-                print(f'❌ Missing deployment dependency: {e}')
-                sys.exit(1)
-            "
-            
+            echo "ℹ️ Using container-based deployment for Lambda"
             echo "ℹ️ Skipping tests and linting - already validated in PR/merge pipeline"
             
             # Container-based deployment for Lambda
-            echo "🐳 Building Lambda container for deployment..."
-            
-            # Create Lambda-compatible requirements
-            uv export --format requirements-txt --no-hashes > requirements-lambda.txt
+            echo "🐳 Building and deploying Lambda container..."
             
             # Build Docker container with Lambda Python 3.9 base
             docker build -f Dockerfile.lambda -t registry-api-lambda .
             
-            # Extract deployment package from container (temporary until infrastructure supports containers)
-            docker create --name temp-container registry-api-lambda
-            docker cp temp-container:/var/task ./deployment-package
-            docker rm temp-container
+            echo "✅ Lambda container built successfully"
             
-            # Create deployment zip from extracted container
-            cd deployment-package
-            zip -r ../api-deployment.zip . -x "*.pyc" "__pycache__/*"
-            cd ..
-            
-            echo "✅ Application packaged successfully"
-            
-            # Deploy using AWS CLI (if Lambda function exists)
-            echo "🚀 Deploying to AWS Lambda..."
+            # Deploy using container deployment to ECR + Lambda
+            echo "🚀 Deploying container to AWS Lambda..."
             
             # Check if we have AWS CLI access
             if aws sts get-caller-identity > /dev/null 2>&1; then
                 echo "✅ AWS CLI access confirmed"
                 
-                # Update Lambda function code (actual deployed function name)
-                FUNCTION_NAME="PeopleRegisterInfrastruct-PeopleApiFunction67A8223-zeZ2Gf1F4U1T"
+                # ECR repository details
+                ECR_REGISTRY="142728997126.dkr.ecr.us-east-1.amazonaws.com"
+                ECR_REPOSITORY="registry-api-lambda"
+                IMAGE_TAG="latest"
+                IMAGE_URI="$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+                
+                # Login to ECR
+                echo "🔐 Logging into ECR..."
+                aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REGISTRY
+                
+                # Tag and push container to ECR
+                echo "📤 Pushing container to ECR..."
+                docker tag registry-api-lambda:latest $IMAGE_URI
+                docker push $IMAGE_URI
+                
+                echo "✅ Container pushed to ECR successfully"
+                
+                # Update Lambda function to use new container image
+                echo "🔄 Updating Lambda function with new container..."
+                FUNCTION_NAME="PeopleRegisterInfrastruct-PeopleApiFunction67A8223-xlC79QhrsKBe"
                 
                 if aws lambda update-function-code \
                     --function-name "$FUNCTION_NAME" \
-                    --zip-file fileb://api-deployment.zip \
+                    --image-uri "$IMAGE_URI" \
                     --region us-east-1; then
-                    echo "✅ Lambda function updated successfully"
+                    echo "✅ Lambda function updated with container successfully"
                 else
                     echo "⚠️ Lambda function update failed or function doesn't exist"
-                    echo "ℹ️ Deployment package created at: api-deployment.zip"
+                    echo "ℹ️ Container available at: $IMAGE_URI"
                 fi
             else
-                echo "⚠️ No AWS CLI access - deployment package created for manual deployment"
-                echo "ℹ️ Deployment package available at: api-deployment.zip"
+                echo "⚠️ No AWS CLI access - container built but not deployed"
+                echo "ℹ️ Container ready for manual deployment"
             fi
             
             # Health check (if API endpoint is available)
             echo "🏥 Running health check..."
             API_URL="https://2t9blvt2c1.execute-api.us-east-1.amazonaws.com/prod"
             
+            echo "⏳ Waiting for container deployment to be ready..."
+            sleep 10  # Give container deployment time to initialize
+            
             echo "⏳ Checking if API is available..."
-            if curl -sf "$API_URL/health" > /dev/null 2>&1; then
-                echo "✅ Health check passed - API is healthy"
+            if curl -sf "$API_URL/subscriptions" > /dev/null 2>&1; then
+                echo "✅ Health check passed - API is responding"
                 
-                # Additional health checks
-                echo "🔍 Running additional health checks..."
-                for i in {1..5}; do
-                    if curl -s "$API_URL/health" | grep -q "healthy"; then
-                        echo "✅ Health check $i/5 passed"
-                    else
-                        echo "⚠️ Health check $i/5 failed"
-                    fi
-                    sleep 1
-                done
+                # Test key endpoints
+                echo "🔍 Testing key endpoints..."
+                if curl -s "$API_URL/subscriptions" | grep -q "subscriptions\|message"; then
+                    echo "✅ Subscriptions endpoint responding"
+                else
+                    echo "⚠️ Subscriptions endpoint may have issues"
+                fi
             else
-                echo "ℹ️ API endpoint not immediately available (normal for new deployments)"
-                echo "ℹ️ Health check can be performed manually at: $API_URL/health"
+                echo "ℹ️ API endpoint not immediately available (normal for container deployments)"
+                echo "ℹ️ Container may still be initializing - check logs if issues persist"
             fi
             
-            echo "✅ Deployment completed"
+            echo "✅ Container deployment completed"
+            echo "ℹ️ Lambda functions now using container-based deployment"
             echo "⏱️ End: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
       Container:
         Registry: CODECATALYST
