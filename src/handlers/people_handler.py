@@ -2160,7 +2160,7 @@ async def create_subscription_with_person(subscription_data: dict):
 
         # Check if person already exists by email
         existing_person = db_service.get_person_by_email(person_create.email)
-        
+
         if existing_person:
             # Use existing person
             person_id = existing_person["id"]
@@ -2170,7 +2170,7 @@ async def create_subscription_with_person(subscription_data: dict):
             person_dict["isActive"] = True
             person_dict["emailVerified"] = False
             person_dict["passwordChangeRequired"] = False
-            
+
             created_person = db_service.create_person(person_dict)
             person_id = created_person["id"]
 
