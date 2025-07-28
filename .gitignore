@@ -47,6 +47,18 @@ samconfig.toml
 # Deployment artifacts
 deployment-package/
 api-deployment.zip
+*-deployment.zip
+*-deployment/
+fastapi-extracted/
+manual-deployment/
+simple-deployment/
+ultra-simple-deployment/
+docker-output/
+
+# Temporary files
+simple_main.py
+ultra_simple_main.py
+workflow-validation-report.txt
 
 # Environment variables
 .env
