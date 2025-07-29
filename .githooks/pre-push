@@ -4,10 +4,8 @@
 
 echo "🔍 Running pre-push checks..."
 
-# Get the directory of this script (should be .githooks)
-HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# Get the repository root (parent of .githooks)
-REPO_ROOT="$(dirname "$HOOK_DIR")"
+# Get the git repository root directory
+REPO_ROOT="$(git rev-parse --show-toplevel)"
 
 # Change to repository root
 cd "$REPO_ROOT"
@@ -15,6 +13,9 @@ cd "$REPO_ROOT"
 # Check if we're in the right directory
 if [ ! -f "pyproject.toml" ]; then
     echo "❌ Error: Not in registry-api root directory"
+    echo "📍 Current directory: $(pwd)"
+    echo "📍 Expected files: pyproject.toml, src/, .flake8"
+    echo "💡 The hook should run from the repository root"
     exit 1
 fi
 
