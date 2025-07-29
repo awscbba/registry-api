@@ -317,62 +317,19 @@ class TestPersonResponseFormatting:
 class TestAPIDocumentationFile:
     """Test that the API documentation file is comprehensive."""
 
+    @pytest.mark.skip(reason="API documentation moved to centralized registry-documentation repository")
     def test_api_documentation_exists(self):
         """Test that API documentation file exists and has required sections."""
-        doc_path = "docs/API_DOCUMENTATION.md"
-        assert os.path.exists(doc_path), "API documentation file should exist"
+        # NOTE: API documentation has been moved to ../registry-documentation/api/API_DOCUMENTATION.md
+        # This test is skipped as documentation is now centralized
+        pass
 
-        with open(doc_path, "r") as f:
-            content = f.read()
-
-        # Check for required sections
-        required_sections = [
-            "# People Register API Documentation",
-            "## Overview",
-            "## Authentication",
-            "## Response Format",
-            "## HTTP Status Codes",
-            "## Endpoints",
-            "### Health Check",
-            "### Authentication",
-            "### Password Management",
-            "### People Management",
-            "### Search",
-            "### Admin Functions",
-            "## Error Codes",
-            "## Rate Limiting",
-            "## Security Features",
-            "## Field Naming Convention",
-        ]
-
-        for section in required_sections:
-            assert (
-                section in content
-            ), f"Documentation should contain section: {section}"
-
+    @pytest.mark.skip(reason="API documentation moved to centralized registry-documentation repository")
     def test_api_documentation_examples(self):
         """Test that API documentation contains proper examples."""
-        doc_path = "docs/API_DOCUMENTATION.md"
-        with open(doc_path, "r") as f:
-            content = f.read()
-
-        # Check for example responses
-        example_patterns = [
-            '"firstName": "John"',
-            '"lastName": "Doe"',
-            '"dateOfBirth": "1990-01-15"',
-            '"createdAt": "2025-01-22T10:30:00Z"',
-            '"updatedAt": "2025-01-22T10:30:00Z"',
-            '"isActive": true',
-            '"emailVerified": true',
-            '"error": "AUTHENTICATION_FAILED"',
-            '"requestId": "req_123456789"',
-        ]
-
-        for pattern in example_patterns:
-            assert (
-                pattern in content
-            ), f"Documentation should contain example: {pattern}"
+        # NOTE: API documentation has been moved to ../registry-documentation/api/API_DOCUMENTATION.md
+        # This test is skipped as documentation is now centralized
+        pass
 
 
 if __name__ == "__main__":
