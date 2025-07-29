@@ -317,14 +317,18 @@ class TestPersonResponseFormatting:
 class TestAPIDocumentationFile:
     """Test that the API documentation file is comprehensive."""
 
-    @pytest.mark.skip(reason="API documentation moved to centralized registry-documentation repository")
+    @pytest.mark.skip(
+        reason="API documentation moved to centralized registry-documentation repository"
+    )
     def test_api_documentation_exists(self):
         """Test that API documentation file exists and has required sections."""
         # NOTE: API documentation has been moved to ../registry-documentation/api/API_DOCUMENTATION.md
         # This test is skipped as documentation is now centralized
         pass
 
-    @pytest.mark.skip(reason="API documentation moved to centralized registry-documentation repository")
+    @pytest.mark.skip(
+        reason="API documentation moved to centralized registry-documentation repository"
+    )
     def test_api_documentation_examples(self):
         """Test that API documentation contains proper examples."""
         # NOTE: API documentation has been moved to ../registry-documentation/api/API_DOCUMENTATION.md

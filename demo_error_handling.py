@@ -9,14 +9,19 @@ from fastapi import Request
 from unittest.mock import Mock
 
 from src.models.error_handling import (
-    APIException, ErrorCode, ErrorContext, ValidationErrorDetail
+    APIException,
+    ErrorCode,
+    ErrorContext,
+    ValidationErrorDetail,
 )
 from src.models.security_event import SecurityEventType
 from src.services.logging_service import logging_service
 from src.services.rate_limiting_service import rate_limiting_service, RateLimitType
 from src.utils.handler_utils import (
-    create_error_context, create_person_not_found_exception,
-    log_authentication_with_context, log_security_event_with_context
+    create_error_context,
+    create_person_not_found_exception,
+    log_authentication_with_context,
+    log_security_event_with_context,
 )
 
 
@@ -31,7 +36,7 @@ async def demo_structured_logging():
         ip_address="192.168.1.100",
         user_agent="demo-client/1.0",
         path="/people/123",
-        method="GET"
+        method="GET",
     )
 
     # Log various types of events
@@ -40,7 +45,7 @@ async def demo_structured_logging():
         category="PERSON_OPERATIONS",
         message="Demo: Person accessed successfully",
         context=context,
-        additional_data={"demo": True, "operation": "GET_PERSON"}
+        additional_data={"demo": True, "operation": "GET_PERSON"},
     )
 
     await logging_service.log_person_operation(
@@ -48,7 +53,7 @@ async def demo_structured_logging():
         person_id="person-123",
         context=context,
         success=True,
-        details={"accessed_by": "user-456", "demo": True}
+        details={"accessed_by": "user-456", "demo": True},
     )
 
     print("✅ Structured logging events created successfully")
@@ -64,7 +69,7 @@ async def demo_security_event_logging():
         ip_address="192.168.1.100",
         user_agent="demo-client/1.0",
         path="/auth/login",
-        method="POST"
+        method="POST",
     )
 
     # Log failed login attempt
@@ -73,7 +78,7 @@ async def demo_security_event_logging():
         user_email="demo@example.com",
         context=context,
         success=False,
-        failure_reason="Invalid password"
+        failure_reason="Invalid password",
     )
 
     # Log security event
@@ -83,8 +88,8 @@ async def demo_security_event_logging():
         details={
             "email": "demo@example.com",
             "failure_reason": "Invalid password",
-            "demo": True
-        }
+            "demo": True,
+        },
     )
 
     print(f"✅ Security event logged with ID: {event_id}")
@@ -99,7 +104,7 @@ async def demo_rate_limiting():
         request_id="demo-rate-limit-123",
         ip_address="192.168.1.100",
         path="/auth/login",
-        method="POST"
+        method="POST",
     )
 
     # Check rate limit multiple times to show progression
@@ -107,13 +112,17 @@ async def demo_rate_limiting():
         result = await rate_limiting_service.check_rate_limit(
             limit_type=RateLimitType.LOGIN_ATTEMPTS,
             identifier="192.168.1.100",
-            context=context
+            context=context,
         )
 
-        print(f"Attempt {i + 1}: Allowed={result.allowed}, Count={result.current_count}/{result.limit}")
+        print(
+            f"Attempt {i + 1}: Allowed={result.allowed}, Count={result.current_count}/{result.limit}"
+        )
 
         if not result.allowed:
-            print(f"Rate limit exceeded! Retry after {result.retry_after_seconds} seconds")
+            print(
+                f"Rate limit exceeded! Retry after {result.retry_after_seconds} seconds"
+            )
             break
 
     print("✅ Rate limiting demonstration completed")
@@ -129,7 +138,7 @@ async def demo_error_handling():
         ip_address="192.168.1.100",
         user_agent="demo-client/1.0",
         path="/people/nonexistent",
-        method="GET"
+        method="GET",
     )
 
     try:
@@ -137,7 +146,7 @@ async def demo_error_handling():
         raise APIException(
             error_code=ErrorCode.PERSON_NOT_FOUND,
             message="Person with ID nonexistent-id not found",
-            context=context
+            context=context,
         )
 
     except APIException as e:
@@ -168,7 +177,7 @@ async def demo_validation_errors():
         ip_address="192.168.1.100",
         user_agent="demo-client/1.0",
         path="/people",
-        method="POST"
+        method="POST",
     )
 
     # Create validation error details
@@ -177,13 +186,13 @@ async def demo_validation_errors():
             field="email",
             message="Invalid email format",
             code=ErrorCode.INVALID_FORMAT,
-            value="invalid-email"
+            value="invalid-email",
         ),
         ValidationErrorDetail(
             field="phone",
             message="Phone number is required",
-            code=ErrorCode.REQUIRED_FIELD
-        )
+            code=ErrorCode.REQUIRED_FIELD,
+        ),
     ]
 
     try:
@@ -192,7 +201,7 @@ async def demo_validation_errors():
             error_code=ErrorCode.INVALID_FORMAT,
             message="The request contains invalid data",
             details=validation_details,
-            context=context
+            context=context,
         )
 
     except APIException as e:
@@ -220,20 +229,20 @@ async def demo_audit_logging():
         ip_address="192.168.1.100",
         user_agent="demo-client/1.0",
         path="/people/123",
-        method="PUT"
+        method="PUT",
     )
 
     # Log audit event for person update
     before_state = {
         "email": "old@example.com",
         "first_name": "John",
-        "last_name": "Doe"
+        "last_name": "Doe",
     }
 
     after_state = {
         "email": "new@example.com",
         "first_name": "John",
-        "last_name": "Smith"
+        "last_name": "Smith",
     }
 
     await logging_service.log_audit_event(
@@ -243,7 +252,7 @@ async def demo_audit_logging():
         context=context,
         before_state=before_state,
         after_state=after_state,
-        success=True
+        success=True,
     )
 
     print("✅ Audit event logged successfully")
@@ -284,6 +293,7 @@ async def main():
     except Exception as e:
         print(f"\n❌ Demo failed with error: {str(e)}")
         import traceback
+
         traceback.print_exc()
 
 

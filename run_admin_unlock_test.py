@@ -1,6 +1,7 @@
 """
 Script to run the admin account unlock tests.
 """
+
 import pytest
 import sys
 
