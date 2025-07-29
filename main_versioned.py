@@ -1,6 +1,6 @@
 """
-Main entry point for the People Registry API Lambda function.
-Updated: 2025-07-29 - Deploy versioned API with v1/v2 endpoints
+Main entry point for the versioned People Registry API Lambda function.
+This version includes v1 (legacy) and v2 (fixed) endpoints.
 """
 
 from mangum import Mangum
