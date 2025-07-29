@@ -148,20 +148,15 @@ async def create_subscription_v1(subscription_data: dict):
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Project not found"
             )
 
-        # NOTE: This version has the original bugs for compatibility
-        # Missing await keywords and wrong parameter types
-        existing_person = db_service.get_person_by_email(
-            person_create.email
-        )  # Missing await
+        # FIXED: Added proper await keywords for v1 compatibility
+        existing_person = await db_service.get_person_by_email(person_create.email)
 
         if existing_person:
-            person_id = (
-                existing_person.id
-                if hasattr(existing_person, "id")
-                else existing_person.get("id")
-            )
+            # Use existing person - existing_person is a Person object
+            person_id = existing_person.id
         else:
-            created_person = db_service.create_person(person_create)  # Missing await
+            # FIXED: Added proper await keyword
+            created_person = await db_service.create_person(person_create)
             person_id = created_person.id
 
         subscription_create = SubscriptionCreate(
