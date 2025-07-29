@@ -166,9 +166,8 @@ async def create_subscription_v1(subscription_data: dict):
             notes=notes,
         )
 
-        # Original implementation passed dict instead of object
-        subscription_dict = subscription_create.model_dump()
-        created_subscription = db_service.create_subscription(subscription_dict)
+        # FIXED: Pass SubscriptionCreate object directly instead of dict
+        created_subscription = db_service.create_subscription(subscription_create)
 
         return {
             "message": "Subscription created successfully",
