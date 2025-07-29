@@ -280,7 +280,7 @@ async def create_subscription_v2(subscription_data: dict):
         subscription_create = SubscriptionCreate(
             projectId=project_id,
             personId=person_id,
-            status="active",  # FIXED: Changed from "pending" to "active"
+            status="pending",  # Requires administrator approval before activation
             notes=notes,
         )
 
