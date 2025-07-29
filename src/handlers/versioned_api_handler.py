@@ -220,6 +220,75 @@ async def get_projects_v2():
         )
 
 
+@v2_router.post("/people/check-email")
+async def check_person_exists_v2(email_data: dict):
+    """Check if a person exists by email (v2)."""
+    try:
+        email = email_data.get("email")
+        if not email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email is required"
+            )
+
+        existing_person = await db_service.get_person_by_email(email)
+        
+        return {
+            "exists": existing_person is not None,
+            "version": "v2"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error checking person existence (v2): {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to check person existence"
+        )
+
+
+@v2_router.post("/subscriptions/check")
+async def check_subscription_exists_v2(check_data: dict):
+    """Check if a person is already subscribed to a project (v2)."""
+    try:
+        email = check_data.get("email")
+        project_id = check_data.get("projectId")
+        
+        if not email or not project_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email and projectId are required"
+            )
+
+        # Get person by email
+        existing_person = await db_service.get_person_by_email(email)
+        if not existing_person:
+            return {
+                "subscribed": False,
+                "version": "v2"
+            }
+
+        # Check if subscription exists
+        subscriptions = db_service.get_subscriptions_by_person(existing_person.id)
+        project_subscriptions = [sub for sub in subscriptions if sub.get('projectId') == project_id]
+        
+        return {
+            "subscribed": len(project_subscriptions) > 0,
+            "subscription_status": project_subscriptions[0].get('status') if project_subscriptions else None,
+            "version": "v2"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error checking subscription (v2): {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to check subscription"
+        )
+
+
 @v2_router.post("/public/subscribe", status_code=status.HTTP_201_CREATED)
 async def create_subscription_v2(subscription_data: dict):
     """Create subscription (v2 - fixed version with proper async/await)."""
