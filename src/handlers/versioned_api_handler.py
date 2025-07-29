@@ -30,13 +30,13 @@ app = FastAPI(
     title="People Register API - Versioned",
     description="""
     ## People Register API with Versioning
-    
+
     This API supports multiple versions to ensure backward compatibility while allowing for improvements.
-    
+
     ### Available Versions
     - **v1**: Current stable version (legacy endpoints)
     - **v2**: Enhanced version with bug fixes and improvements
-    
+
     ### Version Strategy
     - v1 endpoints maintain current behavior for compatibility
     - v2 endpoints include latest fixes and improvements
@@ -58,6 +58,7 @@ app.add_middleware(
 v1_router = APIRouter(prefix="/v1", tags=["v1"])
 v2_router = APIRouter(prefix="/v2", tags=["v2"])
 
+
 # Health check endpoint (unversioned)
 @app.get("/health")
 async def health_check():
@@ -66,10 +67,12 @@ async def health_check():
         "status": "healthy",
         "service": "people-register-api-versioned",
         "timestamp": datetime.now().isoformat(),
-        "versions": ["v1", "v2"]
+        "versions": ["v1", "v2"],
     }
 
+
 # ==================== V1 ENDPOINTS (Legacy) ====================
+
 
 @v1_router.get("/subscriptions")
 async def get_subscriptions_v1():
@@ -81,8 +84,9 @@ async def get_subscriptions_v1():
         logger.error(f"Error getting subscriptions (v1): {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to retrieve subscriptions"
+            detail="Failed to retrieve subscriptions",
         )
+
 
 @v1_router.get("/projects")
 async def get_projects_v1():
@@ -94,8 +98,9 @@ async def get_projects_v1():
         logger.error(f"Error getting projects (v1): {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to retrieve projects"
+            detail="Failed to retrieve projects",
         )
+
 
 @v1_router.post("/public/subscribe")
 async def create_subscription_v1(subscription_data: dict):
@@ -128,10 +133,16 @@ async def create_subscription_v1(subscription_data: dict):
 
         # NOTE: This version has the original bugs for compatibility
         # Missing await keywords and wrong parameter types
-        existing_person = db_service.get_person_by_email(person_create.email)  # Missing await
-        
+        existing_person = db_service.get_person_by_email(
+            person_create.email
+        )  # Missing await
+
         if existing_person:
-            person_id = existing_person.id if hasattr(existing_person, 'id') else existing_person.get('id')
+            person_id = (
+                existing_person.id
+                if hasattr(existing_person, "id")
+                else existing_person.get("id")
+            )
         else:
             created_person = db_service.create_person(person_create)  # Missing await
             person_id = created_person.id
@@ -162,7 +173,9 @@ async def create_subscription_v1(subscription_data: dict):
             detail="Failed to create subscription",
         )
 
+
 # ==================== V2 ENDPOINTS (Fixed) ====================
+
 
 @v2_router.get("/subscriptions")
 async def get_subscriptions_v2():
@@ -172,31 +185,29 @@ async def get_subscriptions_v2():
         return {
             "subscriptions": subscriptions,
             "version": "v2",
-            "count": len(subscriptions)
+            "count": len(subscriptions),
         }
     except Exception as e:
         logger.error(f"Error getting subscriptions (v2): {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to retrieve subscriptions"
+            detail="Failed to retrieve subscriptions",
         )
+
 
 @v2_router.get("/projects")
 async def get_projects_v2():
     """Get all projects (v2 - enhanced version)."""
     try:
         projects = db_service.get_all_projects()
-        return {
-            "projects": projects,
-            "version": "v2",
-            "count": len(projects)
-        }
+        return {"projects": projects, "version": "v2", "count": len(projects)}
     except Exception as e:
         logger.error(f"Error getting projects (v2): {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to retrieve projects"
+            detail="Failed to retrieve projects",
         )
+
 
 @v2_router.post("/public/subscribe", status_code=status.HTTP_201_CREATED)
 async def create_subscription_v2(subscription_data: dict):
@@ -252,7 +263,7 @@ async def create_subscription_v2(subscription_data: dict):
             "message": "Subscription created successfully",
             "subscription": created_subscription,
             "person_created": existing_person is None,
-            "version": "v2"
+            "version": "v2",
         }
 
     except HTTPException:
@@ -264,9 +275,11 @@ async def create_subscription_v2(subscription_data: dict):
             detail="Failed to create subscription",
         )
 
+
 # Register the routers
 app.include_router(v1_router)
 app.include_router(v2_router)
+
 
 # Legacy endpoints (unversioned) - redirect to v1 for compatibility
 @app.get("/subscriptions")
@@ -274,10 +287,12 @@ async def get_subscriptions_legacy():
     """Legacy endpoint - redirects to v1."""
     return await get_subscriptions_v1()
 
+
 @app.get("/projects")
 async def get_projects_legacy():
     """Legacy endpoint - redirects to v1."""
     return await get_projects_v1()
+
 
 @app.post("/public/subscribe")
 async def create_subscription_legacy(subscription_data: dict):
