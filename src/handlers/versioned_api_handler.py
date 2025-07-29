@@ -121,6 +121,26 @@ async def create_subscription_v1(subscription_data: dict):
                 detail="Both person data and projectId are required",
             )
 
+        # Handle person data for public subscriptions (v1 - legacy behavior)
+        # Convert 'name' field to firstName/lastName if provided
+        if "name" in person_data and "firstName" not in person_data:
+            name_parts = person_data["name"].strip().split(" ", 1)
+            person_data["firstName"] = name_parts[0]
+            person_data["lastName"] = name_parts[1] if len(name_parts) > 1 else ""
+            # Remove the 'name' field as it's not part of PersonCreate
+            person_data = {k: v for k, v in person_data.items() if k != "name"}
+        
+        # Set default values for required fields if not provided
+        person_data.setdefault("phone", "")
+        person_data.setdefault("dateOfBirth", "1990-01-01")  # Default date
+        person_data.setdefault("address", {
+            "street": "",
+            "city": "", 
+            "state": "",
+            "zipCode": "",
+            "country": ""
+        })
+        
         # Validate person data
         person_create = PersonCreate(**person_data)
 
@@ -227,6 +247,26 @@ async def create_subscription_v2(subscription_data: dict):
                 detail="Both person data and projectId are required",
             )
 
+        # Handle person data for public subscriptions
+        # Convert 'name' field to firstName/lastName if provided
+        if "name" in person_data and "firstName" not in person_data:
+            name_parts = person_data["name"].strip().split(" ", 1)
+            person_data["firstName"] = name_parts[0]
+            person_data["lastName"] = name_parts[1] if len(name_parts) > 1 else ""
+            # Remove the 'name' field as it's not part of PersonCreate
+            person_data = {k: v for k, v in person_data.items() if k != "name"}
+        
+        # Set default values for required fields if not provided
+        person_data.setdefault("phone", "")
+        person_data.setdefault("dateOfBirth", "1990-01-01")  # Default date
+        person_data.setdefault("address", {
+            "street": "",
+            "city": "", 
+            "state": "",
+            "zipCode": "",
+            "country": ""
+        })
+        
         # Validate person data
         person_create = PersonCreate(**person_data)
 
