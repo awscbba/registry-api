@@ -4,12 +4,27 @@
 
 This project maintains high code quality standards using automated tools.
 
-### Pre-Commit Checklist
+### Automated Git Hooks (Recommended)
 
-Before committing any changes, **always** run:
+Set up automatic formatting and linting before each push:
 
 ```bash
-# Quick pre-commit check (recommended)
+# One-time setup
+./scripts/setup-git-hooks.sh
+```
+
+This installs a pre-push hook that automatically:
+- ✅ Runs `black .` to format code
+- ✅ Runs `flake8` to check linting  
+- ✅ Stops the push if there are issues
+- ✅ Prompts you to commit formatting changes if needed
+
+### Manual Pre-Commit Checklist
+
+If you prefer manual checks or haven't set up hooks:
+
+```bash
+# Quick pre-commit check
 ./scripts/pre-commit-check.sh
 
 # Or manually run each step:
@@ -83,8 +98,38 @@ The API uses container-based deployment:
 - Test locally with Docker before deploying
 - Check ECR permissions for push/pull
 
+## Git Hooks Management
+
+### Installing Hooks
+```bash
+./scripts/setup-git-hooks.sh
+```
+
+### What the Pre-Push Hook Does
+1. **Formats code** with black automatically
+2. **Checks linting** with flake8
+3. **Stops push** if there are linting errors
+4. **Prompts to commit** if formatting changes were made
+
+### Bypassing Hooks (Not Recommended)
+```bash
+# Only use in emergencies
+git push --no-verify
+```
+
+### Uninstalling Hooks
+```bash
+rm .git/hooks/pre-push
+```
+
+### Hook Troubleshooting
+- **Hook not running**: Check if `.git/hooks/pre-push` exists and is executable
+- **uv not found**: Ensure uv is installed and in your PATH
+- **Permission denied**: Run `chmod +x .git/hooks/pre-push`
+
 ## Getting Help
 
 - Check existing tests for examples
 - Review API documentation in OpenAPI format
 - Use the test scripts in the scripts/ directory
+- Run `./scripts/setup-git-hooks.sh` for automated code quality

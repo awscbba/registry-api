@@ -1,0 +1,71 @@
+#!/bin/bash
+# Git pre-push hook for registry-api
+# Automatically runs formatting and linting before each push
+
+echo "🔍 Running pre-push checks..."
+
+# Get the directory of this script (should be .githooks)
+HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Get the repository root (parent of .githooks)
+REPO_ROOT="$(dirname "$HOOK_DIR")"
+
+# Change to repository root
+cd "$REPO_ROOT"
+
+# Check if we're in the right directory
+if [ ! -f "pyproject.toml" ]; then
+    echo "❌ Error: Not in registry-api root directory"
+    exit 1
+fi
+
+# Check if uv is available
+if ! command -v uv &> /dev/null; then
+    echo "❌ Error: uv is not installed or not in PATH"
+    echo "💡 Install uv: curl -LsSf https://astral.sh/uv/install.sh | sh"
+    exit 1
+fi
+
+# Run black formatter
+echo "📝 Running black formatter..."
+uv run black .
+if [ $? -ne 0 ]; then
+    echo "❌ Black formatting failed"
+    exit 1
+fi
+
+# Check if any files were changed by black
+if ! git diff --quiet; then
+    echo "📝 Black made formatting changes"
+    echo "💡 Files have been formatted. Please review and commit the changes:"
+    git diff --name-only
+    echo ""
+    echo "🔄 You can:"
+    echo "   1. Review the changes: git diff"
+    echo "   2. Add the changes: git add ."
+    echo "   3. Commit the changes: git commit -m 'style: apply black formatting'"
+    echo "   4. Push again: git push"
+    echo ""
+    echo "⚠️  Push cancelled to allow you to commit formatting changes"
+    exit 1
+fi
+
+# Run flake8 linter
+echo "🔍 Running flake8 linter..."
+uv run flake8
+if [ $? -ne 0 ]; then
+    echo "❌ Flake8 linting failed"
+    echo "💡 Fix the linting issues above and try pushing again"
+    exit 1
+fi
+
+# Optional: Run tests (uncomment if you want tests to run on every push)
+# echo "🧪 Running tests..."
+# uv run pytest
+# if [ $? -ne 0 ]; then
+#     echo "❌ Tests failed"
+#     echo "💡 Fix the failing tests and try pushing again"
+#     exit 1
+# fi
+
+echo "✅ All pre-push checks passed!"
+echo "🚀 Proceeding with push..."
