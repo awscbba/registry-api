@@ -89,6 +89,34 @@ Actions:
                     echo "⚠️ Lambda function update failed or function doesn't exist"
                     echo "ℹ️ Container available at: $IMAGE_URI"
                 fi
+                
+                # Also update the Router function with the router container
+                echo "🔄 Building and updating Router function..."
+                
+                # Build router container
+                docker build -f Dockerfile.router -t registry-router-lambda .
+                
+                # Router ECR details
+                ROUTER_ECR_REPOSITORY="registry-router-lambda"
+                ROUTER_IMAGE_URI="$ECR_REGISTRY/$ROUTER_ECR_REPOSITORY:$IMAGE_TAG"
+                
+                # Tag and push router container
+                echo "📤 Pushing router container to ECR..."
+                docker tag registry-router-lambda:latest $ROUTER_IMAGE_URI
+                docker push $ROUTER_IMAGE_URI
+                
+                # Update Router Lambda function
+                ROUTER_FUNCTION_NAME="PeopleRegisterInfrastructur-RouterFunction6AC6EF3B-cFuTZOTV5Cjd"
+                
+                if aws lambda update-function-code \
+                    --function-name "$ROUTER_FUNCTION_NAME" \
+                    --image-uri "$ROUTER_IMAGE_URI" \
+                    --region us-east-1; then
+                    echo "✅ Router function updated with container successfully"
+                else
+                    echo "⚠️ Router function update failed or function doesn't exist"
+                    echo "ℹ️ Router container available at: $ROUTER_IMAGE_URI"
+                fi
             else
                 echo "⚠️ No AWS CLI access - container built but not deployed"
                 echo "ℹ️ Container ready for manual deployment"
