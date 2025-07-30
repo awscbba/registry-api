@@ -1083,7 +1083,7 @@ class DynamoDBService:
             response = self.table.query(
                 IndexName="EmailIndex",
                 KeyConditionExpression=Key("email").eq(email),
-                Limit=1
+                Limit=1,
             )
 
             items = response.get("Items", [])

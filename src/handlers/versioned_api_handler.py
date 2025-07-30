@@ -227,16 +227,12 @@ async def check_person_exists_v2(email_data: dict):
         email = email_data.get("email")
         if not email:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email is required"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Email is required"
             )
 
         existing_person = await db_service.get_person_by_email(email)
-        
-        return {
-            "exists": existing_person is not None,
-            "version": "v2"
-        }
+
+        return {"exists": existing_person is not None, "version": "v2"}
 
     except HTTPException:
         raise
@@ -244,7 +240,7 @@ async def check_person_exists_v2(email_data: dict):
         logger.error(f"Error checking person existence (v2): {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to check person existence"
+            detail="Failed to check person existence",
         )
 
 
@@ -254,29 +250,32 @@ async def check_subscription_exists_v2(check_data: dict):
     try:
         email = check_data.get("email")
         project_id = check_data.get("projectId")
-        
+
         if not email or not project_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email and projectId are required"
+                detail="Email and projectId are required",
             )
 
         # Get person by email
         existing_person = await db_service.get_person_by_email(email)
         if not existing_person:
-            return {
-                "subscribed": False,
-                "version": "v2"
-            }
+            return {"subscribed": False, "version": "v2"}
 
         # Check if subscription exists
         subscriptions = db_service.get_subscriptions_by_person(existing_person.id)
-        project_subscriptions = [sub for sub in subscriptions if sub.get('projectId') == project_id]
-        
+        project_subscriptions = [
+            sub for sub in subscriptions if sub.get("projectId") == project_id
+        ]
+
         return {
             "subscribed": len(project_subscriptions) > 0,
-            "subscription_status": project_subscriptions[0].get('status') if project_subscriptions else None,
-            "version": "v2"
+            "subscription_status": (
+                project_subscriptions[0].get("status")
+                if project_subscriptions
+                else None
+            ),
+            "version": "v2",
         }
 
     except HTTPException:
@@ -285,7 +284,7 @@ async def check_subscription_exists_v2(check_data: dict):
         logger.error(f"Error checking subscription (v2): {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to check subscription"
+            detail="Failed to check subscription",
         )
 
 
@@ -296,16 +295,12 @@ async def check_person_exists_v2(email_data: dict):
         email = email_data.get("email")
         if not email:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email is required"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Email is required"
             )
 
         existing_person = await db_service.get_person_by_email(email)
-        
-        return {
-            "exists": existing_person is not None,
-            "version": "v2"
-        }
+
+        return {"exists": existing_person is not None, "version": "v2"}
 
     except HTTPException:
         raise
@@ -313,7 +308,7 @@ async def check_person_exists_v2(email_data: dict):
         logger.error(f"Error checking person existence (v2): {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to check person existence"
+            detail="Failed to check person existence",
         )
 
 
@@ -323,29 +318,32 @@ async def check_subscription_exists_v2(check_data: dict):
     try:
         email = check_data.get("email")
         project_id = check_data.get("projectId")
-        
+
         if not email or not project_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email and projectId are required"
+                detail="Email and projectId are required",
             )
 
         # Get person by email
         existing_person = await db_service.get_person_by_email(email)
         if not existing_person:
-            return {
-                "subscribed": False,
-                "version": "v2"
-            }
+            return {"subscribed": False, "version": "v2"}
 
         # Check if subscription exists
         subscriptions = db_service.get_subscriptions_by_person(existing_person.id)
-        project_subscriptions = [sub for sub in subscriptions if sub.get('projectId') == project_id]
-        
+        project_subscriptions = [
+            sub for sub in subscriptions if sub.get("projectId") == project_id
+        ]
+
         return {
             "subscribed": len(project_subscriptions) > 0,
-            "subscription_status": project_subscriptions[0].get('status') if project_subscriptions else None,
-            "version": "v2"
+            "subscription_status": (
+                project_subscriptions[0].get("status")
+                if project_subscriptions
+                else None
+            ),
+            "version": "v2",
         }
 
     except HTTPException:
@@ -354,7 +352,7 @@ async def check_subscription_exists_v2(check_data: dict):
         logger.error(f"Error checking subscription (v2): {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to check subscription"
+            detail="Failed to check subscription",
         )
 
 
@@ -481,14 +479,14 @@ async def get_people_v2(email: str = None):
                     "people": [person.dict()],
                     "version": "v2",
                     "count": 1,
-                    "query": {"email": email}
+                    "query": {"email": email},
                 }
             else:
                 return {
                     "people": [],
-                    "version": "v2", 
+                    "version": "v2",
                     "count": 0,
-                    "query": {"email": email}
+                    "query": {"email": email},
                 }
         else:
             # Get all people (limit for performance)
@@ -496,7 +494,7 @@ async def get_people_v2(email: str = None):
             return {
                 "people": [person.dict() for person in people],
                 "version": "v2",
-                "count": len(people)
+                "count": len(people),
             }
     except Exception as e:
         logger.error(f"Error getting people (v2): {str(e)}")
