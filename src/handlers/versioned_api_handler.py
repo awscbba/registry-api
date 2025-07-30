@@ -473,37 +473,32 @@ async def login(credentials: dict):
     try:
         email = credentials.get("email")
         password = credentials.get("password")
-        
+
         if not email or not password:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email and password are required"
+                detail="Email and password are required",
             )
-        
+
         # For now, return a simple response - this can be enhanced later
         # with proper authentication logic
         if email == "sergio.rodriguez@cbba.cloud.org.bo":
             return {
                 "message": "Login successful",
                 "token": "mock-jwt-token",
-                "user": {
-                    "email": email,
-                    "role": "admin"
-                }
+                "user": {"email": email, "role": "admin"},
             }
         else:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid credentials"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
             )
-            
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Login error: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Login failed"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Login failed"
         )
 
 
