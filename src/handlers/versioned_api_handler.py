@@ -484,20 +484,19 @@ async def login(credentials: dict):
         person = await db_service.get_person_by_email(email)
         if not person:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid credentials"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
             )
-        
+
         # Check if user has admin privileges
         if not person.is_admin:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Access denied - admin privileges required"
+                detail="Access denied - admin privileges required",
             )
-        
+
         # TODO: Implement proper password verification
         # For now, we'll accept any password for admin users
-        
+
         return {
             "message": "Login successful",
             "token": f"jwt-token-{person.id}",  # TODO: Generate proper JWT
@@ -507,8 +506,8 @@ async def login(credentials: dict):
                 "firstName": person.first_name,
                 "lastName": person.last_name,
                 "role": "admin",
-                "isAdmin": person.is_admin
-            }
+                "isAdmin": person.is_admin,
+            },
         }
 
     except HTTPException:
@@ -537,20 +536,19 @@ async def login_v2(credentials: dict):
         person = await db_service.get_person_by_email(email)
         if not person:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid credentials"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
             )
-        
+
         # Check if user has admin privileges
         if not person.is_admin:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Access denied - admin privileges required"
+                detail="Access denied - admin privileges required",
             )
-        
+
         # TODO: Implement proper password verification
         # For now, we'll accept any password for admin users
-        
+
         return {
             "message": "Login successful",
             "token": f"jwt-token-v2-{person.id}",  # TODO: Generate proper JWT
@@ -560,9 +558,9 @@ async def login_v2(credentials: dict):
                 "firstName": person.first_name,
                 "lastName": person.last_name,
                 "role": "admin",
-                "isAdmin": person.is_admin
+                "isAdmin": person.is_admin,
             },
-            "version": "v2"
+            "version": "v2",
         }
 
     except HTTPException:
@@ -620,21 +618,20 @@ async def update_admin_status(person_id: str, admin_data: dict):
     try:
         # TODO: Add proper authentication middleware to verify admin user
         # For now, we'll implement basic validation
-        
+
         is_admin = admin_data.get("isAdmin", False)
-        
+
         # Get the person to update
         person = await db_service.get_person_by_id(person_id)
         if not person:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Person not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Person not found"
             )
-        
+
         # Update admin status
         update_data = {"isAdmin": is_admin}
         updated_person = await db_service.update_person(person_id, update_data)
-        
+
         return {
             "message": f"Admin status {'granted' if is_admin else 'revoked'} successfully",
             "person": {
@@ -642,16 +639,16 @@ async def update_admin_status(person_id: str, admin_data: dict):
                 "email": updated_person.email,
                 "firstName": updated_person.first_name,
                 "lastName": updated_person.last_name,
-                "isAdmin": updated_person.is_admin
+                "isAdmin": updated_person.is_admin,
             },
-            "version": "v2"
+            "version": "v2",
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error updating admin status: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to update admin status"
+            detail="Failed to update admin status",
         )
