@@ -14,8 +14,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from ..models.person import PersonCreate, PersonResponse
 from ..models.subscription import SubscriptionCreate
 from ..services.dynamodb_service import DynamoDBService
-from ..services.auth_service import AuthService
-from ..middleware.auth_middleware import get_current_user
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -23,7 +21,6 @@ logger = logging.getLogger(__name__)
 
 # Initialize services
 db_service = DynamoDBService()
-auth_service = AuthService()
 
 # Create FastAPI app
 app = FastAPI(
