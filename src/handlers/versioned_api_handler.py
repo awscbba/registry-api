@@ -659,10 +659,12 @@ async def test_admin_system():
     """Test endpoint to verify admin system is working."""
     try:
         # Get the admin user we just set
-        person = await db_service.get_person_by_email("sergio.rodriguez.inclan@gmail.com")
+        person = await db_service.get_person_by_email(
+            "sergio.rodriguez.inclan@gmail.com"
+        )
         if not person:
             return {"error": "Admin user not found", "version": "v2"}
-        
+
         return {
             "message": "Admin system test successful",
             "admin_user": {
@@ -670,11 +672,11 @@ async def test_admin_system():
                 "email": person.email,
                 "firstName": person.first_name,
                 "lastName": person.last_name,
-                "isAdmin": person.is_admin
+                "isAdmin": person.is_admin,
             },
-            "version": "v2"
+            "version": "v2",
         }
-        
+
     except Exception as e:
         logger.error(f"Error testing admin system: {str(e)}")
         return {"error": str(e), "version": "v2"}
