@@ -463,6 +463,7 @@ class DynamoDBService:
             "phone": item["phone"],
             "dateOfBirth": item["dateOfBirth"],
             "address": address_data,
+            "isAdmin": item.get("isAdmin", False),  # Default to False if not present
             "createdAt": datetime.fromisoformat(item["createdAt"]),
             "updatedAt": datetime.fromisoformat(item["updatedAt"]),
         }

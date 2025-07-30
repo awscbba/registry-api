@@ -21,6 +21,7 @@ class PersonBase(BaseModel):
     phone: str
     date_of_birth: str = Field(alias="dateOfBirth")  # YYYY-MM-DD format
     address: Address
+    is_admin: bool = Field(default=False, alias="isAdmin")  # Admin privilege flag
 
 
 class PersonCreate(PersonBase):
@@ -34,6 +35,7 @@ class PersonUpdate(BaseModel):
     phone: Optional[str] = None
     date_of_birth: Optional[str] = Field(None, alias="dateOfBirth")
     address: Optional[Address] = None
+    is_admin: Optional[bool] = Field(None, alias="isAdmin")  # Admin privilege flag
 
     # Security fields for admin operations
     failed_login_attempts: Optional[int] = Field(None, alias="failedLoginAttempts")

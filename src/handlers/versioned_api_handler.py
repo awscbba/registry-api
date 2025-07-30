@@ -480,18 +480,36 @@ async def login(credentials: dict):
                 detail="Email and password are required",
             )
 
-        # For now, return a simple response - this can be enhanced later
-        # with proper authentication logic
-        if email == "sergio.rodriguez@cbba.cloud.org.bo":
-            return {
-                "message": "Login successful",
-                "token": "mock-jwt-token",
-                "user": {"email": email, "role": "admin"},
-            }
-        else:
+        # Check if user exists in database and has admin privileges
+        person = await db_service.get_person_by_email(email)
+        if not person:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid credentials"
             )
+        
+        # Check if user has admin privileges
+        if not person.is_admin:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied - admin privileges required"
+            )
+        
+        # TODO: Implement proper password verification
+        # For now, we'll accept any password for admin users
+        
+        return {
+            "message": "Login successful",
+            "token": f"jwt-token-{person.id}",  # TODO: Generate proper JWT
+            "user": {
+                "id": person.id,
+                "email": email,
+                "firstName": person.first_name,
+                "lastName": person.last_name,
+                "role": "admin",
+                "isAdmin": person.is_admin
+            }
+        }
 
     except HTTPException:
         raise
@@ -515,19 +533,37 @@ async def login_v2(credentials: dict):
                 detail="Email and password are required",
             )
 
-        # For now, return a simple response - this can be enhanced later
-        # with proper authentication logic
-        if email == "sergio.rodriguez@cbba.cloud.org.bo":
-            return {
-                "message": "Login successful",
-                "token": "mock-jwt-token-v2",
-                "user": {"email": email, "role": "admin"},
-                "version": "v2",
-            }
-        else:
+        # Check if user exists in database and has admin privileges
+        person = await db_service.get_person_by_email(email)
+        if not person:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid credentials"
             )
+        
+        # Check if user has admin privileges
+        if not person.is_admin:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied - admin privileges required"
+            )
+        
+        # TODO: Implement proper password verification
+        # For now, we'll accept any password for admin users
+        
+        return {
+            "message": "Login successful",
+            "token": f"jwt-token-v2-{person.id}",  # TODO: Generate proper JWT
+            "user": {
+                "id": person.id,
+                "email": email,
+                "firstName": person.first_name,
+                "lastName": person.last_name,
+                "role": "admin",
+                "isAdmin": person.is_admin
+            },
+            "version": "v2"
+        }
 
     except HTTPException:
         raise
@@ -575,4 +611,47 @@ async def get_people_v2(email: str = None):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve people",
+        )
+
+
+@v2_router.put("/people/{person_id}/admin")
+async def update_admin_status(person_id: str, admin_data: dict):
+    """Update admin status for a person (admin only)."""
+    try:
+        # TODO: Add proper authentication middleware to verify admin user
+        # For now, we'll implement basic validation
+        
+        is_admin = admin_data.get("isAdmin", False)
+        
+        # Get the person to update
+        person = await db_service.get_person_by_id(person_id)
+        if not person:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Person not found"
+            )
+        
+        # Update admin status
+        update_data = {"isAdmin": is_admin}
+        updated_person = await db_service.update_person(person_id, update_data)
+        
+        return {
+            "message": f"Admin status {'granted' if is_admin else 'revoked'} successfully",
+            "person": {
+                "id": updated_person.id,
+                "email": updated_person.email,
+                "firstName": updated_person.first_name,
+                "lastName": updated_person.last_name,
+                "isAdmin": updated_person.is_admin
+            },
+            "version": "v2"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating admin status: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update admin status"
         )
