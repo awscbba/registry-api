@@ -454,7 +454,7 @@ class DynamoDBService:
         address_data = item["address"].copy()
         if "zip_code" in address_data:
             address_data["zipCode"] = address_data.pop("zip_code")
-        
+
         person_data = {
             "id": item["id"],
             "firstName": item["firstName"],
