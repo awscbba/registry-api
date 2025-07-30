@@ -464,3 +464,43 @@ async def get_projects_legacy():
 async def create_subscription_legacy(subscription_data: dict):
     """Legacy endpoint - redirects to v1."""
     return await create_subscription_v1(subscription_data)
+
+
+# ==================== V2 PEOPLE ENDPOINTS ====================
+
+
+@v2_router.get("/people")
+async def get_people_v2(email: str = None):
+    """Get people with optional email filter (v2)."""
+    try:
+        if email:
+            # Query by email using EmailIndex GSI
+            person = await db_service.get_person_by_email(email)
+            if person:
+                return {
+                    "people": [person.dict()],
+                    "version": "v2",
+                    "count": 1,
+                    "query": {"email": email}
+                }
+            else:
+                return {
+                    "people": [],
+                    "version": "v2", 
+                    "count": 0,
+                    "query": {"email": email}
+                }
+        else:
+            # Get all people (limit for performance)
+            people = db_service.get_all_people(limit=100)
+            return {
+                "people": [person.dict() for person in people],
+                "version": "v2",
+                "count": len(people)
+            }
+    except Exception as e:
+        logger.error(f"Error getting people (v2): {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve people",
+        )

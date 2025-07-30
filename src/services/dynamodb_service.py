@@ -1079,10 +1079,11 @@ class DynamoDBService:
     ) -> Optional[Person]:
         """Get a person by email address with optimized indexing and audit logging"""
         try:
-            # In production, this should use a GSI on email for better performance
-            # For now, we use scan with filter expression
-            response = self.table.scan(
-                FilterExpression=Attr("email").eq(email), Limit=1
+            # Use EmailIndex GSI for efficient email lookups
+            response = self.table.query(
+                IndexName="EmailIndex",
+                KeyConditionExpression=Key("email").eq(email),
+                Limit=1
             )
 
             items = response.get("Items", [])
