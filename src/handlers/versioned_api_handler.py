@@ -502,6 +502,47 @@ async def login(credentials: dict):
         )
 
 
+@v2_router.post("/auth/login")
+async def login_v2(credentials: dict):
+    """Admin login endpoint (v2)."""
+    try:
+        email = credentials.get("email")
+        password = credentials.get("password")
+        
+        if not email or not password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email and password are required"
+            )
+        
+        # For now, return a simple response - this can be enhanced later
+        # with proper authentication logic
+        if email == "sergio.rodriguez@cbba.cloud.org.bo":
+            return {
+                "message": "Login successful",
+                "token": "mock-jwt-token-v2",
+                "user": {
+                    "email": email,
+                    "role": "admin"
+                },
+                "version": "v2"
+            }
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid credentials"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Login error (v2): {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Login failed"
+        )
+
+
 # ==================== V2 PEOPLE ENDPOINTS ====================
 
 
