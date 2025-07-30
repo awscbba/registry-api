@@ -450,6 +450,11 @@ class DynamoDBService:
 
     def _item_to_person(self, item: Dict[str, Any]) -> Person:
         """Convert DynamoDB item to Person model with comprehensive field handling"""
+        # Convert address field to match model expectations
+        address_data = item["address"].copy()
+        if "zip_code" in address_data:
+            address_data["zipCode"] = address_data.pop("zip_code")
+        
         person_data = {
             "id": item["id"],
             "firstName": item["firstName"],
@@ -457,7 +462,7 @@ class DynamoDBService:
             "email": item["email"],
             "phone": item["phone"],
             "dateOfBirth": item["dateOfBirth"],
-            "address": item["address"],
+            "address": address_data,
             "createdAt": datetime.fromisoformat(item["createdAt"]),
             "updatedAt": datetime.fromisoformat(item["updatedAt"]),
         }
