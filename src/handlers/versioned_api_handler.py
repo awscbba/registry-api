@@ -652,3 +652,29 @@ async def update_admin_status(person_id: str, admin_data: dict):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update admin status",
         )
+
+
+@v2_router.get("/admin/test")
+async def test_admin_system():
+    """Test endpoint to verify admin system is working."""
+    try:
+        # Get the admin user we just set
+        person = await db_service.get_person_by_email("sergio.rodriguez.inclan@gmail.com")
+        if not person:
+            return {"error": "Admin user not found", "version": "v2"}
+        
+        return {
+            "message": "Admin system test successful",
+            "admin_user": {
+                "id": person.id,
+                "email": person.email,
+                "firstName": person.first_name,
+                "lastName": person.last_name,
+                "isAdmin": person.is_admin
+            },
+            "version": "v2"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error testing admin system: {str(e)}")
+        return {"error": str(e), "version": "v2"}
