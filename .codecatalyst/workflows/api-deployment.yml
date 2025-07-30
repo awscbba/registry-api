@@ -25,36 +25,40 @@ Actions:
             echo "🚀 API Container Deployment"
             echo "=========================="
             echo "📅 Start: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            
+
             # Install Python, uv, and Docker
             echo "📦 Installing Python, uv, and Docker..."
             curl -LsSf https://astral.sh/uv/install.sh | sh
             export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
-            
+
             # Install Docker
             yum update -y
             yum install -y docker
             service docker start
-            
+
             # Verify installations
             which uv || echo "uv not found in PATH"
             uv --version || echo "uv version check failed"
             docker --version || echo "Docker version check failed"
-            
+
             echo "ℹ️ Using container-based deployment for Lambda"
             echo "ℹ️ Skipping tests and linting - already validated in PR/merge pipeline"
-            
+
             # Container-based deployment for Lambda
             echo "🐳 Building and deploying Lambda container..."
-            
+
             # Build Docker container with Lambda Python 3.9 base
             docker build -f Dockerfile.lambda -t registry-api-lambda .
-            
+
             echo "✅ Lambda container built successfully"
-            
+
             # Deploy using container deployment to ECR + Lambda
             echo "🚀 Deploying container to AWS Lambda..."
-            
+
+            # Get git commit hash for tagging
+            GIT_HASH=$(git rev-parse --short HEAD)
+            echo "📋 Git commit hash: $GIT_HASH"
+
             # Check if we have AWS CLI access
             if aws sts get-caller-identity > /dev/null 2>&1; then
                 echo "✅ AWS CLI access confirmed"
@@ -62,21 +66,26 @@ Actions:
                 # ECR repository details
                 ECR_REGISTRY="142728997126.dkr.ecr.us-east-1.amazonaws.com"
                 ECR_REPOSITORY="registry-api-lambda"
-                IMAGE_TAG="latest"
+                IMAGE_TAG="main-$GIT_HASH"
+                LATEST_TAG="latest"
                 IMAGE_URI="$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+                LATEST_URI="$ECR_REGISTRY/$ECR_REPOSITORY:$LATEST_TAG"
                 
                 # Login to ECR
                 echo "🔐 Logging into ECR..."
                 aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REGISTRY
                 
-                # Tag and push container to ECR
+                # Tag and push container to ECR with both git hash and latest tags
                 echo "📤 Pushing container to ECR..."
                 docker tag registry-api-lambda:latest $IMAGE_URI
+                docker tag registry-api-lambda:latest $LATEST_URI
                 docker push $IMAGE_URI
+                docker push $LATEST_URI
+                echo "✅ Container pushed with tags: $IMAGE_TAG and $LATEST_TAG"
                 
                 echo "✅ Container pushed to ECR successfully"
                 
-                # Update Lambda function to use new container image
+                # Update Lambda function to use new container image (with git hash tag)
                 echo "🔄 Updating Lambda function with new container..."
                 FUNCTION_NAME="PeopleRegisterInfrastruct-PeopleApiFunction67A8223-xlC79QhrsKBe"
                 
@@ -85,6 +94,7 @@ Actions:
                     --image-uri "$IMAGE_URI" \
                     --region us-east-1; then
                     echo "✅ Lambda function updated with container successfully"
+                    echo "📋 Using container: $IMAGE_URI"
                 else
                     echo "⚠️ Lambda function update failed or function doesn't exist"
                     echo "ℹ️ Container available at: $IMAGE_URI"
@@ -98,14 +108,19 @@ Actions:
                 
                 # Router ECR details
                 ROUTER_ECR_REPOSITORY="registry-router-lambda"
-                ROUTER_IMAGE_URI="$ECR_REGISTRY/$ROUTER_ECR_REPOSITORY:$IMAGE_TAG"
+                ROUTER_IMAGE_TAG="main-$GIT_HASH"
+                ROUTER_IMAGE_URI="$ECR_REGISTRY/$ROUTER_ECR_REPOSITORY:$ROUTER_IMAGE_TAG"
+                ROUTER_LATEST_URI="$ECR_REGISTRY/$ROUTER_ECR_REPOSITORY:$LATEST_TAG"
                 
-                # Tag and push router container
+                # Tag and push router container with both git hash and latest tags
                 echo "📤 Pushing router container to ECR..."
                 docker tag registry-router-lambda:latest $ROUTER_IMAGE_URI
+                docker tag registry-router-lambda:latest $ROUTER_LATEST_URI
                 docker push $ROUTER_IMAGE_URI
+                docker push $ROUTER_LATEST_URI
+                echo "✅ Router container pushed with tags: $ROUTER_IMAGE_TAG and $LATEST_TAG"
                 
-                # Update Router Lambda function
+                # Update Router Lambda function (with git hash tag)
                 ROUTER_FUNCTION_NAME="PeopleRegisterInfrastructur-RouterFunction6AC6EF3B-cFuTZOTV5Cjd"
                 
                 if aws lambda update-function-code \
@@ -113,6 +128,7 @@ Actions:
                     --image-uri "$ROUTER_IMAGE_URI" \
                     --region us-east-1; then
                     echo "✅ Router function updated with container successfully"
+                    echo "📋 Using container: $ROUTER_IMAGE_URI"
                 else
                     echo "⚠️ Router function update failed or function doesn't exist"
                     echo "ℹ️ Router container available at: $ROUTER_IMAGE_URI"
@@ -121,14 +137,14 @@ Actions:
                 echo "⚠️ No AWS CLI access - container built but not deployed"
                 echo "ℹ️ Container ready for manual deployment"
             fi
-            
+
             # Health check (if API endpoint is available)
             echo "🏥 Running health check..."
             API_URL="https://2t9blvt2c1.execute-api.us-east-1.amazonaws.com/prod"
-            
+
             echo "⏳ Waiting for container deployment to be ready..."
             sleep 10  # Give container deployment time to initialize
-            
+
             echo "⏳ Checking if API is available..."
             if curl -sf "$API_URL/subscriptions" > /dev/null 2>&1; then
                 echo "✅ Health check passed - API is responding"
@@ -144,9 +160,16 @@ Actions:
                 echo "ℹ️ API endpoint not immediately available (normal for container deployments)"
                 echo "ℹ️ Container may still be initializing - check logs if issues persist"
             fi
-            
+
             echo "✅ Container deployment completed"
             echo "ℹ️ Lambda functions now using container-based deployment"
+            echo ""
+            echo "📋 Deployment Summary:"
+            echo "======================"
+            echo "🔖 Git Commit: $GIT_HASH"
+            echo "🐳 API Container: $ECR_REGISTRY/$ECR_REPOSITORY:main-$GIT_HASH"
+            echo "🔀 Router Container: $ECR_REGISTRY/$ROUTER_ECR_REPOSITORY:main-$GIT_HASH"
+            echo "🔄 Both containers also tagged as 'latest'"
             echo "⏱️ End: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
       Container:
         Registry: CODECATALYST
