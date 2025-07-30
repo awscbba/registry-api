@@ -464,6 +464,49 @@ async def create_subscription_legacy(subscription_data: dict):
     return await create_subscription_v1(subscription_data)
 
 
+# ==================== AUTH ENDPOINTS ====================
+
+
+@app.post("/auth/login")
+async def login(credentials: dict):
+    """Admin login endpoint."""
+    try:
+        email = credentials.get("email")
+        password = credentials.get("password")
+        
+        if not email or not password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email and password are required"
+            )
+        
+        # For now, return a simple response - this can be enhanced later
+        # with proper authentication logic
+        if email == "sergio.rodriguez@cbba.cloud.org.bo":
+            return {
+                "message": "Login successful",
+                "token": "mock-jwt-token",
+                "user": {
+                    "email": email,
+                    "role": "admin"
+                }
+            }
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid credentials"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Login error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Login failed"
+        )
+
+
 # ==================== V2 PEOPLE ENDPOINTS ====================
 
 
