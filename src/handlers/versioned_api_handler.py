@@ -257,7 +257,7 @@ async def check_subscription_exists_v2(check_data: dict):
             return {"subscribed": False, "version": "v2"}
 
         # Check if subscription exists
-        subscriptions = await db_service.get_subscriptions_by_person(existing_person.id)
+        subscriptions = db_service.get_subscriptions_by_person(existing_person.id)
         project_subscriptions = [
             sub for sub in subscriptions if sub.get("projectId") == project_id
         ]
@@ -583,10 +583,7 @@ async def test_admin_system():
     try:
         # Get a test admin user (configurable via environment)
         import os
-
-        test_admin_email = os.getenv(
-            "TEST_ADMIN_EMAIL", "sergio.rodriguez.inclan@gmail.com"
-        )
+        test_admin_email = os.getenv("TEST_ADMIN_EMAIL", "sergio.rodriguez.inclan@gmail.com")
         person = await db_service.get_person_by_email(test_admin_email)
         if not person:
             return {"error": "Admin user not found", "version": "v2"}
