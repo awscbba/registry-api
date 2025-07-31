@@ -75,7 +75,7 @@ async def health_check():
 async def get_subscriptions_v1():
     """Get all subscriptions (v1 - legacy version)."""
     try:
-        subscriptions = db_service.get_all_subscriptions()
+        subscriptions = await db_service.get_all_subscriptions()
         return {"subscriptions": subscriptions}
     except Exception as e:
         logger.error(f"Error getting subscriptions (v1): {str(e)}")
@@ -89,7 +89,7 @@ async def get_subscriptions_v1():
 async def get_projects_v1():
     """Get all projects (v1 - legacy version)."""
     try:
-        projects = db_service.get_all_projects()
+        projects = await db_service.get_all_projects()
         return {"projects": projects}
     except Exception as e:
         logger.error(f"Error getting projects (v1): {str(e)}")
@@ -105,9 +105,6 @@ async def create_subscription_v1(subscription_data: dict):
     # This is the original implementation with the bugs
     # Kept for backward compatibility
     try:
-        from ..models.person import PersonCreate
-        from ..models.subscription import SubscriptionCreate
-
         person_data = subscription_data.get("person")
         project_id = subscription_data.get("projectId")
         notes = subscription_data.get("notes")
@@ -164,7 +161,7 @@ async def create_subscription_v1(subscription_data: dict):
         )
 
         # FIXED: Pass SubscriptionCreate object directly instead of dict
-        created_subscription = db_service.create_subscription(subscription_create)
+        created_subscription = await db_service.create_subscription(subscription_create)
 
         return {
             "message": "Subscription created successfully",
@@ -189,7 +186,7 @@ async def create_subscription_v1(subscription_data: dict):
 async def get_subscriptions_v2():
     """Get all subscriptions (v2 - enhanced version)."""
     try:
-        subscriptions = db_service.get_all_subscriptions()
+        subscriptions = await db_service.get_all_subscriptions()
         return {
             "subscriptions": subscriptions,
             "version": "v2",
@@ -207,7 +204,7 @@ async def get_subscriptions_v2():
 async def get_projects_v2():
     """Get all projects (v2 - enhanced version)."""
     try:
-        projects = db_service.get_all_projects()
+        projects = await db_service.get_all_projects()
         return {"projects": projects, "version": "v2", "count": len(projects)}
     except Exception as e:
         logger.error(f"Error getting projects (v2): {str(e)}")
@@ -260,75 +257,7 @@ async def check_subscription_exists_v2(check_data: dict):
             return {"subscribed": False, "version": "v2"}
 
         # Check if subscription exists
-        subscriptions = db_service.get_subscriptions_by_person(existing_person.id)
-        project_subscriptions = [
-            sub for sub in subscriptions if sub.get("projectId") == project_id
-        ]
-
-        return {
-            "subscribed": len(project_subscriptions) > 0,
-            "subscription_status": (
-                project_subscriptions[0].get("status")
-                if project_subscriptions
-                else None
-            ),
-            "version": "v2",
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error checking subscription (v2): {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to check subscription",
-        )
-
-
-@v2_router.post("/people/check-email")
-async def check_person_exists_v2(email_data: dict):
-    """Check if a person exists by email (v2)."""
-    try:
-        email = email_data.get("email")
-        if not email:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Email is required"
-            )
-
-        existing_person = await db_service.get_person_by_email(email)
-
-        return {"exists": existing_person is not None, "version": "v2"}
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error checking person existence (v2): {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to check person existence",
-        )
-
-
-@v2_router.post("/subscriptions/check")
-async def check_subscription_exists_v2(check_data: dict):
-    """Check if a person is already subscribed to a project (v2)."""
-    try:
-        email = check_data.get("email")
-        project_id = check_data.get("projectId")
-
-        if not email or not project_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email and projectId are required",
-            )
-
-        # Get person by email
-        existing_person = await db_service.get_person_by_email(email)
-        if not existing_person:
-            return {"subscribed": False, "version": "v2"}
-
-        # Check if subscription exists
-        subscriptions = db_service.get_subscriptions_by_person(existing_person.id)
+        subscriptions = await db_service.get_subscriptions_by_person(existing_person.id)
         project_subscriptions = [
             sub for sub in subscriptions if sub.get("projectId") == project_id
         ]
@@ -357,9 +286,6 @@ async def check_subscription_exists_v2(check_data: dict):
 async def create_subscription_v2(subscription_data: dict):
     """Create subscription (v2 - fixed version with proper async/await)."""
     try:
-        from ..models.person import PersonCreate
-        from ..models.subscription import SubscriptionCreate
-
         # Extract person and subscription data
         person_data = subscription_data.get("person")
         project_id = subscription_data.get("projectId")
@@ -418,7 +344,7 @@ async def create_subscription_v2(subscription_data: dict):
         )
 
         # FIXED: Pass SubscriptionCreate object directly instead of dict
-        created_subscription = db_service.create_subscription(subscription_create)
+        created_subscription = await db_service.create_subscription(subscription_create)
 
         return {
             "message": "Subscription created successfully",
@@ -595,7 +521,7 @@ async def get_people_v2(email: str = None):
                 }
         else:
             # Get all people (limit for performance)
-            people = db_service.get_all_people(limit=100)
+            people = await db_service.get_all_people(limit=100)
             return {
                 "people": [person.dict() for person in people],
                 "version": "v2",
@@ -655,10 +581,10 @@ async def update_admin_status(person_id: str, admin_data: dict):
 async def test_admin_system():
     """Test endpoint to verify admin system is working."""
     try:
-        # Get the admin user we just set
-        person = await db_service.get_person_by_email(
-            "sergio.rodriguez.inclan@gmail.com"
-        )
+        # Get a test admin user (configurable via environment)
+        import os
+        test_admin_email = os.getenv("TEST_ADMIN_EMAIL", "sergio.rodriguez.inclan@gmail.com")
+        person = await db_service.get_person_by_email(test_admin_email)
         if not person:
             return {"error": "Admin user not found", "version": "v2"}
 
