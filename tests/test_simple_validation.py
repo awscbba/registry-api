@@ -176,7 +176,7 @@ class TestSimpleValidation:
                 or stripped.startswith("from ..services")
             ):
                 problematic_imports.append(
-                    f"Line {i+1} in {current_function}: {stripped}"
+                    f"Line {i + 1} in {current_function}: {stripped}"
                 )
 
         assert (

@@ -127,7 +127,7 @@ def run_tests():
             all_passed = False
 
     # Final summary
-    print(f"\n{'='*50}")
+    print(f"\n{'=' * 50}")
     if all_passed:
         print("🎉 ALL TESTS PASSED!")
         print("✅ Versioned API Handler is ready for deployment")
