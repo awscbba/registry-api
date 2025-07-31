@@ -91,8 +91,13 @@ def update_error_patterns(file_path: Path) -> bool:
         original_content = content
 
         # Pattern 1: Database errors
+        db_error_pattern = (
+            r'logger\.error\(f"Error (getting|creating|updating|deleting) ([^"]+): '
+            r'\{str\(e\)\}"\)\s*raise HTTPException\(\s*status_code=status\.'
+            r'HTTP_500_INTERNAL_SERVER_ERROR,\s*detail="[^"]+",?\s*\)'
+        )
         content = re.sub(
-            r'logger\.error\(f"Error (getting|creating|updating|deleting) ([^"]+): \{str\(e\)\}"\)\s*raise HTTPException\(\s*status_code=status\.HTTP_500_INTERNAL_SERVER_ERROR,\s*detail="[^"]+",?\s*\)',
+            db_error_pattern,
             r'raise handle_database_error("\1 \2", e)',
             content,
             flags=re.MULTILINE | re.DOTALL,
