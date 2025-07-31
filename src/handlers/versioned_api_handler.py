@@ -4,7 +4,6 @@ This allows us to deploy fixes safely while maintaining backward compatibility.
 """
 
 import json
-import logging
 import uuid
 from datetime import datetime, timezone
 from typing import Dict, Any
@@ -14,10 +13,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from ..models.person import PersonCreate, PersonResponse
 from ..models.subscription import SubscriptionCreate
 from ..services.dynamodb_service import DynamoDBService
+from ..utils.error_handler import StandardErrorHandler, handle_database_error
+from ..utils.logging_config import get_handler_logger
+from ..utils.response_models import (
+    ResponseFactory,
+    create_v1_response,
+    create_v2_response,
+)
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Configure standardized logging
+logger = get_handler_logger("versioned_api")
 
 # Initialize services
 db_service = DynamoDBService()
@@ -75,28 +80,38 @@ async def health_check():
 async def get_subscriptions_v1():
     """Get all subscriptions (v1 - legacy version)."""
     try:
+        logger.log_api_request("GET", "/v1/subscriptions")
         subscriptions = await db_service.get_all_subscriptions()
-        return {"subscriptions": subscriptions}
+
+        response = create_v1_response(subscriptions)
+        logger.log_api_response("GET", "/v1/subscriptions", 200)
+        return response
     except Exception as e:
-        logger.error(f"Error getting subscriptions (v1): {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to retrieve subscriptions",
+        logger.error(
+            "Failed to retrieve subscriptions",
+            operation="get_subscriptions_v1",
+            error_type=type(e).__name__,
         )
+        raise handle_database_error("retrieving subscriptions", e)
 
 
 @v1_router.get("/projects")
 async def get_projects_v1():
     """Get all projects (v1 - legacy version)."""
     try:
+        logger.log_api_request("GET", "/v1/projects")
         projects = await db_service.get_all_projects()
-        return {"projects": projects}
+
+        response = create_v1_response(projects)
+        logger.log_api_response("GET", "/v1/projects", 200)
+        return response
     except Exception as e:
-        logger.error(f"Error getting projects (v1): {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to retrieve projects",
+        logger.error(
+            "Failed to retrieve projects",
+            operation="get_projects_v1",
+            error_type=type(e).__name__,
         )
+        raise handle_database_error("retrieving projects", e)
 
 
 @v1_router.post("/public/subscribe")
@@ -186,32 +201,47 @@ async def create_subscription_v1(subscription_data: dict):
 async def get_subscriptions_v2():
     """Get all subscriptions (v2 - enhanced version)."""
     try:
+        logger.log_api_request("GET", "/v2/subscriptions")
         subscriptions = await db_service.get_all_subscriptions()
-        return {
-            "subscriptions": subscriptions,
-            "version": "v2",
-            "count": len(subscriptions),
-        }
-    except Exception as e:
-        logger.error(f"Error getting subscriptions (v2): {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to retrieve subscriptions",
+
+        response = create_v2_response(
+            subscriptions, metadata={"total_count": len(subscriptions)}
         )
+        logger.log_api_response(
+            "GET",
+            "/v2/subscriptions",
+            200,
+            additional_context={"count": len(subscriptions)},
+        )
+        return response
+    except Exception as e:
+        logger.error(
+            "Failed to retrieve subscriptions",
+            operation="get_subscriptions_v2",
+            error_type=type(e).__name__,
+        )
+        raise handle_database_error("retrieving subscriptions", e)
 
 
 @v2_router.get("/projects")
 async def get_projects_v2():
     """Get all projects (v2 - enhanced version)."""
     try:
+        logger.log_api_request("GET", "/v2/projects")
         projects = await db_service.get_all_projects()
-        return {"projects": projects, "version": "v2", "count": len(projects)}
-    except Exception as e:
-        logger.error(f"Error getting projects (v2): {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to retrieve projects",
+
+        response = create_v2_response(projects, metadata={"total_count": len(projects)})
+        logger.log_api_response(
+            "GET", "/v2/projects", 200, additional_context={"count": len(projects)}
         )
+        return response
+    except Exception as e:
+        logger.error(
+            "Failed to retrieve projects",
+            operation="get_projects_v2",
+            error_type=type(e).__name__,
+        )
+        raise handle_database_error("retrieving projects", e)
 
 
 @v2_router.post("/people/check-email")

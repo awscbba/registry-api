@@ -1491,7 +1491,7 @@ class DynamoDBService:
                 f"Failed to create project: {e.response['Error']['Message']}"
             )
 
-    def get_all_projects(self) -> List[Dict[str, Any]]:
+    async def get_all_projects(self) -> List[Dict[str, Any]]:
         """Get all projects"""
         if not self.projects_table:
             return []
@@ -1617,7 +1617,7 @@ class DynamoDBService:
                 f"Failed to create subscription: {e.response['Error']['Message']}"
             )
 
-    def get_all_subscriptions(self) -> List[Dict[str, Any]]:
+    async def get_all_subscriptions(self) -> List[Dict[str, Any]]:
         """Get all subscriptions"""
         if not self.subscriptions_table:
             return []
