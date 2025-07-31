@@ -8,7 +8,7 @@ import sys
 from unittest.mock import AsyncMock, MagicMock
 
 # Add src to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 # Set environment variables to avoid AWS connection issues during testing
 os.environ["AWS_ACCESS_KEY_ID"] = "testing"
@@ -25,12 +25,12 @@ def setup_test_environment():
     os.environ["TEST_ADMIN_EMAIL"] = "test-admin@example.com"
     os.environ["JWT_SECRET"] = "test-jwt-secret"
     os.environ["JWT_EXPIRATION_HOURS"] = "1"
-    
+
     # Ensure we're in test mode
     os.environ["TESTING"] = "true"
-    
+
     yield
-    
+
     # Cleanup after tests
     test_vars = ["TEST_ADMIN_EMAIL", "JWT_SECRET", "JWT_EXPIRATION_HOURS", "TESTING"]
     for var in test_vars:
@@ -52,7 +52,7 @@ def mock_person():
         "email": "test@example.com",
         "firstName": "Test",
         "lastName": "User",
-        "isAdmin": False
+        "isAdmin": False,
     }
     return person
 
@@ -71,7 +71,7 @@ def mock_admin_person():
         "email": "admin@example.com",
         "firstName": "Admin",
         "lastName": "User",
-        "isAdmin": True
+        "isAdmin": True,
     }
     return person
 
@@ -83,7 +83,7 @@ def mock_project():
         "id": "test-project-id",
         "name": "Test Project",
         "description": "A test project",
-        "status": "active"
+        "status": "active",
     }
 
 
@@ -95,7 +95,7 @@ def mock_subscription():
         "projectId": "test-project-id",
         "personId": "test-person-id",
         "status": "active",
-        "notes": "Test subscription"
+        "notes": "Test subscription",
     }
 
 
@@ -113,8 +113,8 @@ def sample_person_data():
             "city": "Anytown",
             "state": "CA",
             "zipCode": "12345",
-            "country": "USA"
-        }
+            "country": "USA",
+        },
     }
 
 
@@ -124,7 +124,7 @@ def sample_subscription_data(sample_person_data):
     return {
         "person": sample_person_data,
         "projectId": "test-project-id",
-        "notes": "Test subscription notes"
+        "notes": "Test subscription notes",
     }
 
 
@@ -132,7 +132,7 @@ def sample_subscription_data(sample_person_data):
 def comprehensive_db_mock():
     """Comprehensive database service mock with all methods configured"""
     mock = MagicMock()
-    
+
     # Configure async methods
     mock.get_all_subscriptions = AsyncMock(return_value=[])
     mock.get_all_projects = AsyncMock(return_value=[])
@@ -143,10 +143,12 @@ def comprehensive_db_mock():
     mock.get_all_people = AsyncMock(return_value=[])
     mock.get_person_by_id = AsyncMock(return_value=None)
     mock.update_person = AsyncMock(return_value=MagicMock(id="updated-person-id"))
-    
+
     # Configure sync methods
-    mock.get_project_by_id = MagicMock(return_value={"id": "test-project-id", "name": "Test Project"})
-    
+    mock.get_project_by_id = MagicMock(
+        return_value={"id": "test-project-id", "name": "Test Project"}
+    )
+
     return mock
 
 
@@ -156,15 +158,9 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "async_test: mark test as testing async functionality"
     )
-    config.addinivalue_line(
-        "markers", "integration: mark test as integration test"
-    )
-    config.addinivalue_line(
-        "markers", "unit: mark test as unit test"
-    )
-    config.addinivalue_line(
-        "markers", "slow: mark test as slow running"
-    )
+    config.addinivalue_line("markers", "integration: mark test as integration test")
+    config.addinivalue_line("markers", "unit: mark test as unit test")
+    config.addinivalue_line("markers", "slow: mark test as slow running")
 
 
 def pytest_collection_modifyitems(config, items):
@@ -173,35 +169,45 @@ def pytest_collection_modifyitems(config, items):
         # Add async_test marker to tests that test async functionality
         if "async" in item.name.lower() or "await" in item.name.lower():
             item.add_marker(pytest.mark.async_test)
-        
+
         # Add integration marker to integration tests
         if "integration" in item.name.lower() or "test_integration" in str(item.fspath):
             item.add_marker(pytest.mark.integration)
-        
+
         # Add unit marker to unit tests (default)
-        if not any(marker.name in ["integration", "slow"] for marker in item.iter_markers()):
+        if not any(
+            marker.name in ["integration", "slow"] for marker in item.iter_markers()
+        ):
             item.add_marker(pytest.mark.unit)
 
 
 # Custom assertions
 def assert_response_success(response, expected_status=200):
     """Assert that a response is successful"""
-    assert response.status_code == expected_status, f"Expected {expected_status}, got {response.status_code}: {response.text}"
+    assert (
+        response.status_code == expected_status
+    ), f"Expected {expected_status}, got {response.status_code}: {response.text}"
 
 
 def assert_response_error(response, expected_status, expected_message=None):
     """Assert that a response is an error with expected status and message"""
-    assert response.status_code == expected_status, f"Expected {expected_status}, got {response.status_code}"
-    
+    assert (
+        response.status_code == expected_status
+    ), f"Expected {expected_status}, got {response.status_code}"
+
     if expected_message:
         data = response.json()
-        assert expected_message in data.get("detail", ""), f"Expected '{expected_message}' in error detail"
+        assert expected_message in data.get(
+            "detail", ""
+        ), f"Expected '{expected_message}' in error detail"
 
 
 def assert_has_version(data, expected_version):
     """Assert that response data has the expected version"""
     assert "version" in data, "Response should include version field"
-    assert data["version"] == expected_version, f"Expected version {expected_version}, got {data.get('version')}"
+    assert (
+        data["version"] == expected_version
+    ), f"Expected version {expected_version}, got {data.get('version')}"
 
 
 # Make custom assertions available globally
