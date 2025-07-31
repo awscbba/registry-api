@@ -257,7 +257,7 @@ async def check_subscription_exists_v2(check_data: dict):
             return {"subscribed": False, "version": "v2"}
 
         # Check if subscription exists
-        subscriptions = db_service.get_subscriptions_by_person(existing_person.id)
+        subscriptions = await db_service.get_subscriptions_by_person(existing_person.id)
         project_subscriptions = [
             sub for sub in subscriptions if sub.get("projectId") == project_id
         ]
