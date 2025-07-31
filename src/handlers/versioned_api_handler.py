@@ -583,7 +583,10 @@ async def test_admin_system():
     try:
         # Get a test admin user (configurable via environment)
         import os
-        test_admin_email = os.getenv("TEST_ADMIN_EMAIL", "sergio.rodriguez.inclan@gmail.com")
+
+        test_admin_email = os.getenv(
+            "TEST_ADMIN_EMAIL", "sergio.rodriguez.inclan@gmail.com"
+        )
         person = await db_service.get_person_by_email(test_admin_email)
         if not person:
             return {"error": "Admin user not found", "version": "v2"}
