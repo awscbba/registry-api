@@ -267,7 +267,9 @@ class TestCriticalFixes:
             if inside_function and (
                 stripped.startswith("from ..") or stripped.startswith("import ")
             ):
-                inline_imports.append(f"Line {i +  1} in {current_function}: {stripped}")
+                inline_imports.append(
+                    f"Line {i +  1} in {current_function}: {stripped}"
+                )
 
         # Filter out acceptable inline imports (like os.getenv)
         problematic_imports = [
