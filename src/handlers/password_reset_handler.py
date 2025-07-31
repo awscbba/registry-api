@@ -2,7 +2,6 @@
 Password reset API handlers for FastAPI endpoints.
 """
 
-import logging
 from typing import Dict, Any
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -13,8 +12,10 @@ from ..models.password_reset import (
     PasswordResetResponse,
 )
 from ..services.password_reset_service import PasswordResetService
+from ..utils.error_handler import StandardErrorHandler
+from ..utils.logging_config import get_handler_logger
 
-logger = logging.getLogger(__name__)
+logger = get_handler_logger("password_reset")
 
 
 class PasswordResetHandler:

@@ -2,7 +2,6 @@
 Password management API handlers for FastAPI endpoints.
 """
 
-import logging
 from typing import Dict, Any, Optional
 from fastapi import HTTPException, Request, Depends
 from fastapi.responses import JSONResponse
@@ -12,8 +11,16 @@ from ..models.person import PasswordUpdateRequest, PasswordUpdateResponse
 from ..services.password_management_service import PasswordManagementService
 from ..middleware.auth_middleware import get_current_user
 from ..models.auth import AuthenticatedUser
+from ..utils.error_handler import (
+    StandardErrorHandler,
+    handle_database_error,
+    handle_authentication_error,
+)
+from ..utils.logging_config import get_handler_logger
+from ..utils.response_models import ResponseFactory
 
-logger = logging.getLogger(__name__)
+
+logger = get_handler_logger("password_management")
 security = HTTPBearer()
 
 

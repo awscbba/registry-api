@@ -187,11 +187,7 @@ async def create_subscription_v1(subscription_data: dict):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error creating subscription (v1): {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create subscription",
-        )
+        raise handle_database_error("creating subscription (v1)", e)
 
 
 # ==================== V2 ENDPOINTS (Fixed) ====================
@@ -386,11 +382,7 @@ async def create_subscription_v2(subscription_data: dict):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error creating subscription (v2): {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create subscription",
-        )
+        raise handle_database_error("creating subscription (v2)", e)
 
 
 # Register the routers
@@ -558,11 +550,7 @@ async def get_people_v2(email: str = None):
                 "count": len(people),
             }
     except Exception as e:
-        logger.error(f"Error getting people (v2): {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to retrieve people",
-        )
+        raise handle_database_error("getting people (v2)", e)
 
 
 @v2_router.put("/people/{person_id}/admin")
@@ -600,11 +588,7 @@ async def update_admin_status(person_id: str, admin_data: dict):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error updating admin status: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to update admin status",
-        )
+        raise handle_database_error("updating admin status", e)
 
 
 @v2_router.get("/admin/test")

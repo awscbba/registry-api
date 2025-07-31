@@ -8,7 +8,6 @@ This handler implements all requirements for task 15:
 """
 
 import json
-import logging
 from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 from fastapi import FastAPI, HTTPException, status, Request, Depends, Query
@@ -42,10 +41,17 @@ from ..services.person_validation_service import PersonValidationService
 from ..services.email_verification_service import EmailVerificationService
 from ..services.person_deletion_service import PersonDeletionService
 from ..middleware.auth_middleware import get_current_user, require_no_password_change
+from ..utils.error_handler import (
+    StandardErrorHandler,
+    handle_database_error,
+    handle_authentication_error,
+)
+from ..utils.logging_config import get_handler_logger
+from ..utils.response_models import ResponseFactory
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+
+# Configure standardized logging
+logger = get_handler_logger("documented_people")
 
 # Initialize FastAPI app with comprehensive OpenAPI documentation
 app = FastAPI(

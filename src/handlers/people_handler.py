@@ -1,5 +1,4 @@
 import json
-import logging
 import uuid
 from datetime import datetime, timezone
 from typing import Dict, Any
@@ -28,12 +27,18 @@ from ..services.auth_service import AuthService
 from ..services.password_management_service import PasswordManagementService
 from ..services.person_validation_service import PersonValidationService
 from ..services.email_verification_service import EmailVerificationService
+from ..utils.error_handler import (
+    StandardErrorHandler,
+    handle_database_error,
+    handle_authentication_error,
+)
+from ..utils.logging_config import get_handler_logger
+from ..utils.response_models import ResponseFactory
 from ..services.person_deletion_service import PersonDeletionService
 from ..middleware.auth_middleware import get_current_user, require_no_password_change
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Configure standardized logging
+logger = get_handler_logger("people")
 
 # Initialize FastAPI app with comprehensive OpenAPI documentation
 app = FastAPI(
@@ -283,11 +288,10 @@ async def login(login_request: LoginRequest, request: Request):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Login error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Authentication failed",
+        logger.error(
+            "Authentication failed", operation="login", error_type=type(e).__name__
         )
+        raise handle_authentication_error("Authentication failed")
 
 
 @app.get(
@@ -478,11 +482,7 @@ async def update_password(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error updating password: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to update password",
-        )
+        raise handle_database_error("updating password", e)
 
 
 @app.put(
@@ -1396,11 +1396,7 @@ async def create_person(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except Exception as e:
-        logger.error(f"Error creating person: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error",
-        )
+        raise handle_database_error("creating person", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create person",
@@ -1886,11 +1882,7 @@ async def get_projects():
         projects = db_service.get_all_projects()
         return {"projects": projects, "count": len(projects)}
     except Exception as e:
-        logger.error(f"Error getting projects: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to get projects",
-        )
+        raise handle_database_error("getting projects", e)
 
 
 @app.get("/projects/{project_id}")
@@ -1906,11 +1898,7 @@ async def get_project(project_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting project {project_id}: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to get project",
-        )
+        raise handle_database_error("getting project {project_id}", e)
 
 
 @app.post("/projects", status_code=status.HTTP_201_CREATED)
@@ -1935,11 +1923,7 @@ async def create_project(
             detail=f"Invalid project data: {str(e)}",
         )
     except Exception as e:
-        logger.error(f"Error creating project: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create project",
-        )
+        raise handle_database_error("creating project", e)
 
 
 @app.put("/projects/{project_id}")
@@ -1970,11 +1954,7 @@ async def update_project(
             detail=f"Invalid project data: {str(e)}",
         )
     except Exception as e:
-        logger.error(f"Error updating project {project_id}: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to update project",
-        )
+        raise handle_database_error("updating project {project_id}", e)
 
 
 @app.delete("/projects/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -1991,11 +1971,7 @@ async def delete_project(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error deleting project {project_id}: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete project",
-        )
+        raise handle_database_error("deleting project {project_id}", e)
 
 
 # ==================== SUBSCRIPTION ENDPOINTS ====================
@@ -2008,11 +1984,7 @@ async def get_subscriptions():
         subscriptions = db_service.get_all_subscriptions()
         return {"subscriptions": subscriptions, "count": len(subscriptions)}
     except Exception as e:
-        logger.error(f"Error getting subscriptions: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to get subscriptions",
-        )
+        raise handle_database_error("getting subscriptions", e)
 
 
 @app.get("/subscriptions/{subscription_id}")
@@ -2028,11 +2000,7 @@ async def get_subscription(subscription_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting subscription {subscription_id}: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to get subscription",
-        )
+        raise handle_database_error("getting subscription {subscription_id}", e)
 
 
 @app.post("/subscriptions", status_code=status.HTTP_201_CREATED)
@@ -2069,11 +2037,7 @@ async def create_subscription(subscription_data: dict):
             detail=f"Invalid subscription data: {str(e)}",
         )
     except Exception as e:
-        logger.error(f"Error creating subscription: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create subscription",
-        )
+        raise handle_database_error("creating subscription", e)
 
 
 @app.put("/subscriptions/{subscription_id}")
@@ -2104,11 +2068,7 @@ async def update_subscription(subscription_id: str, subscription_data: dict):
             detail=f"Invalid subscription data: {str(e)}",
         )
     except Exception as e:
-        logger.error(f"Error updating subscription {subscription_id}: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to update subscription",
-        )
+        raise handle_database_error("updating subscription {subscription_id}", e)
 
 
 @app.delete("/subscriptions/{subscription_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -2123,11 +2083,7 @@ async def delete_subscription(subscription_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error deleting subscription {subscription_id}: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete subscription",
-        )
+        raise handle_database_error("deleting subscription {subscription_id}", e)
 
 
 @app.post("/public/subscribe", status_code=status.HTTP_201_CREATED)
@@ -2189,11 +2145,7 @@ async def create_subscription_with_person(subscription_data: dict):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error creating subscription with person: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create subscription",
-        )
+        raise handle_database_error("creating subscription with person", e)
 
 
 @app.get("/people/{person_id}/subscriptions")
@@ -2212,11 +2164,7 @@ async def get_person_subscriptions(person_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting subscriptions for person {person_id}: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to get person subscriptions",
-        )
+        raise handle_database_error("getting subscriptions for person {person_id}", e)
 
 
 @app.get("/projects/{project_id}/subscriptions")
@@ -2235,11 +2183,7 @@ async def get_project_subscriptions(project_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting subscriptions for project {project_id}: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to get project subscriptions",
-        )
+        raise handle_database_error("getting subscriptions for project {project_id}", e)
 
 
 # ==================== AUDIT LOGGING FUNCTIONS ====================
