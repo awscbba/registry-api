@@ -556,6 +556,57 @@ async def test_admin_system():
         return {"error": str(e), "version": "v2"}
 
 
+@v2_router.get("/admin/dashboard")
+async def get_admin_dashboard():
+    """Get admin dashboard data with statistics and recent activity."""
+    try:
+        logger.log_api_request("GET", "/v2/admin/dashboard")
+        
+        # Get statistics from database
+        projects = await db_service.get_all_projects()
+        subscriptions = await db_service.get_all_subscriptions()
+        
+        # Count active projects
+        active_projects = [p for p in projects if p.get('status') == 'active']
+        
+        # Count active subscriptions
+        active_subscriptions = [s for s in subscriptions if s.get('status') == 'active']
+        
+        # Get recent activity (last 10 subscriptions)
+        recent_subscriptions = sorted(
+            subscriptions, 
+            key=lambda x: x.get('createdAt', ''), 
+            reverse=True
+        )[:10]
+        
+        # Create dashboard data
+        dashboard_data = {
+            "totalProjects": len(projects),
+            "activeProjects": len(active_projects),
+            "totalSubscriptions": len(subscriptions),
+            "activeSubscriptions": len(active_subscriptions),
+            "pendingSubscriptions": len([s for s in subscriptions if s.get('status') == 'pending']),
+            "recentActivity": recent_subscriptions,
+            "statistics": {
+                "projectsCreatedThisMonth": len([p for p in projects if p.get('createdAt', '').startswith('2025-08')]),
+                "subscriptionsThisMonth": len([s for s in subscriptions if s.get('createdAt', '').startswith('2025-08')]),
+                "averageSubscriptionsPerProject": len(subscriptions) / max(len(projects), 1)
+            }
+        }
+        
+        response = create_v2_response(dashboard_data)
+        logger.log_api_response("GET", "/v2/admin/dashboard", 200)
+        return response
+        
+    except Exception as e:
+        logger.error(
+            "Failed to get admin dashboard",
+            operation="get_admin_dashboard",
+            error_type=type(e).__name__,
+        )
+        raise handle_database_error("getting admin dashboard", e)
+
+
 # Register the routers
 app.include_router(v1_router)
 app.include_router(v2_router)
@@ -573,6 +624,12 @@ async def get_subscriptions_legacy():
 async def get_projects_legacy():
     """Legacy endpoint - redirects to v2 for better functionality."""
     return await get_projects_v2()
+
+
+@app.get("/admin/dashboard")
+async def get_admin_dashboard_legacy():
+    """Legacy admin dashboard endpoint - redirects to v2."""
+    return await get_admin_dashboard()
 
 
 @app.post("/public/subscribe")
