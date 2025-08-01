@@ -101,8 +101,7 @@ class TestSimpleValidation:
             "check_person_exists_v2",
             "check_subscription_exists_v2",
             "create_subscription_v2",
-            "login",
-            "login_v2",
+            "login",  # Auth router login function
             "get_people_v2",
             "update_admin_status",
             "test_admin_system",
@@ -203,8 +202,9 @@ class TestSimpleValidation:
             '@v2_router.post("/subscriptions/check")',
             '@v2_router.post("/public/subscribe"',  # Partial match due to status_code parameter
             '@v2_router.get("/admin/test")',
-            '@app.post("/auth/login")',
-            '@v2_router.post("/auth/login")',
+            '@auth_router.post("/login")',  # Updated to match new auth router
+            '@auth_router.get("/me")',      # Added new auth endpoints
+            '@auth_router.post("/logout")', # Added new auth endpoints
             '@v2_router.get("/people")',
             '@v2_router.put("/people/{person_id}/admin")',
         ]
