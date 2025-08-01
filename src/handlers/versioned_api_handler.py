@@ -584,9 +584,6 @@ async def create_subscription_legacy(subscription_data: dict):
 # ==================== AUTH ENDPOINTS ====================
 
 
-
-
-
 # ==================== V2 PEOPLE ENDPOINTS ====================
 
 
