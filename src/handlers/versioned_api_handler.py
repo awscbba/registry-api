@@ -635,25 +635,29 @@ async def get_admin_people():
             # Handle both Person objects and dict formats safely
             try:
                 admin_person = {
-                    "id": getattr(person, 'id', None),
-                    "email": getattr(person, 'email', None),
-                    "firstName": getattr(person, 'first_name', None),
-                    "lastName": getattr(person, 'last_name', None),
-                    "phone": getattr(person, 'phone', None),
-                    "dateOfBirth": getattr(person, 'date_of_birth', None),
-                    "address": getattr(person, 'address', None),
-                    "isAdmin": getattr(person, 'is_admin', False),
-                    "createdAt": getattr(person, 'created_at', None),
-                    "updatedAt": getattr(person, 'updated_at', None),
+                    "id": getattr(person, "id", None),
+                    "email": getattr(person, "email", None),
+                    "firstName": getattr(person, "first_name", None),
+                    "lastName": getattr(person, "last_name", None),
+                    "phone": getattr(person, "phone", None),
+                    "dateOfBirth": getattr(person, "date_of_birth", None),
+                    "address": getattr(person, "address", None),
+                    "isAdmin": getattr(person, "is_admin", False),
+                    "createdAt": getattr(person, "created_at", None),
+                    "updatedAt": getattr(person, "updated_at", None),
                     # Add security fields for admin view
                     "isActive": getattr(person, "is_active", True),
-                    "requirePasswordChange": getattr(person, "require_password_change", False),
+                    "requirePasswordChange": getattr(
+                        person, "require_password_change", False
+                    ),
                     "lastLoginAt": getattr(person, "last_login_at", None),
                     "failedLoginAttempts": getattr(person, "failed_login_attempts", 0),
                 }
                 admin_people.append(admin_person)
             except Exception as person_error:
-                logger.warning(f"Error processing person {getattr(person, 'id', 'unknown')}: {person_error}")
+                logger.warning(
+                    f"Error processing person {getattr(person, 'id', 'unknown')}: {person_error}"
+                )
                 continue
 
         response = create_v2_response(admin_people)
@@ -744,10 +748,10 @@ async def get_admin_subscriptions():
         # Create lookup dictionaries safely
         people_dict = {}
         for p in people:
-            person_id = getattr(p, 'id', None)
+            person_id = getattr(p, "id", None)
             if person_id:
                 people_dict[person_id] = p
-                
+
         projects_dict = {p.get("id"): p for p in projects if p.get("id")}
 
         # Enhance subscriptions with person and project details
@@ -761,10 +765,10 @@ async def get_admin_subscriptions():
                     **subscription,
                     "person": (
                         {
-                            "id": getattr(person, 'id', None),
-                            "email": getattr(person, 'email', None),
-                            "firstName": getattr(person, 'first_name', None),
-                            "lastName": getattr(person, 'last_name', None),
+                            "id": getattr(person, "id", None),
+                            "email": getattr(person, "email", None),
+                            "firstName": getattr(person, "first_name", None),
+                            "lastName": getattr(person, "last_name", None),
                         }
                         if person
                         else None
@@ -781,7 +785,9 @@ async def get_admin_subscriptions():
                 }
                 enhanced_subscriptions.append(enhanced_subscription)
             except Exception as sub_error:
-                logger.warning(f"Error processing subscription {subscription.get('id', 'unknown')}: {sub_error}")
+                logger.warning(
+                    f"Error processing subscription {subscription.get('id', 'unknown')}: {sub_error}"
+                )
                 # Add subscription without enhancement if there's an error
                 enhanced_subscriptions.append(subscription)
 
