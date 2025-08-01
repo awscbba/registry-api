@@ -94,12 +94,20 @@ class TestCriticalFixes:
     def test_admin_test_endpoint_exists(self):
         """Test that the admin test endpoint exists and is accessible"""
         # Read source directly to avoid import issues
-        handler_path = os.path.join(os.path.dirname(__file__), "..", "src", "handlers", "versioned_api_handler.py")
+        handler_path = os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "src",
+            "handlers",
+            "versioned_api_handler.py",
+        )
         with open(handler_path, "r") as f:
             source = f.read()
-        
+
         # Check that admin test endpoint is defined
-        assert '@v2_router.get("/admin/test")' in source, "Admin test endpoint not found"
+        assert (
+            '@v2_router.get("/admin/test")' in source
+        ), "Admin test endpoint not found"
         assert "async def test_admin_system" in source, "Admin test function not found"
         assert "TEST_ADMIN_EMAIL" in source, "Admin email configuration not found"
 
@@ -185,42 +193,55 @@ class TestCriticalFixes:
     def test_async_database_calls_work_correctly(self):
         """Test that async database calls are properly structured"""
         # Read source directly to avoid import issues
-        handler_path = os.path.join(os.path.dirname(__file__), "..", "src", "handlers", "versioned_api_handler.py")
+        handler_path = os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "src",
+            "handlers",
+            "versioned_api_handler.py",
+        )
         with open(handler_path, "r") as f:
             source = f.read()
 
         # Check that async database methods are called with await
         async_db_methods = [
             "get_all_subscriptions",
-            "get_all_projects", 
+            "get_all_projects",
             "get_person_by_email",
             "create_person",
-            "create_subscription"
+            "create_subscription",
         ]
-        
+
         missing_await = []
         for method in async_db_methods:
             pattern = f"db_service.{method}("
             if pattern in source:
                 # Find all occurrences
                 import re
+
                 matches = list(re.finditer(re.escape(pattern), source))
                 for match in matches:
                     # Get the line containing the match
-                    start = source.rfind('\n', 0, match.start()) + 1
-                    end = source.find('\n', match.end())
+                    start = source.rfind("\n", 0, match.start()) + 1
+                    end = source.find("\n", match.end())
                     line = source[start:end] if end != -1 else source[start:]
-                    
+
                     # Check if await is present before the call
-                    if 'await' not in line[:match.start() - start]:
+                    if "await" not in line[: match.start() - start]:
                         missing_await.append(f"{method} in: {line.strip()}")
-        
+
         assert len(missing_await) == 0, f"Database calls missing await: {missing_await}"
 
     def test_no_redundant_imports(self):
         """Test that there are no redundant inline imports"""
         # Read source directly to avoid import issues
-        handler_path = os.path.join(os.path.dirname(__file__), "..", "src", "handlers", "versioned_api_handler.py")
+        handler_path = os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "src",
+            "handlers",
+            "versioned_api_handler.py",
+        )
         with open(handler_path, "r") as f:
             source = f.read()
         lines = source.split("\n")
@@ -265,18 +286,32 @@ class TestCriticalFixes:
     def test_environment_variable_configuration(self):
         """Test that environment variables are properly used for configuration"""
         # Read source directly to avoid import issues
-        handler_path = os.path.join(os.path.dirname(__file__), "..", "src", "handlers", "versioned_api_handler.py")
+        handler_path = os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "src",
+            "handlers",
+            "versioned_api_handler.py",
+        )
         with open(handler_path, "r") as f:
             source = f.read()
-        
+
         # Check that environment variables are used properly
-        assert 'os.getenv(' in source, "Environment variables not used"
-        assert 'TEST_ADMIN_EMAIL' in source, "TEST_ADMIN_EMAIL environment variable not configured"
+        assert "os.getenv(" in source, "Environment variables not used"
+        assert (
+            "TEST_ADMIN_EMAIL" in source
+        ), "TEST_ADMIN_EMAIL environment variable not configured"
 
     def test_route_registration_completeness(self):
         """Test that all expected routes are properly registered"""
         # Read source directly to avoid import issues
-        handler_path = os.path.join(os.path.dirname(__file__), "..", "src", "handlers", "versioned_api_handler.py")
+        handler_path = os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "src",
+            "handlers",
+            "versioned_api_handler.py",
+        )
         with open(handler_path, "r") as f:
             source = f.read()
 
@@ -301,26 +336,42 @@ class TestCriticalFixes:
     def test_fastapi_app_creation(self):
         """Test that the FastAPI app is created correctly"""
         # Read source directly to avoid import issues
-        handler_path = os.path.join(os.path.dirname(__file__), "..", "src", "handlers", "versioned_api_handler.py")
+        handler_path = os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "src",
+            "handlers",
+            "versioned_api_handler.py",
+        )
         with open(handler_path, "r") as f:
             source = f.read()
 
         # Check that FastAPI app is created with correct configuration
         assert "app = FastAPI(" in source, "FastAPI app should be created"
-        assert 'title="People Register API - Versioned"' in source, "App title should be set"
+        assert (
+            'title="People Register API - Versioned"' in source
+        ), "App title should be set"
         assert 'version="2.0.0"' in source, "App version should be set"
 
     def test_error_handling_consistency(self):
         """Test that error handling is consistent across endpoints"""
         # Read source directly to avoid import issues
-        handler_path = os.path.join(os.path.dirname(__file__), "..", "src", "handlers", "versioned_api_handler.py")
+        handler_path = os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "src",
+            "handlers",
+            "versioned_api_handler.py",
+        )
         with open(handler_path, "r") as f:
             source = f.read()
 
         # Check that error handling patterns are consistent
         assert "try:" in source, "Should have try blocks for error handling"
         assert "except Exception as e:" in source, "Should have exception handling"
-        assert "handle_database_error" in source, "Should use standardized error handling"
+        assert (
+            "handle_database_error" in source
+        ), "Should use standardized error handling"
         assert "logger.error" in source, "Should have error logging"
 
 
