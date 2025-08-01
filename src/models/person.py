@@ -48,7 +48,9 @@ class Person(PersonBase):
     created_at: datetime = Field(alias="createdAt")
     updated_at: datetime = Field(alias="updatedAt")
     password_hash: Optional[str] = Field(None, alias="password_hash")
-    require_password_change: Optional[bool] = Field(default=False, alias="requirePasswordChange")
+    require_password_change: Optional[bool] = Field(
+        default=False, alias="requirePasswordChange"
+    )
     is_active: Optional[bool] = Field(default=True, alias="isActive")
     last_login_at: Optional[datetime] = Field(None, alias="lastLoginAt")
 

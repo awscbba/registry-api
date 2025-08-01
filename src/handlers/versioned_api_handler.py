@@ -396,31 +396,34 @@ async def create_subscription_v2(subscription_data: dict):
 async def login(login_request: LoginRequest, request: Request):
     """
     Authenticate user and return JWT tokens.
-    
+
     This endpoint handles admin and user authentication.
     """
     try:
         logger.log_api_request("POST", "/auth/login", {"email": login_request.email})
-        
+
         # Get client IP and user agent for security logging
         client_ip = request.client.host if request.client else None
         user_agent = request.headers.get("user-agent")
-        
+
         # Authenticate user
         success, login_response, error_message = await auth_service.authenticate_user(
             login_request, client_ip, user_agent
         )
-        
+
         if not success:
-            logger.log_api_response("POST", "/auth/login", 401, {"error": error_message})
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=error_message
+            logger.log_api_response(
+                "POST", "/auth/login", 401, {"error": error_message}
             )
-        
-        logger.log_api_response("POST", "/auth/login", 200, {"user_id": login_response.user["id"]})
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail=error_message
+            )
+
+        logger.log_api_response(
+            "POST", "/auth/login", 200, {"user_id": login_response.user["id"]}
+        )
         return login_response
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -428,11 +431,11 @@ async def login(login_request: LoginRequest, request: Request):
             "Authentication error",
             operation="login",
             error_type=type(e).__name__,
-            error_message=str(e)
+            error_message=str(e),
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Authentication service error"
+            detail="Authentication service error",
         )
 
 
@@ -440,13 +443,13 @@ async def login(login_request: LoginRequest, request: Request):
 async def get_current_user_info(request: Request):
     """
     Get current authenticated user information.
-    
+
     Requires valid JWT token in Authorization header.
     """
     try:
         from ..middleware.auth_middleware import get_current_user
         from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-        
+
         # Extract token from Authorization header
         auth_header = request.headers.get("Authorization")
         if not auth_header or not auth_header.startswith("Bearer "):
@@ -455,14 +458,15 @@ async def get_current_user_info(request: Request):
                 detail="Missing or invalid authorization header",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        
+
         token = auth_header.split(" ")[1]
         credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
-        
+
         # Get current user using auth middleware
         from ..middleware.auth_middleware import auth_middleware
+
         current_user = await auth_middleware.get_current_user(credentials)
-        
+
         return {
             "user": {
                 "id": current_user.id,
@@ -471,10 +475,14 @@ async def get_current_user_info(request: Request):
                 "lastName": current_user.last_name,
                 "requirePasswordChange": current_user.require_password_change,
                 "isActive": current_user.is_active,
-                "lastLoginAt": current_user.last_login_at.isoformat() if current_user.last_login_at else None
+                "lastLoginAt": (
+                    current_user.last_login_at.isoformat()
+                    if current_user.last_login_at
+                    else None
+                ),
             }
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -482,11 +490,11 @@ async def get_current_user_info(request: Request):
             "Error getting current user info",
             operation="get_current_user_info",
             error_type=type(e).__name__,
-            error_message=str(e)
+            error_message=str(e),
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Unable to retrieve user information"
+            detail="Unable to retrieve user information",
         )
 
 
@@ -494,30 +502,58 @@ async def get_current_user_info(request: Request):
 async def logout(request: Request):
     """
     Logout user (invalidate token).
-    
+
     Note: With JWT tokens, logout is typically handled client-side by removing the token.
     This endpoint is provided for consistency and future token blacklisting if needed.
     """
     try:
         # For now, just return success since JWT tokens are stateless
         # In the future, we could implement token blacklisting here
-        
+
         return {
             "message": "Logged out successfully",
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
-        
+
     except Exception as e:
         logger.error(
             "Error during logout",
             operation="logout",
             error_type=type(e).__name__,
-            error_message=str(e)
+            error_message=str(e),
         )
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Logout error"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Logout error"
         )
+
+
+@v2_router.get("/admin/test")
+async def test_admin_system():
+    """Test endpoint to verify admin system is working."""
+    try:
+        # Get a test admin user (configurable via environment)
+        import os
+
+        test_admin_email = os.getenv("TEST_ADMIN_EMAIL", "admin@awsugcbba.org")
+        person = await db_service.get_person_by_email(test_admin_email)
+        if not person:
+            return {"error": "Admin user not found", "version": "v2"}
+
+        return {
+            "message": "Admin system test successful",
+            "admin_user": {
+                "id": person.id,
+                "email": person.email,
+                "firstName": person.first_name,
+                "lastName": person.last_name,
+                "isAdmin": person.is_admin,
+            },
+            "version": "v2",
+        }
+
+    except Exception as e:
+        logger.error(f"Error testing admin system: {str(e)}")
+        return {"error": str(e), "version": "v2"}
 
 
 # Register the routers
@@ -725,34 +761,3 @@ async def update_admin_status(person_id: str, admin_data: dict):
         raise
     except Exception as e:
         raise handle_database_error("updating admin status", e)
-
-
-@v2_router.get("/admin/test")
-async def test_admin_system():
-    """Test endpoint to verify admin system is working."""
-    try:
-        # Get a test admin user (configurable via environment)
-        import os
-
-        test_admin_email = os.getenv(
-            "TEST_ADMIN_EMAIL", "sergio.rodriguez.inclan@gmail.com"
-        )
-        person = await db_service.get_person_by_email(test_admin_email)
-        if not person:
-            return {"error": "Admin user not found", "version": "v2"}
-
-        return {
-            "message": "Admin system test successful",
-            "admin_user": {
-                "id": person.id,
-                "email": person.email,
-                "firstName": person.first_name,
-                "lastName": person.last_name,
-                "isAdmin": person.is_admin,
-            },
-            "version": "v2",
-        }
-
-    except Exception as e:
-        logger.error(f"Error testing admin system: {str(e)}")
-        return {"error": str(e), "version": "v2"}
