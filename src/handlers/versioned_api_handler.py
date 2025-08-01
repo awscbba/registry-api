@@ -561,43 +561,56 @@ async def get_admin_dashboard():
     """Get admin dashboard data with statistics and recent activity."""
     try:
         logger.log_api_request("GET", "/v2/admin/dashboard")
-        
+
         # Get statistics from database
         projects = await db_service.get_all_projects()
         subscriptions = await db_service.get_all_subscriptions()
-        
+
         # Count active projects
-        active_projects = [p for p in projects if p.get('status') == 'active']
-        
+        active_projects = [p for p in projects if p.get("status") == "active"]
+
         # Count active subscriptions
-        active_subscriptions = [s for s in subscriptions if s.get('status') == 'active']
-        
+        active_subscriptions = [s for s in subscriptions if s.get("status") == "active"]
+
         # Get recent activity (last 10 subscriptions)
         recent_subscriptions = sorted(
-            subscriptions, 
-            key=lambda x: x.get('createdAt', ''), 
-            reverse=True
+            subscriptions, key=lambda x: x.get("createdAt", ""), reverse=True
         )[:10]
-        
+
         # Create dashboard data
         dashboard_data = {
             "totalProjects": len(projects),
             "activeProjects": len(active_projects),
             "totalSubscriptions": len(subscriptions),
             "activeSubscriptions": len(active_subscriptions),
-            "pendingSubscriptions": len([s for s in subscriptions if s.get('status') == 'pending']),
+            "pendingSubscriptions": len(
+                [s for s in subscriptions if s.get("status") == "pending"]
+            ),
             "recentActivity": recent_subscriptions,
             "statistics": {
-                "projectsCreatedThisMonth": len([p for p in projects if p.get('createdAt', '').startswith('2025-08')]),
-                "subscriptionsThisMonth": len([s for s in subscriptions if s.get('createdAt', '').startswith('2025-08')]),
-                "averageSubscriptionsPerProject": len(subscriptions) / max(len(projects), 1)
-            }
+                "projectsCreatedThisMonth": len(
+                    [
+                        p
+                        for p in projects
+                        if p.get("createdAt", "").startswith("2025-08")
+                    ]
+                ),
+                "subscriptionsThisMonth": len(
+                    [
+                        s
+                        for s in subscriptions
+                        if s.get("createdAt", "").startswith("2025-08")
+                    ]
+                ),
+                "averageSubscriptionsPerProject": len(subscriptions)
+                / max(len(projects), 1),
+            },
         }
-        
+
         response = create_v2_response(dashboard_data)
         logger.log_api_response("GET", "/v2/admin/dashboard", 200)
         return response
-        
+
     except Exception as e:
         logger.error(
             "Failed to get admin dashboard",
@@ -612,10 +625,10 @@ async def get_admin_people():
     """Get all people for admin management (v2)."""
     try:
         logger.log_api_request("GET", "/v2/admin/people")
-        
+
         # Get all people from database
         people = await db_service.get_all_people()
-        
+
         # Convert to admin-friendly format with additional fields
         admin_people = []
         for person in people:
@@ -628,20 +641,26 @@ async def get_admin_people():
                 "dateOfBirth": person.date_of_birth,
                 "address": person.address.dict() if person.address else None,
                 "isAdmin": person.is_admin,
-                "createdAt": person.created_at.isoformat() if person.created_at else None,
-                "updatedAt": person.updated_at.isoformat() if person.updated_at else None,
+                "createdAt": (
+                    person.created_at.isoformat() if person.created_at else None
+                ),
+                "updatedAt": (
+                    person.updated_at.isoformat() if person.updated_at else None
+                ),
                 # Add security fields for admin view
-                "isActive": getattr(person, 'is_active', True),
-                "requirePasswordChange": getattr(person, 'require_password_change', False),
-                "lastLoginAt": getattr(person, 'last_login_at', None),
-                "failedLoginAttempts": getattr(person, 'failed_login_attempts', 0)
+                "isActive": getattr(person, "is_active", True),
+                "requirePasswordChange": getattr(
+                    person, "require_password_change", False
+                ),
+                "lastLoginAt": getattr(person, "last_login_at", None),
+                "failedLoginAttempts": getattr(person, "failed_login_attempts", 0),
             }
             admin_people.append(admin_person)
-        
+
         response = create_v2_response(admin_people)
         logger.log_api_response("GET", "/v2/admin/people", 200)
         return response
-        
+
     except Exception as e:
         logger.error(
             "Failed to get admin people",
@@ -656,31 +675,51 @@ async def get_admin_projects():
     """Get all projects for admin management with enhanced details (v2)."""
     try:
         logger.log_api_request("GET", "/v2/admin/projects")
-        
+
         # Get all projects
         projects = await db_service.get_all_projects()
-        
+
         # Get subscription counts for each project
         subscriptions = await db_service.get_all_subscriptions()
-        
+
         # Enhance projects with subscription statistics
         enhanced_projects = []
         for project in projects:
-            project_subscriptions = [s for s in subscriptions if s.get('projectId') == project.get('id')]
-            
+            project_subscriptions = [
+                s for s in subscriptions if s.get("projectId") == project.get("id")
+            ]
+
             enhanced_project = {
                 **project,
                 "subscriptionCount": len(project_subscriptions),
-                "activeSubscriptions": len([s for s in project_subscriptions if s.get('status') == 'active']),
-                "pendingSubscriptions": len([s for s in project_subscriptions if s.get('status') == 'pending']),
-                "availableSlots": max(0, project.get('maxParticipants', 0) - len([s for s in project_subscriptions if s.get('status') == 'active'])) if project.get('maxParticipants') else None
+                "activeSubscriptions": len(
+                    [s for s in project_subscriptions if s.get("status") == "active"]
+                ),
+                "pendingSubscriptions": len(
+                    [s for s in project_subscriptions if s.get("status") == "pending"]
+                ),
+                "availableSlots": (
+                    max(
+                        0,
+                        project.get("maxParticipants", 0)
+                        - len(
+                            [
+                                s
+                                for s in project_subscriptions
+                                if s.get("status") == "active"
+                            ]
+                        ),
+                    )
+                    if project.get("maxParticipants")
+                    else None
+                ),
             }
             enhanced_projects.append(enhanced_project)
-        
+
         response = create_v2_response(enhanced_projects)
         logger.log_api_response("GET", "/v2/admin/projects", 200)
         return response
-        
+
     except Exception as e:
         logger.error(
             "Failed to get admin projects",
@@ -695,44 +734,52 @@ async def get_admin_subscriptions():
     """Get all subscriptions for admin management with enhanced details (v2)."""
     try:
         logger.log_api_request("GET", "/v2/admin/subscriptions")
-        
+
         # Get all subscriptions
         subscriptions = await db_service.get_all_subscriptions()
-        
+
         # Get people and projects for enhanced details
         people = await db_service.get_all_people()
         projects = await db_service.get_all_projects()
-        
+
         # Create lookup dictionaries
         people_dict = {p.id: p for p in people}
-        projects_dict = {p.get('id'): p for p in projects}
-        
+        projects_dict = {p.get("id"): p for p in projects}
+
         # Enhance subscriptions with person and project details
         enhanced_subscriptions = []
         for subscription in subscriptions:
-            person = people_dict.get(subscription.get('personId'))
-            project = projects_dict.get(subscription.get('projectId'))
-            
+            person = people_dict.get(subscription.get("personId"))
+            project = projects_dict.get(subscription.get("projectId"))
+
             enhanced_subscription = {
                 **subscription,
-                "person": {
-                    "id": person.id,
-                    "email": person.email,
-                    "firstName": person.first_name,
-                    "lastName": person.last_name
-                } if person else None,
-                "project": {
-                    "id": project.get('id'),
-                    "name": project.get('name'),
-                    "status": project.get('status')
-                } if project else None
+                "person": (
+                    {
+                        "id": person.id,
+                        "email": person.email,
+                        "firstName": person.first_name,
+                        "lastName": person.last_name,
+                    }
+                    if person
+                    else None
+                ),
+                "project": (
+                    {
+                        "id": project.get("id"),
+                        "name": project.get("name"),
+                        "status": project.get("status"),
+                    }
+                    if project
+                    else None
+                ),
             }
             enhanced_subscriptions.append(enhanced_subscription)
-        
+
         response = create_v2_response(enhanced_subscriptions)
         logger.log_api_response("GET", "/v2/admin/subscriptions", 200)
         return response
-        
+
     except Exception as e:
         logger.error(
             "Failed to get admin subscriptions",
