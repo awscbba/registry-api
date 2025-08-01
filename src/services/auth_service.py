@@ -66,6 +66,7 @@ class AuthService:
             # Check if account is locked (temporarily disabled for testing)
             # is_locked, lockout_info = await self._check_account_lockout(person.id)
             is_locked = False
+            lockout_info = None
             if is_locked:
                 await self._log_security_event(
                     person_id=person.id,
@@ -77,7 +78,7 @@ class AuthService:
                         "reason": "account_locked",
                         "locked_until": (
                             lockout_info.locked_until.isoformat()
-                            if lockout_info.locked_until
+                            if lockout_info and lockout_info.locked_until
                             else None
                         ),
                     },
@@ -85,7 +86,7 @@ class AuthService:
                 return (
                     False,
                     None,
-                    f"Account is temporarily locked. Try again after {lockout_info.locked_until.strftime('%H:%M')} UTC.",
+                    f"Account is temporarily locked. Try again after {lockout_info.locked_until.strftime('%H:%M') if lockout_info and lockout_info.locked_until else 'some time'} UTC.",
                 )
 
             # Verify password
