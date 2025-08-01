@@ -12,7 +12,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from ..models.person import PersonCreate, PersonResponse
 from ..models.subscription import SubscriptionCreate
+from ..models.auth import LoginRequest, LoginResponse
 from ..services.dynamodb_service import DynamoDBService
+from ..services.auth_service import AuthService
 from ..utils.error_handler import StandardErrorHandler, handle_database_error
 from ..utils.logging_config import get_handler_logger
 from ..utils.response_models import (
@@ -26,6 +28,7 @@ logger = get_handler_logger("versioned_api")
 
 # Initialize services
 db_service = DynamoDBService()
+auth_service = AuthService()
 
 # Create FastAPI app
 app = FastAPI(
@@ -59,6 +62,7 @@ app.add_middleware(
 # Create version-specific routers
 v1_router = APIRouter(prefix="/v1", tags=["v1"])
 v2_router = APIRouter(prefix="/v2", tags=["v2"])
+auth_router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 # Health check endpoint (unversioned)
@@ -385,9 +389,141 @@ async def create_subscription_v2(subscription_data: dict):
         raise handle_database_error("creating subscription (v2)", e)
 
 
+# ==================== AUTH ENDPOINTS ====================
+
+
+@auth_router.post("/login", response_model=LoginResponse)
+async def login(login_request: LoginRequest, request: Request):
+    """
+    Authenticate user and return JWT tokens.
+    
+    This endpoint handles admin and user authentication.
+    """
+    try:
+        logger.log_api_request("POST", "/auth/login", {"email": login_request.email})
+        
+        # Get client IP and user agent for security logging
+        client_ip = request.client.host if request.client else None
+        user_agent = request.headers.get("user-agent")
+        
+        # Authenticate user
+        success, login_response, error_message = await auth_service.authenticate_user(
+            login_request, client_ip, user_agent
+        )
+        
+        if not success:
+            logger.log_api_response("POST", "/auth/login", 401, {"error": error_message})
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=error_message
+            )
+        
+        logger.log_api_response("POST", "/auth/login", 200, {"user_id": login_response.user["id"]})
+        return login_response
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            "Authentication error",
+            operation="login",
+            error_type=type(e).__name__,
+            error_message=str(e)
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Authentication service error"
+        )
+
+
+@auth_router.get("/me")
+async def get_current_user_info(request: Request):
+    """
+    Get current authenticated user information.
+    
+    Requires valid JWT token in Authorization header.
+    """
+    try:
+        from ..middleware.auth_middleware import get_current_user
+        from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+        
+        # Extract token from Authorization header
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Missing or invalid authorization header",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        token = auth_header.split(" ")[1]
+        credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
+        
+        # Get current user using auth middleware
+        from ..middleware.auth_middleware import auth_middleware
+        current_user = await auth_middleware.get_current_user(credentials)
+        
+        return {
+            "user": {
+                "id": current_user.id,
+                "email": current_user.email,
+                "firstName": current_user.first_name,
+                "lastName": current_user.last_name,
+                "requirePasswordChange": current_user.require_password_change,
+                "isActive": current_user.is_active,
+                "lastLoginAt": current_user.last_login_at.isoformat() if current_user.last_login_at else None
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            "Error getting current user info",
+            operation="get_current_user_info",
+            error_type=type(e).__name__,
+            error_message=str(e)
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to retrieve user information"
+        )
+
+
+@auth_router.post("/logout")
+async def logout(request: Request):
+    """
+    Logout user (invalidate token).
+    
+    Note: With JWT tokens, logout is typically handled client-side by removing the token.
+    This endpoint is provided for consistency and future token blacklisting if needed.
+    """
+    try:
+        # For now, just return success since JWT tokens are stateless
+        # In the future, we could implement token blacklisting here
+        
+        return {
+            "message": "Logged out successfully",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(
+            "Error during logout",
+            operation="logout",
+            error_type=type(e).__name__,
+            error_message=str(e)
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Logout error"
+        )
+
+
 # Register the routers
 app.include_router(v1_router)
 app.include_router(v2_router)
+app.include_router(auth_router)
 
 
 # Legacy endpoints (unversioned) - redirect to v1 for compatibility

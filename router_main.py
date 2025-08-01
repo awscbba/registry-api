@@ -40,8 +40,14 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     logger.info(f"Extracted path: {path}, method: {http_method}")
 
     # Determine target function based on path
-    # Route all requests to API function since it now handles auth endpoints
-    target_function = API_FUNCTION_NAME
+    if path.startswith("/auth"):
+        # Route auth requests to API function (which now handles auth endpoints)
+        target_function = API_FUNCTION_NAME
+        logger.info(f"Routing auth request to API function: {path}")
+    else:
+        # Route all other requests to API function
+        target_function = API_FUNCTION_NAME
+        logger.info(f"Routing API request to API function: {path}")
 
     logger.info(f"Routing to function: {target_function}")
 

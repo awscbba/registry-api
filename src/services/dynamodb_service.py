@@ -473,6 +473,8 @@ class DynamoDBService:
         # Add password-related fields if they exist
         if "passwordHash" in item:
             person.password_hash = item["passwordHash"]
+        elif "password_hash" in item:  # Support snake_case for backward compatibility
+            person.password_hash = item["password_hash"]
         if "passwordSalt" in item:
             person.password_salt = item["passwordSalt"]
         if "requirePasswordChange" in item:
