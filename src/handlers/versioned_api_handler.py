@@ -607,6 +607,141 @@ async def get_admin_dashboard():
         raise handle_database_error("getting admin dashboard", e)
 
 
+@v2_router.get("/admin/people")
+async def get_admin_people():
+    """Get all people for admin management (v2)."""
+    try:
+        logger.log_api_request("GET", "/v2/admin/people")
+        
+        # Get all people from database
+        people = await db_service.get_all_people()
+        
+        # Convert to admin-friendly format with additional fields
+        admin_people = []
+        for person in people:
+            admin_person = {
+                "id": person.id,
+                "email": person.email,
+                "firstName": person.first_name,
+                "lastName": person.last_name,
+                "phone": person.phone,
+                "dateOfBirth": person.date_of_birth,
+                "address": person.address.dict() if person.address else None,
+                "isAdmin": person.is_admin,
+                "createdAt": person.created_at.isoformat() if person.created_at else None,
+                "updatedAt": person.updated_at.isoformat() if person.updated_at else None,
+                # Add security fields for admin view
+                "isActive": getattr(person, 'is_active', True),
+                "requirePasswordChange": getattr(person, 'require_password_change', False),
+                "lastLoginAt": getattr(person, 'last_login_at', None),
+                "failedLoginAttempts": getattr(person, 'failed_login_attempts', 0)
+            }
+            admin_people.append(admin_person)
+        
+        response = create_v2_response(admin_people)
+        logger.log_api_response("GET", "/v2/admin/people", 200)
+        return response
+        
+    except Exception as e:
+        logger.error(
+            "Failed to get admin people",
+            operation="get_admin_people",
+            error_type=type(e).__name__,
+        )
+        raise handle_database_error("getting admin people", e)
+
+
+@v2_router.get("/admin/projects")
+async def get_admin_projects():
+    """Get all projects for admin management with enhanced details (v2)."""
+    try:
+        logger.log_api_request("GET", "/v2/admin/projects")
+        
+        # Get all projects
+        projects = await db_service.get_all_projects()
+        
+        # Get subscription counts for each project
+        subscriptions = await db_service.get_all_subscriptions()
+        
+        # Enhance projects with subscription statistics
+        enhanced_projects = []
+        for project in projects:
+            project_subscriptions = [s for s in subscriptions if s.get('projectId') == project.get('id')]
+            
+            enhanced_project = {
+                **project,
+                "subscriptionCount": len(project_subscriptions),
+                "activeSubscriptions": len([s for s in project_subscriptions if s.get('status') == 'active']),
+                "pendingSubscriptions": len([s for s in project_subscriptions if s.get('status') == 'pending']),
+                "availableSlots": max(0, project.get('maxParticipants', 0) - len([s for s in project_subscriptions if s.get('status') == 'active'])) if project.get('maxParticipants') else None
+            }
+            enhanced_projects.append(enhanced_project)
+        
+        response = create_v2_response(enhanced_projects)
+        logger.log_api_response("GET", "/v2/admin/projects", 200)
+        return response
+        
+    except Exception as e:
+        logger.error(
+            "Failed to get admin projects",
+            operation="get_admin_projects",
+            error_type=type(e).__name__,
+        )
+        raise handle_database_error("getting admin projects", e)
+
+
+@v2_router.get("/admin/subscriptions")
+async def get_admin_subscriptions():
+    """Get all subscriptions for admin management with enhanced details (v2)."""
+    try:
+        logger.log_api_request("GET", "/v2/admin/subscriptions")
+        
+        # Get all subscriptions
+        subscriptions = await db_service.get_all_subscriptions()
+        
+        # Get people and projects for enhanced details
+        people = await db_service.get_all_people()
+        projects = await db_service.get_all_projects()
+        
+        # Create lookup dictionaries
+        people_dict = {p.id: p for p in people}
+        projects_dict = {p.get('id'): p for p in projects}
+        
+        # Enhance subscriptions with person and project details
+        enhanced_subscriptions = []
+        for subscription in subscriptions:
+            person = people_dict.get(subscription.get('personId'))
+            project = projects_dict.get(subscription.get('projectId'))
+            
+            enhanced_subscription = {
+                **subscription,
+                "person": {
+                    "id": person.id,
+                    "email": person.email,
+                    "firstName": person.first_name,
+                    "lastName": person.last_name
+                } if person else None,
+                "project": {
+                    "id": project.get('id'),
+                    "name": project.get('name'),
+                    "status": project.get('status')
+                } if project else None
+            }
+            enhanced_subscriptions.append(enhanced_subscription)
+        
+        response = create_v2_response(enhanced_subscriptions)
+        logger.log_api_response("GET", "/v2/admin/subscriptions", 200)
+        return response
+        
+    except Exception as e:
+        logger.error(
+            "Failed to get admin subscriptions",
+            operation="get_admin_subscriptions",
+            error_type=type(e).__name__,
+        )
+        raise handle_database_error("getting admin subscriptions", e)
+
+
 # Register the routers
 app.include_router(v1_router)
 app.include_router(v2_router)
