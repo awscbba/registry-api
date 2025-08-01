@@ -63,10 +63,8 @@ class AuthService:
                 )
                 return False, None, "Invalid email or password"
 
-            # Check if account is locked (temporarily disabled for testing)
-            # is_locked, lockout_info = await self._check_account_lockout(person.id)
-            is_locked = False
-            lockout_info = None
+            # Check if account is locked
+            is_locked, lockout_info = await self._check_account_lockout(person.id)
             if is_locked:
                 await self._log_security_event(
                     person_id=person.id,
