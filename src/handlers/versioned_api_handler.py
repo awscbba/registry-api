@@ -632,30 +632,29 @@ async def get_admin_people():
         # Convert to admin-friendly format with additional fields
         admin_people = []
         for person in people:
-            admin_person = {
-                "id": person.id,
-                "email": person.email,
-                "firstName": person.first_name,
-                "lastName": person.last_name,
-                "phone": person.phone,
-                "dateOfBirth": person.date_of_birth,
-                "address": person.address.dict() if person.address else None,
-                "isAdmin": person.is_admin,
-                "createdAt": (
-                    person.created_at.isoformat() if person.created_at else None
-                ),
-                "updatedAt": (
-                    person.updated_at.isoformat() if person.updated_at else None
-                ),
-                # Add security fields for admin view
-                "isActive": getattr(person, "is_active", True),
-                "requirePasswordChange": getattr(
-                    person, "require_password_change", False
-                ),
-                "lastLoginAt": getattr(person, "last_login_at", None),
-                "failedLoginAttempts": getattr(person, "failed_login_attempts", 0),
-            }
-            admin_people.append(admin_person)
+            # Handle both Person objects and dict formats safely
+            try:
+                admin_person = {
+                    "id": getattr(person, 'id', None),
+                    "email": getattr(person, 'email', None),
+                    "firstName": getattr(person, 'first_name', None),
+                    "lastName": getattr(person, 'last_name', None),
+                    "phone": getattr(person, 'phone', None),
+                    "dateOfBirth": getattr(person, 'date_of_birth', None),
+                    "address": getattr(person, 'address', None),
+                    "isAdmin": getattr(person, 'is_admin', False),
+                    "createdAt": getattr(person, 'created_at', None),
+                    "updatedAt": getattr(person, 'updated_at', None),
+                    # Add security fields for admin view
+                    "isActive": getattr(person, "is_active", True),
+                    "requirePasswordChange": getattr(person, "require_password_change", False),
+                    "lastLoginAt": getattr(person, "last_login_at", None),
+                    "failedLoginAttempts": getattr(person, "failed_login_attempts", 0),
+                }
+                admin_people.append(admin_person)
+            except Exception as person_error:
+                logger.warning(f"Error processing person {getattr(person, 'id', 'unknown')}: {person_error}")
+                continue
 
         response = create_v2_response(admin_people)
         logger.log_api_response("GET", "/v2/admin/people", 200)
@@ -742,39 +741,49 @@ async def get_admin_subscriptions():
         people = await db_service.get_all_people()
         projects = await db_service.get_all_projects()
 
-        # Create lookup dictionaries
-        people_dict = {p.id: p for p in people}
-        projects_dict = {p.get("id"): p for p in projects}
+        # Create lookup dictionaries safely
+        people_dict = {}
+        for p in people:
+            person_id = getattr(p, 'id', None)
+            if person_id:
+                people_dict[person_id] = p
+                
+        projects_dict = {p.get("id"): p for p in projects if p.get("id")}
 
         # Enhance subscriptions with person and project details
         enhanced_subscriptions = []
         for subscription in subscriptions:
-            person = people_dict.get(subscription.get("personId"))
-            project = projects_dict.get(subscription.get("projectId"))
+            try:
+                person = people_dict.get(subscription.get("personId"))
+                project = projects_dict.get(subscription.get("projectId"))
 
-            enhanced_subscription = {
-                **subscription,
-                "person": (
-                    {
-                        "id": person.id,
-                        "email": person.email,
-                        "firstName": person.first_name,
-                        "lastName": person.last_name,
-                    }
-                    if person
-                    else None
-                ),
-                "project": (
-                    {
-                        "id": project.get("id"),
-                        "name": project.get("name"),
-                        "status": project.get("status"),
-                    }
-                    if project
-                    else None
-                ),
-            }
-            enhanced_subscriptions.append(enhanced_subscription)
+                enhanced_subscription = {
+                    **subscription,
+                    "person": (
+                        {
+                            "id": getattr(person, 'id', None),
+                            "email": getattr(person, 'email', None),
+                            "firstName": getattr(person, 'first_name', None),
+                            "lastName": getattr(person, 'last_name', None),
+                        }
+                        if person
+                        else None
+                    ),
+                    "project": (
+                        {
+                            "id": project.get("id"),
+                            "name": project.get("name"),
+                            "status": project.get("status"),
+                        }
+                        if project
+                        else None
+                    ),
+                }
+                enhanced_subscriptions.append(enhanced_subscription)
+            except Exception as sub_error:
+                logger.warning(f"Error processing subscription {subscription.get('id', 'unknown')}: {sub_error}")
+                # Add subscription without enhancement if there's an error
+                enhanced_subscriptions.append(subscription)
 
         response = create_v2_response(enhanced_subscriptions)
         logger.log_api_response("GET", "/v2/admin/subscriptions", 200)
