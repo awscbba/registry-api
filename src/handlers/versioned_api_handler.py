@@ -809,11 +809,11 @@ async def get_admin_registrations():
     """Get all registrations for admin management (v2) - alias for subscriptions."""
     try:
         logger.log_api_request("GET", "/v2/admin/registrations")
-        
+
         # Registrations are essentially subscriptions in this system
         # This endpoint provides the same data as subscriptions but with different naming
         subscriptions = await db_service.get_all_subscriptions()
-        
+
         # Transform subscriptions to registrations format
         registrations = []
         for subscription in subscriptions:
@@ -858,7 +858,7 @@ async def get_events_v1():
         logger.log_api_request("GET", "/v1/events")
         # For now, return projects as events for backward compatibility
         projects = await db_service.get_all_projects()
-        
+
         # Transform projects to events format for legacy compatibility
         events = []
         for project in projects:
@@ -895,7 +895,7 @@ async def get_events_v2():
         logger.log_api_request("GET", "/v2/events")
         # For now, return projects as events for backward compatibility
         projects = await db_service.get_all_projects()
-        
+
         # Transform projects to events format with enhanced data
         events = []
         for project in projects:
