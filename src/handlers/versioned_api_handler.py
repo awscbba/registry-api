@@ -571,22 +571,8 @@ async def get_subscriptions_legacy():
 
 @app.get("/projects")
 async def get_projects_legacy():
-    """Legacy endpoint - returns format expected by frontend."""
-    try:
-        logger.log_api_request("GET", "/projects")
-        projects = await db_service.get_all_projects()
-        
-        # Return format expected by frontend: {projects: [...], count: N}
-        response = {"projects": projects, "count": len(projects)}
-        logger.log_api_response("GET", "/projects", 200)
-        return response
-    except Exception as e:
-        logger.error(
-            "Failed to retrieve projects",
-            operation="get_projects_legacy",
-            error_type=type(e).__name__,
-        )
-        raise handle_database_error("retrieving projects", e)
+    """Legacy endpoint - redirects to v2 for better functionality."""
+    return await get_projects_v2()
 
 
 @app.post("/public/subscribe")
