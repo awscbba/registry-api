@@ -627,7 +627,7 @@ async def get_admin_people():
         logger.log_api_request("GET", "/v2/admin/people")
 
         # Get all people from database
-        people = await db_service.get_all_people()
+        people = await db_service.list_people(limit=1000)
 
         # Convert to admin-friendly format with additional fields
         admin_people = []
@@ -742,7 +742,7 @@ async def get_admin_subscriptions():
         subscriptions = await db_service.get_all_subscriptions()
 
         # Get people and projects for enhanced details
-        people = await db_service.get_all_people()
+        people = await db_service.list_people(limit=1000)
         projects = await db_service.get_all_projects()
 
         # Create lookup dictionaries safely
@@ -804,10 +804,129 @@ async def get_admin_subscriptions():
         raise handle_database_error("getting admin subscriptions", e)
 
 
+@v2_router.get("/admin/registrations")
+async def get_admin_registrations():
+    """Get all registrations for admin management (v2) - alias for subscriptions."""
+    try:
+        logger.log_api_request("GET", "/v2/admin/registrations")
+        
+        # Registrations are essentially subscriptions in this system
+        # This endpoint provides the same data as subscriptions but with different naming
+        subscriptions = await db_service.get_all_subscriptions()
+        
+        # Transform subscriptions to registrations format
+        registrations = []
+        for subscription in subscriptions:
+            registration = {
+                "id": subscription.get("id"),
+                "personId": subscription.get("personId"),
+                "projectId": subscription.get("projectId"),
+                "status": subscription.get("status"),
+                "registrationDate": subscription.get("createdAt"),
+                "notes": subscription.get("notes"),
+                "createdAt": subscription.get("createdAt"),
+                "updatedAt": subscription.get("updatedAt"),
+            }
+            registrations.append(registration)
+
+        response = create_v2_response(registrations)
+        logger.log_api_response("GET", "/v2/admin/registrations", 200)
+        return response
+
+    except Exception as e:
+        logger.error(
+            "Failed to get admin registrations",
+            operation="get_admin_registrations",
+            error_type=type(e).__name__,
+        )
+        raise handle_database_error("getting admin registrations", e)
+
+
 # Register the routers
 app.include_router(v1_router)
 app.include_router(v2_router)
 app.include_router(auth_router)
+
+
+# ==================== EVENTS ENDPOINTS ====================
+
+
+@v1_router.get("/events")
+async def get_events_v1():
+    """Get all events (v1 - legacy version)."""
+    try:
+        logger.log_api_request("GET", "/v1/events")
+        # For now, return projects as events for backward compatibility
+        projects = await db_service.get_all_projects()
+        
+        # Transform projects to events format for legacy compatibility
+        events = []
+        for project in projects:
+            event = {
+                "id": project.get("id"),
+                "name": project.get("name"),
+                "description": project.get("description"),
+                "startDate": project.get("startDate"),
+                "endDate": project.get("endDate"),
+                "location": project.get("location"),
+                "status": project.get("status"),
+                "maxParticipants": project.get("maxParticipants"),
+                "createdAt": project.get("createdAt"),
+                "updatedAt": project.get("updatedAt"),
+            }
+            events.append(event)
+
+        response = create_v1_response(events)
+        logger.log_api_response("GET", "/v1/events", 200)
+        return response
+    except Exception as e:
+        logger.error(
+            "Failed to retrieve events",
+            operation="get_events_v1",
+            error_type=type(e).__name__,
+        )
+        raise handle_database_error("retrieving events", e)
+
+
+@v2_router.get("/events")
+async def get_events_v2():
+    """Get all events (v2 - enhanced version)."""
+    try:
+        logger.log_api_request("GET", "/v2/events")
+        # For now, return projects as events for backward compatibility
+        projects = await db_service.get_all_projects()
+        
+        # Transform projects to events format with enhanced data
+        events = []
+        for project in projects:
+            event = {
+                "id": project.get("id"),
+                "name": project.get("name"),
+                "description": project.get("description"),
+                "startDate": project.get("startDate"),
+                "endDate": project.get("endDate"),
+                "location": project.get("location"),
+                "status": project.get("status"),
+                "maxParticipants": project.get("maxParticipants"),
+                "createdAt": project.get("createdAt"),
+                "updatedAt": project.get("updatedAt"),
+                "type": "project",  # Enhanced field
+                "category": project.get("category", "workshop"),  # Enhanced field
+            }
+            events.append(event)
+
+        response = create_v2_response(events, metadata={"total_count": len(events)})
+        logger.log_api_response(
+            "GET", "/v2/events", 200, additional_context={"count": len(events)}
+        )
+        return response
+    except Exception as e:
+        logger.error(
+            "Failed to retrieve events",
+            operation="get_events_v2",
+            error_type=type(e).__name__,
+        )
+        raise handle_database_error("retrieving events", e)
 
 
 # Legacy endpoints (unversioned) - redirect to v1 for compatibility
@@ -821,6 +940,12 @@ async def get_subscriptions_legacy():
 async def get_projects_legacy():
     """Legacy endpoint - redirects to v2 for better functionality."""
     return await get_projects_v2()
+
+
+@app.get("/events")
+async def get_events_legacy():
+    """Legacy events endpoint - redirects to v1."""
+    return await get_events_v1()
 
 
 @app.get("/admin/dashboard")
@@ -864,7 +989,7 @@ async def get_people_v2(email: str = None):
                 }
         else:
             # Get all people (limit for performance)
-            people = await db_service.get_all_people(limit=100)
+            people = await db_service.list_people(limit=100)
             return {
                 "people": [person.dict() for person in people],
                 "version": "v2",
