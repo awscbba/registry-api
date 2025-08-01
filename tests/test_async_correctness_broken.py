@@ -108,3 +108,70 @@ class TestAsyncCorrectness:
                 incorrect_await.append(f"Sync method {method} should not use await")
         
         assert len(incorrect_await) == 0, f"Sync methods incorrectly using await: {incorrect_await}"
+
+    def test_has_expected_async_functions(self):
+        """Test that expected functions are defined as async"""
+        handler_path = os.path.join(os.path.dirname(__file__), "..", "src", "handlers", "versioned_api_handler.py")
+        with open(handler_path, "r") as f:
+            source = f.read()
+        
+        tree = ast.parse(source)
+        
+        async_functions = []
+        class AsyncFunctionVisitor(ast.NodeVisitor):
+            def visit_AsyncFunctionDef(self, node):
+                async_functions.append(node.name)
+                self.generic_visit(node)
+        
+        visitor = AsyncFunctionVisitor()
+        visitor.visit(tree)
+        
+        # Check that key functions are async
+        expected_async_functions = [
+            "health_check",
+            "get_subscriptions_v1",
+            "get_projects_v1", 
+            "create_subscription_v1",
+            "get_subscriptions_v2",
+            "get_projects_v2",
+            "check_person_exists_v2",
+            "check_subscription_exists_v2",
+            "create_subscription_v2"
+        ]
+        
+        missing_async = []
+        for func_name in expected_async_functions:
+            if func_name not in async_functions:
+                missing_async.append(func_name)
+        
+        assert len(missing_async) == 0, f"Expected async functions not found: {missing_async}"
+
+    def test_no_obvious_blocking_calls(self):
+        """Test that async functions don't contain obvious blocking calls"""
+        handler_path = os.path.join(os.path.dirname(__file__), "..", "src", "handlers", "versioned_api_handler.py")
+        with open(handler_path, "r") as f:
+            source = f.read()
+        
+        # Check for common blocking patterns that shouldn't be in async functions
+        blocking_patterns = [
+            "time.sleep(",
+            "requests.get(",
+            "requests.post(",
+            "open(",  # File I/O without async
+        ]
+        
+        found_blocking = []
+        for pattern in blocking_patterns:
+            if pattern in source:
+                # Find the context (which function it's in)
+                lines = source.split('\n')
+                for i, line in enumerate(lines):
+                    if pattern in line:
+                        # Look backwards to find the function definition
+                        for j in range(i, max(0, i-20), -1):
+                            if 'async def ' in lines[j]:
+                                func_name = lines[j].split('async def ')[1].split('(')[0]
+                                found_blocking.append(f"{pattern} in async function {func_name}")
+                                break
+        
+        assert len(found_blocking) == 0, f"Found blocking calls in async functions: {found_blocking}"
