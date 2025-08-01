@@ -202,7 +202,7 @@ class TestSimpleValidation:
             '@v2_router.post("/subscriptions/check")',
             '@v2_router.post("/public/subscribe"',  # Partial match due to status_code parameter
             '@v2_router.get("/admin/test")',
-            '@auth_router.post("/login")',  # Updated to match new auth router
+            '@auth_router.post("/login"',  # Updated to match new auth router (partial match due to response_model)
             '@auth_router.get("/me")',  # Added new auth endpoints
             '@auth_router.post("/logout")',  # Added new auth endpoints
             '@v2_router.get("/people")',
