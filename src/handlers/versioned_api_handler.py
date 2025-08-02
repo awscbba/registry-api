@@ -375,7 +375,7 @@ async def create_subscription_v2(subscription_data: dict):
                 logger.error(f"Error creating person: {create_error}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Failed to create person: {str(create_error)}"
+                    detail=f"Failed to create person: {str(create_error)}",
                 )
 
         # Create subscription
@@ -661,7 +661,7 @@ async def get_admin_people():
             # Handle both Person objects and dict formats safely
             try:
                 # Check if it's a Person object or dict
-                if hasattr(person, '__dict__'):
+                if hasattr(person, "__dict__"):
                     # Person object
                     admin_person = {
                         "id": getattr(person, "id", None),
@@ -680,7 +680,9 @@ async def get_admin_people():
                             person, "require_password_change", False
                         ),
                         "lastLoginAt": getattr(person, "last_login_at", None),
-                        "failedLoginAttempts": getattr(person, "failed_login_attempts", 0),
+                        "failedLoginAttempts": getattr(
+                            person, "failed_login_attempts", 0
+                        ),
                     }
                 else:
                     # Dict format (from fallback)
@@ -697,7 +699,9 @@ async def get_admin_people():
                         "updatedAt": person.get("updatedAt"),
                         # Add security fields for admin view
                         "isActive": person.get("isActive", True),
-                        "requirePasswordChange": person.get("requirePasswordChange", False),
+                        "requirePasswordChange": person.get(
+                            "requirePasswordChange", False
+                        ),
                         "lastLoginAt": person.get("lastLoginAt"),
                         "failedLoginAttempts": person.get("failedLoginAttempts", 0),
                     }
