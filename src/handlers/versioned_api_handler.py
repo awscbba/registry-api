@@ -1094,14 +1094,13 @@ async def get_person_v2(person_id: str):
     """Get a specific person by ID (v2)."""
     try:
         logger.log_api_request("GET", f"/v2/people/{person_id}")
-        
+
         person = await db_service.get_person_by_id(person_id)
         if not person:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Person not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Person not found"
             )
-        
+
         # Convert to response format
         person_data = {
             "id": person.id,
@@ -1109,27 +1108,33 @@ async def get_person_v2(person_id: str):
             "firstName": person.first_name,
             "lastName": person.last_name,
             "phone": person.phone or "",
-            "dateOfBirth": person.date_of_birth.isoformat() if person.date_of_birth else "",
+            "dateOfBirth": (
+                person.date_of_birth.isoformat() if person.date_of_birth else ""
+            ),
             "address": {
                 "country": person.address.get("country", "") if person.address else "",
                 "state": person.address.get("state", "") if person.address else "",
                 "city": person.address.get("city", "") if person.address else "",
                 "street": person.address.get("street", "") if person.address else "",
-                "postalCode": person.address.get("postalCode", "") if person.address else "",
+                "postalCode": (
+                    person.address.get("postalCode", "") if person.address else ""
+                ),
             },
             "isAdmin": person.is_admin,
             "createdAt": person.created_at.isoformat() if person.created_at else "",
             "updatedAt": person.updated_at.isoformat() if person.updated_at else "",
             "isActive": person.is_active,
             "requirePasswordChange": person.require_password_change,
-            "lastLoginAt": person.last_login_at.isoformat() if person.last_login_at else None,
+            "lastLoginAt": (
+                person.last_login_at.isoformat() if person.last_login_at else None
+            ),
             "failedLoginAttempts": person.failed_login_attempts or 0,
         }
-        
+
         response = create_v2_response(person_data)
         logger.log_api_response("GET", f"/v2/people/{person_id}", 200)
         return response
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -1147,18 +1152,17 @@ async def update_person_v2(person_id: str, person_update: dict):
     """Update a person (v2)."""
     try:
         logger.log_api_request("PUT", f"/v2/people/{person_id}")
-        
+
         # Check if person exists
         existing_person = await db_service.get_person_by_id(person_id)
         if not existing_person:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Person not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Person not found"
             )
-        
+
         # Update the person
         updated_person = await db_service.update_person(person_id, person_update)
-        
+
         # Convert to response format
         person_data = {
             "id": updated_person.id,
@@ -1166,27 +1170,63 @@ async def update_person_v2(person_id: str, person_update: dict):
             "firstName": updated_person.first_name,
             "lastName": updated_person.last_name,
             "phone": updated_person.phone or "",
-            "dateOfBirth": updated_person.date_of_birth.isoformat() if updated_person.date_of_birth else "",
+            "dateOfBirth": (
+                updated_person.date_of_birth.isoformat()
+                if updated_person.date_of_birth
+                else ""
+            ),
             "address": {
-                "country": updated_person.address.get("country", "") if updated_person.address else "",
-                "state": updated_person.address.get("state", "") if updated_person.address else "",
-                "city": updated_person.address.get("city", "") if updated_person.address else "",
-                "street": updated_person.address.get("street", "") if updated_person.address else "",
-                "postalCode": updated_person.address.get("postalCode", "") if updated_person.address else "",
+                "country": (
+                    updated_person.address.get("country", "")
+                    if updated_person.address
+                    else ""
+                ),
+                "state": (
+                    updated_person.address.get("state", "")
+                    if updated_person.address
+                    else ""
+                ),
+                "city": (
+                    updated_person.address.get("city", "")
+                    if updated_person.address
+                    else ""
+                ),
+                "street": (
+                    updated_person.address.get("street", "")
+                    if updated_person.address
+                    else ""
+                ),
+                "postalCode": (
+                    updated_person.address.get("postalCode", "")
+                    if updated_person.address
+                    else ""
+                ),
             },
             "isAdmin": updated_person.is_admin,
-            "createdAt": updated_person.created_at.isoformat() if updated_person.created_at else "",
-            "updatedAt": updated_person.updated_at.isoformat() if updated_person.updated_at else "",
+            "createdAt": (
+                updated_person.created_at.isoformat()
+                if updated_person.created_at
+                else ""
+            ),
+            "updatedAt": (
+                updated_person.updated_at.isoformat()
+                if updated_person.updated_at
+                else ""
+            ),
             "isActive": updated_person.is_active,
             "requirePasswordChange": updated_person.require_password_change,
-            "lastLoginAt": updated_person.last_login_at.isoformat() if updated_person.last_login_at else None,
+            "lastLoginAt": (
+                updated_person.last_login_at.isoformat()
+                if updated_person.last_login_at
+                else None
+            ),
             "failedLoginAttempts": updated_person.failed_login_attempts or 0,
         }
-        
+
         response = create_v2_response(person_data)
         logger.log_api_response("PUT", f"/v2/people/{person_id}", 200)
         return response
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -1204,21 +1244,20 @@ async def delete_person_v2(person_id: str):
     """Delete a person (v2)."""
     try:
         logger.log_api_request("DELETE", f"/v2/people/{person_id}")
-        
+
         # Check if person exists
         existing_person = await db_service.get_person_by_id(person_id)
         if not existing_person:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Person not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Person not found"
             )
-        
+
         # Delete the person
         await db_service.delete_person(person_id)
-        
+
         logger.log_api_response("DELETE", f"/v2/people/{person_id}", 204)
         return {"message": "Person deleted successfully", "version": "v2"}
-        
+
     except HTTPException:
         raise
     except Exception as e:
