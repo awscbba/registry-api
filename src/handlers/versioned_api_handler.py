@@ -354,16 +354,29 @@ async def create_subscription_v2(subscription_data: dict):
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Project not found"
             )
 
-        # FIXED: Added proper await keywords
-        existing_person = await db_service.get_person_by_email(person_create.email)
+        # FIXED: Added proper await keywords with error handling
+        try:
+            existing_person = await db_service.get_person_by_email(person_create.email)
+        except Exception as email_error:
+            logger.warning(f"Error checking existing person by email: {email_error}")
+            existing_person = None
 
         if existing_person:
             # Use existing person - existing_person is a Person object
             person_id = existing_person.id
+            logger.info(f"Using existing person: {person_id}")
         else:
-            # FIXED: Added proper await keyword
-            created_person = await db_service.create_person(person_create)
-            person_id = created_person.id
+            # FIXED: Added proper await keyword with error handling
+            try:
+                created_person = await db_service.create_person(person_create)
+                person_id = created_person.id
+                logger.info(f"Created new person: {person_id}")
+            except Exception as create_error:
+                logger.error(f"Error creating person: {create_error}")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Failed to create person: {str(create_error)}"
+                )
 
         # Create subscription
         subscription_create = SubscriptionCreate(
@@ -626,37 +639,72 @@ async def get_admin_people():
     try:
         logger.log_api_request("GET", "/v2/admin/people")
 
-        # Get all people from database
-        people = await db_service.list_people(limit=1000)
+        # Get all people from database with error handling
+        try:
+            people = await db_service.list_people(limit=1000)
+        except Exception as db_error:
+            logger.error(f"Database error in list_people: {db_error}")
+            # Fallback: try to get people directly from DynamoDB
+            try:
+                response = db_service.table.scan(Limit=1000)
+                people = []
+                for item in response.get("Items", []):
+                    # Create a simple dict instead of Person object to avoid validation
+                    people.append(item)
+            except Exception as fallback_error:
+                logger.error(f"Fallback query also failed: {fallback_error}")
+                raise handle_database_error("getting admin people", db_error)
 
         # Convert to admin-friendly format with additional fields
         admin_people = []
         for person in people:
             # Handle both Person objects and dict formats safely
             try:
-                admin_person = {
-                    "id": getattr(person, "id", None),
-                    "email": getattr(person, "email", None),
-                    "firstName": getattr(person, "first_name", None),
-                    "lastName": getattr(person, "last_name", None),
-                    "phone": getattr(person, "phone", None),
-                    "dateOfBirth": getattr(person, "date_of_birth", None),
-                    "address": getattr(person, "address", None),
-                    "isAdmin": getattr(person, "is_admin", False),
-                    "createdAt": getattr(person, "created_at", None),
-                    "updatedAt": getattr(person, "updated_at", None),
-                    # Add security fields for admin view
-                    "isActive": getattr(person, "is_active", True),
-                    "requirePasswordChange": getattr(
-                        person, "require_password_change", False
-                    ),
-                    "lastLoginAt": getattr(person, "last_login_at", None),
-                    "failedLoginAttempts": getattr(person, "failed_login_attempts", 0),
-                }
+                # Check if it's a Person object or dict
+                if hasattr(person, '__dict__'):
+                    # Person object
+                    admin_person = {
+                        "id": getattr(person, "id", None),
+                        "email": getattr(person, "email", None),
+                        "firstName": getattr(person, "first_name", None),
+                        "lastName": getattr(person, "last_name", None),
+                        "phone": getattr(person, "phone", None),
+                        "dateOfBirth": getattr(person, "date_of_birth", None),
+                        "address": getattr(person, "address", None),
+                        "isAdmin": getattr(person, "is_admin", False),
+                        "createdAt": getattr(person, "created_at", None),
+                        "updatedAt": getattr(person, "updated_at", None),
+                        # Add security fields for admin view
+                        "isActive": getattr(person, "is_active", True),
+                        "requirePasswordChange": getattr(
+                            person, "require_password_change", False
+                        ),
+                        "lastLoginAt": getattr(person, "last_login_at", None),
+                        "failedLoginAttempts": getattr(person, "failed_login_attempts", 0),
+                    }
+                else:
+                    # Dict format (from fallback)
+                    admin_person = {
+                        "id": person.get("id"),
+                        "email": person.get("email"),
+                        "firstName": person.get("firstName"),
+                        "lastName": person.get("lastName"),
+                        "phone": person.get("phone"),
+                        "dateOfBirth": person.get("dateOfBirth"),
+                        "address": person.get("address"),
+                        "isAdmin": person.get("isAdmin", False),
+                        "createdAt": person.get("createdAt"),
+                        "updatedAt": person.get("updatedAt"),
+                        # Add security fields for admin view
+                        "isActive": person.get("isActive", True),
+                        "requirePasswordChange": person.get("requirePasswordChange", False),
+                        "lastLoginAt": person.get("lastLoginAt"),
+                        "failedLoginAttempts": person.get("failedLoginAttempts", 0),
+                    }
                 admin_people.append(admin_person)
             except Exception as person_error:
                 logger.warning(
-                    f"Error processing person {getattr(person, 'id', 'unknown')}: {person_error}"
+                    f"Error processing person {getattr(person, 'id', person.get('id', 'unknown'))}: {person_error}"
                 )
                 continue
 
