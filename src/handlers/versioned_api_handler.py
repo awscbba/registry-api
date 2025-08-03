@@ -894,10 +894,7 @@ async def get_admin_registrations():
         raise handle_database_error("getting admin registrations", e)
 
 
-# Register the routers
-app.include_router(v1_router)
-app.include_router(v2_router)
-app.include_router(auth_router)
+# Router registration moved to end of file after all endpoints are defined
 
 
 # ==================== EVENTS ENDPOINTS ====================
@@ -1594,3 +1591,10 @@ async def unsubscribe_person_from_project_v2(project_id: str, subscription_id: s
             error_type=type(e).__name__,
         )
         raise handle_database_error("removing project subscription", e)
+
+# ==================== ROUTER REGISTRATION ====================
+# Register all routers after all endpoints are defined
+
+app.include_router(v1_router)
+app.include_router(v2_router)
+app.include_router(auth_router)

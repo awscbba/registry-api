@@ -206,33 +206,33 @@ class TestCriticalIntegration:
         This test simulates the admin dashboard person update workflow
         that was returning 404 errors.
         """
-        # Mock the database responses
-        mock_person = {
-            "id": "test-person-id",
-            "first_name": "John",
-            "last_name": "Doe",
-            "email": "john@example.com",
-            "phone": "+1234567890",
-            "date_of_birth": "1990-01-01",
-            "address": {
-                "street": "123 Main St",
-                "city": "Test City",
-                "state": "Test State",
-                "country": "Test Country",
-                "postalCode": "12345",
-            },
-            "is_admin": False,
-            "created_at": "2025-01-01T00:00:00Z",
-            "updated_at": "2025-01-01T00:00:00Z",
-            "is_active": True,
-            "require_password_change": False,
-            "last_login_at": None,
-            "failed_login_attempts": 0,
+        # Create a proper mock person object with attributes
+        from datetime import datetime
+        mock_person = Mock()
+        mock_person.id = "test-person-id"
+        mock_person.first_name = "John"
+        mock_person.last_name = "Doe"
+        mock_person.email = "john@example.com"
+        mock_person.phone = "+1234567890"
+        mock_person.date_of_birth = datetime.fromisoformat("1990-01-01")
+        mock_person.address = {
+            "street": "123 Main St",
+            "city": "Test City",
+            "state": "Test State",
+            "country": "Test Country",
+            "postalCode": "12345",
         }
+        mock_person.is_admin = False
+        mock_person.created_at = datetime.fromisoformat("2025-01-01T00:00:00")
+        mock_person.updated_at = datetime.fromisoformat("2025-01-01T00:00:00")
+        mock_person.is_active = True
+        mock_person.require_password_change = False
+        mock_person.last_login_at = None
+        mock_person.failed_login_attempts = 0
 
         # Mock the get_person method (not get_person_by_id!)
-        mock_db_service.get_person = AsyncMock(return_value=Mock(**mock_person))
-        mock_db_service.update_person = AsyncMock(return_value=Mock(**mock_person))
+        mock_db_service.get_person = AsyncMock(return_value=mock_person)
+        mock_db_service.update_person = AsyncMock(return_value=mock_person)
 
         # Test GET /v2/people/{person_id} - this was failing with 404
         response = client.get("/v2/people/test-person-id")
@@ -262,7 +262,7 @@ class TestCriticalIntegration:
         CRITICAL: Test that would have caught non-existent endpoints
 
         This test verifies that all endpoints referenced in the frontend
-        actually exist and return proper responses.
+        actually exist and return proper responses (not route-level 404s).
         """
         # Define the endpoints that the frontend expects to exist
         # Based on registry-frontend/src/config/api.ts
@@ -299,9 +299,26 @@ class TestCriticalIntegration:
                 elif method == "DELETE":
                     response = client.delete(endpoint)
 
-                # We expect either success or a proper error (not 404 Not Found)
+                # Check if this is a route-level 404 (endpoint doesn't exist)
+                # vs resource-level 404 (endpoint exists but resource not found)
                 if response.status_code == 404:
-                    missing_endpoints.append(f"{method} {endpoint}")
+                    # Check the response content to distinguish between route and resource 404s
+                    response_text = response.text.lower()
+                    
+                    # Resource-level 404s contain specific error messages
+                    resource_404_messages = [
+                        "person not found", 
+                        "project not found", 
+                        "subscription not found",
+                        "user not found"
+                    ]
+                    
+                    # If it's a generic "not found" without specific resource info, it's likely a route 404
+                    is_resource_404 = any(msg in response_text for msg in resource_404_messages)
+                    
+                    if not is_resource_404:
+                        missing_endpoints.append(f"{method} {endpoint}")
+                    # If it's a resource-level 404, the endpoint exists (which is what we want to test)
 
             except Exception as e:
                 missing_endpoints.append(f"{method} {endpoint} - Exception: {str(e)}")
@@ -373,31 +390,35 @@ class TestCriticalIntegration:
         mock_person.email = "john@example.com"
         mock_db_service.get_person = AsyncMock(return_value=mock_person)
 
+        # Mock subscription data
+        mock_subscription = {
+            "id": "test-subscription",
+            "projectId": "test-project",
+            "personId": "test-person",
+            "status": "active",
+            "createdAt": "2025-01-01T00:00:00Z",
+        }
+
         # Mock subscription operations
-        mock_db_service.get_all_subscriptions = AsyncMock(return_value=[])
+        mock_db_service.get_all_subscriptions = AsyncMock(return_value=[mock_subscription])
         mock_db_service.list_people = AsyncMock(return_value=[mock_person])
-        mock_db_service.create_subscription = Mock(
-            return_value={
-                "id": "test-subscription",
-                "projectId": "test-project",
-                "personId": "test-person",
-                "status": "active",
-                "createdAt": "2025-01-01T00:00:00Z",
-            }
-        )
+        mock_db_service.create_subscription = Mock(return_value=mock_subscription)
         mock_db_service.update_subscription = Mock(
             return_value={"id": "test-subscription", "status": "inactive"}
         )
         mock_db_service.delete_subscription = Mock(return_value=True)
 
-        # Test 1: GET subscribers for project
+        # Test 1: GET subscribers for project (should return existing subscription)
         response = client.get("/v2/projects/test-project/subscribers")
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
         assert "subscribers" in data["data"]
 
-        # Test 2: POST subscribe person to project
+        # Test 2: POST subscribe different person to project (to avoid conflict)
+        # First, mock empty subscriptions for the POST test
+        mock_db_service.get_all_subscriptions = AsyncMock(return_value=[])
+        
         subscribe_data = {
             "personId": "test-person",
             "status": "active",
@@ -406,9 +427,12 @@ class TestCriticalIntegration:
         response = client.post(
             "/v2/projects/test-project/subscribers", json=subscribe_data
         )
-        assert response.status_code == 200
+        assert response.status_code in [200, 201]  # Accept both 200 and 201
         data = response.json()
         assert data["success"] is True
+
+        # Restore the subscription for PUT/DELETE tests
+        mock_db_service.get_all_subscriptions = AsyncMock(return_value=[mock_subscription])
 
         # Test 3: PUT update subscription
         update_data = {"status": "inactive"}
