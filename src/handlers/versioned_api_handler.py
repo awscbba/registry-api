@@ -1061,7 +1061,7 @@ async def update_admin_status(person_id: str, admin_data: dict):
         is_admin = admin_data.get("isAdmin", False)
 
         # Get the person to update
-        person = await db_service.get_person_by_id(person_id)
+        person = await db_service.get_person(person_id)
         if not person:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Person not found"
@@ -1095,7 +1095,7 @@ async def get_person_v2(person_id: str):
     try:
         logger.log_api_request("GET", f"/v2/people/{person_id}")
 
-        person = await db_service.get_person_by_id(person_id)
+        person = await db_service.get_person(person_id)
         if not person:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Person not found"
@@ -1154,7 +1154,7 @@ async def update_person_v2(person_id: str, person_update: dict):
         logger.log_api_request("PUT", f"/v2/people/{person_id}")
 
         # Check if person exists
-        existing_person = await db_service.get_person_by_id(person_id)
+        existing_person = await db_service.get_person(person_id)
         if not existing_person:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Person not found"
@@ -1246,7 +1246,7 @@ async def delete_person_v2(person_id: str):
         logger.log_api_request("DELETE", f"/v2/people/{person_id}")
 
         # Check if person exists
-        existing_person = await db_service.get_person_by_id(person_id)
+        existing_person = await db_service.get_person(person_id)
         if not existing_person:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Person not found"
