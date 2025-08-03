@@ -153,11 +153,22 @@ class TestVersionedAPIHandlerSource:
         """Test that database calls use proper await keywords"""
         # Methods that should be awaited
         async_db_methods = [
-            "get_all_subscriptions",
-            "get_all_projects",
-            "get_person_by_email",
+            "check_email_uniqueness",
+            "clear_account_lockout",
             "create_person",
-            "create_subscription",
+            "delete_person",
+            "get_account_lockout",
+            "get_all_projects",
+            "get_all_subscriptions",
+            "get_person",
+            "get_person_by_email",
+            "list_people",
+            "log_security_event",
+            "save_account_lockout",
+            "search_people",
+            "update_last_login",
+            "update_person",
+            "update_person_password_fields",
         ]
 
         # Methods that should NOT be awaited (sync methods)
