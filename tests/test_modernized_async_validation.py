@@ -286,8 +286,7 @@ class TestLegacyTestCompatibility:
         fake_source = """
         # This would be caught by our method existence check
         person = await db_service.get_person_by_id(person_id)  # ❌ Method doesn't exist
-        
-        # This would be caught by our async/sync check  
+# This would be caught by our async/sync check  
         subscription = await db_service.create_subscription(data)  # ❌ Sync method with await
         """
 
