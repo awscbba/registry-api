@@ -1268,3 +1268,296 @@ async def delete_person_v2(person_id: str):
             error_type=type(e).__name__,
         )
         raise handle_database_error("deleting person", e)
+
+
+# ==================== V2 PROJECT SUBSCRIPTION MANAGEMENT ====================
+
+
+@v2_router.get("/projects/{project_id}/subscribers")
+async def get_project_subscribers_v2(project_id: str):
+    """Get all subscribers for a specific project (v2)."""
+    try:
+        logger.log_api_request("GET", f"/v2/projects/{project_id}/subscribers")
+
+        # Verify project exists
+        project = db_service.get_project_by_id(project_id)
+        if not project:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+            )
+
+        # Get all subscriptions for this project
+        all_subscriptions = await db_service.get_all_subscriptions()
+        project_subscriptions = [
+            sub for sub in all_subscriptions if sub.get("projectId") == project_id
+        ]
+
+        # Get people details for each subscription
+        people = await db_service.list_people(limit=1000)
+        people_dict = {}
+        for p in people:
+            person_id = getattr(p, "id", None)
+            if person_id:
+                people_dict[person_id] = {
+                    "id": person_id,
+                    "firstName": getattr(p, "first_name", ""),
+                    "lastName": getattr(p, "last_name", ""),
+                    "email": getattr(p, "email", ""),
+                }
+
+        # Enhance subscriptions with person details
+        enhanced_subscriptions = []
+        for subscription in project_subscriptions:
+            person_id = subscription.get("personId")
+            person_info = people_dict.get(person_id, {
+                "id": person_id,
+                "firstName": "Unknown",
+                "lastName": "User",
+                "email": "unknown@example.com"
+            })
+
+            enhanced_subscription = {
+                "id": subscription.get("id"),
+                "personId": person_id,
+                "projectId": project_id,
+                "status": subscription.get("status", "active"),
+                "subscribedAt": subscription.get("createdAt"),
+                "subscribedBy": subscription.get("subscribedBy"),
+                "notes": subscription.get("notes", ""),
+                "person": person_info
+            }
+            enhanced_subscriptions.append(enhanced_subscription)
+
+        # Calculate metadata
+        total_count = len(enhanced_subscriptions)
+        active_count = len([s for s in enhanced_subscriptions if s["status"] == "active"])
+        pending_count = len([s for s in enhanced_subscriptions if s["status"] == "pending"])
+
+        response_data = {
+            "subscribers": enhanced_subscriptions,
+            "metadata": {
+                "totalCount": total_count,
+                "activeCount": active_count,
+                "pendingCount": pending_count,
+                "projectId": project_id,
+                "projectName": project.get("name", "Unknown Project")
+            }
+        }
+
+        response = create_v2_response(response_data)
+        logger.log_api_response("GET", f"/v2/projects/{project_id}/subscribers", 200)
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            "Failed to get project subscribers",
+            operation="get_project_subscribers_v2",
+            project_id=project_id,
+            error_type=type(e).__name__,
+        )
+        raise handle_database_error("getting project subscribers", e)
+
+
+@v2_router.post("/projects/{project_id}/subscribers")
+async def subscribe_person_to_project_v2(project_id: str, subscription_data: dict):
+    """Subscribe a person to a project (v2)."""
+    try:
+        logger.log_api_request("POST", f"/v2/projects/{project_id}/subscribers")
+
+        # Verify project exists
+        project = db_service.get_project_by_id(project_id)
+        if not project:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+            )
+
+        # Extract and validate required fields
+        person_id = subscription_data.get("personId")
+        if not person_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="personId is required"
+            )
+
+        # Verify person exists
+        person = await db_service.get_person(person_id)
+        if not person:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Person not found"
+            )
+
+        # Check if subscription already exists
+        all_subscriptions = await db_service.get_all_subscriptions()
+        existing_subscription = next(
+            (sub for sub in all_subscriptions 
+             if sub.get("personId") == person_id and sub.get("projectId") == project_id),
+            None
+        )
+
+        if existing_subscription:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT, 
+                detail="Person is already subscribed to this project"
+            )
+
+        # Create subscription
+        subscription_create = SubscriptionCreate(
+            projectId=project_id,
+            personId=person_id,
+            status=subscription_data.get("status", "active"),
+            notes=subscription_data.get("notes", ""),
+            subscribedBy=subscription_data.get("subscribedBy")
+        )
+
+        created_subscription = db_service.create_subscription(subscription_create)
+
+        # Enhance response with person details
+        response_data = {
+            "id": created_subscription.get("id"),
+            "personId": person_id,
+            "projectId": project_id,
+            "status": created_subscription.get("status"),
+            "subscribedAt": created_subscription.get("createdAt"),
+            "subscribedBy": created_subscription.get("subscribedBy"),
+            "notes": created_subscription.get("notes", ""),
+            "person": {
+                "id": person.id,
+                "firstName": person.first_name,
+                "lastName": person.last_name,
+                "email": person.email
+            }
+        }
+
+        response = create_v2_response(response_data)
+        logger.log_api_response("POST", f"/v2/projects/{project_id}/subscribers", 201)
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            "Failed to subscribe person to project",
+            operation="subscribe_person_to_project_v2",
+            project_id=project_id,
+            error_type=type(e).__name__,
+        )
+        raise handle_database_error("subscribing person to project", e)
+
+
+@v2_router.put("/projects/{project_id}/subscribers/{subscription_id}")
+async def update_project_subscription_v2(project_id: str, subscription_id: str, update_data: dict):
+    """Update a project subscription (v2)."""
+    try:
+        logger.log_api_request("PUT", f"/v2/projects/{project_id}/subscribers/{subscription_id}")
+
+        # Verify project exists
+        project = db_service.get_project_by_id(project_id)
+        if not project:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+            )
+
+        # Find the subscription
+        all_subscriptions = await db_service.get_all_subscriptions()
+        subscription = next(
+            (sub for sub in all_subscriptions 
+             if sub.get("id") == subscription_id and sub.get("projectId") == project_id),
+            None
+        )
+
+        if not subscription:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Subscription not found"
+            )
+
+        # Create update object
+        from ..models.subscription import SubscriptionUpdate
+        
+        update_fields = {}
+        if "status" in update_data:
+            update_fields["status"] = update_data["status"]
+        if "notes" in update_data:
+            update_fields["notes"] = update_data["notes"]
+
+        subscription_update = SubscriptionUpdate(**update_fields)
+        updated_subscription = db_service.update_subscription(subscription_id, subscription_update)
+        
+        if not updated_subscription:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to update subscription"
+            )
+
+        response = create_v2_response(updated_subscription)
+        logger.log_api_response("PUT", f"/v2/projects/{project_id}/subscribers/{subscription_id}", 200)
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            "Failed to update project subscription",
+            operation="update_project_subscription_v2",
+            project_id=project_id,
+            subscription_id=subscription_id,
+            error_type=type(e).__name__,
+        )
+        raise handle_database_error("updating project subscription", e)
+
+
+@v2_router.delete("/projects/{project_id}/subscribers/{subscription_id}")
+async def unsubscribe_person_from_project_v2(project_id: str, subscription_id: str):
+    """Remove a person's subscription from a project (v2)."""
+    try:
+        logger.log_api_request("DELETE", f"/v2/projects/{project_id}/subscribers/{subscription_id}")
+
+        # Verify project exists
+        project = db_service.get_project_by_id(project_id)
+        if not project:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+            )
+
+        # Find the subscription
+        all_subscriptions = await db_service.get_all_subscriptions()
+        subscription = next(
+            (sub for sub in all_subscriptions 
+             if sub.get("id") == subscription_id and sub.get("projectId") == project_id),
+            None
+        )
+
+        if not subscription:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Subscription not found"
+            )
+
+        # Delete subscription
+        success = db_service.delete_subscription(subscription_id)
+        
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to delete subscription"
+            )
+        
+        response = create_v2_response({
+            "message": "Subscription removed successfully",
+            "subscriptionId": subscription_id,
+            "projectId": project_id
+        })
+        
+        logger.log_api_response("DELETE", f"/v2/projects/{project_id}/subscribers/{subscription_id}", 200)
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            "Failed to remove project subscription",
+            operation="unsubscribe_person_from_project_v2",
+            project_id=project_id,
+            subscription_id=subscription_id,
+            error_type=type(e).__name__,
+        )
+        raise handle_database_error("removing project subscription", e)
