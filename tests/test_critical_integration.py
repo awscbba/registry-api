@@ -208,6 +208,7 @@ class TestCriticalIntegration:
         """
         # Create a proper mock person object with attributes
         from datetime import datetime
+
         mock_person = Mock()
         mock_person.id = "test-person-id"
         mock_person.first_name = "John"
@@ -304,18 +305,20 @@ class TestCriticalIntegration:
                 if response.status_code == 404:
                     # Check the response content to distinguish between route and resource 404s
                     response_text = response.text.lower()
-                    
+
                     # Resource-level 404s contain specific error messages
                     resource_404_messages = [
-                        "person not found", 
-                        "project not found", 
+                        "person not found",
+                        "project not found",
                         "subscription not found",
-                        "user not found"
+                        "user not found",
                     ]
-                    
+
                     # If it's a generic "not found" without specific resource info, it's likely a route 404
-                    is_resource_404 = any(msg in response_text for msg in resource_404_messages)
-                    
+                    is_resource_404 = any(
+                        msg in response_text for msg in resource_404_messages
+                    )
+
                     if not is_resource_404:
                         missing_endpoints.append(f"{method} {endpoint}")
                     # If it's a resource-level 404, the endpoint exists (which is what we want to test)
@@ -400,11 +403,13 @@ class TestCriticalIntegration:
         }
 
         # Mock subscription operations
-        mock_db_service.get_all_subscriptions = AsyncMock(return_value=[mock_subscription])
+        mock_db_service.get_all_subscriptions = AsyncMock(
+            return_value=[mock_subscription]
+        )
         mock_db_service.list_people = AsyncMock(return_value=[mock_person])
         mock_db_service.create_subscription = Mock(return_value=mock_subscription)
         mock_db_service.update_subscription = Mock(
-            return_value={"id": "test-subscription", "status": "inactive"}
+            return_value={"id": "test-subscription", "status": "cancelled"}
         )
         mock_db_service.delete_subscription = Mock(return_value=True)
 
@@ -418,7 +423,7 @@ class TestCriticalIntegration:
         # Test 2: POST subscribe different person to project (to avoid conflict)
         # First, mock empty subscriptions for the POST test
         mock_db_service.get_all_subscriptions = AsyncMock(return_value=[])
-        
+
         subscribe_data = {
             "personId": "test-person",
             "status": "active",
@@ -432,10 +437,12 @@ class TestCriticalIntegration:
         assert data["success"] is True
 
         # Restore the subscription for PUT/DELETE tests
-        mock_db_service.get_all_subscriptions = AsyncMock(return_value=[mock_subscription])
+        mock_db_service.get_all_subscriptions = AsyncMock(
+            return_value=[mock_subscription]
+        )
 
         # Test 3: PUT update subscription
-        update_data = {"status": "inactive"}
+        update_data = {"status": "cancelled"}  # Use valid enum value
         response = client.put(
             "/v2/projects/test-project/subscribers/test-subscription", json=update_data
         )
@@ -485,7 +492,10 @@ class TestProductionHealthChecks:
     @pytest.mark.integration
     def test_person_endpoint_exists_in_production(self):
         """
-        Test the specific endpoint that was failing in production
+        Test that the person endpoint route exists in production
+
+        This test verifies that the endpoint is properly registered and returns
+        a meaningful error (not a route-level 404) for non-existent persons.
         """
         api_base_url = "https://2t9blvt2c1.execute-api.us-east-1.amazonaws.com/prod"
 
@@ -495,10 +505,29 @@ class TestProductionHealthChecks:
 
         try:
             response = httpx.get(f"{api_base_url}{endpoint}", timeout=10.0)
-            # We expect either 200 (success) or 401/403 (auth required), but NOT 404
-            assert (
-                response.status_code != 404
-            ), f"Person endpoint still returns 404: {endpoint}"
+
+            # Check if this is a route-level 404 vs resource-level 404
+            if response.status_code == 404:
+                response_text = response.text.lower()
+                # If it contains "person not found", the endpoint exists but person doesn't
+                # If it's generic "not found", the route doesn't exist
+                if "person not found" in response_text:
+                    # This is good - endpoint exists, person doesn't
+                    pass
+                else:
+                    # This is bad - route doesn't exist
+                    pytest.fail(
+                        f"Person endpoint route not found in production: {endpoint}"
+                    )
+            elif response.status_code in [200, 401, 403]:
+                # These are all acceptable responses
+                pass
+            else:
+                # Other errors might indicate problems
+                pytest.fail(
+                    f"Unexpected response from person endpoint: {response.status_code}"
+                )
+
         except Exception as e:
             pytest.fail(f"Failed to test person endpoint: {str(e)}")
 

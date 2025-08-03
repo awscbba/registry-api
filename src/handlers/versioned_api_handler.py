@@ -1592,6 +1592,7 @@ async def unsubscribe_person_from_project_v2(project_id: str, subscription_id: s
         )
         raise handle_database_error("removing project subscription", e)
 
+
 # ==================== ROUTER REGISTRATION ====================
 # Register all routers after all endpoints are defined
 
