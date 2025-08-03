@@ -42,7 +42,23 @@ Actions:
             docker --version || echo "Docker version check failed"
 
             echo "ℹ️ Using container-based deployment for Lambda"
-            echo "ℹ️ Skipping tests and linting - already validated in PR/merge pipeline"
+            echo "🧪 Running critical pre-deployment tests..."
+            
+            # Install just if not available
+            if ! command -v just >/dev/null 2>&1; then
+                echo "📦 Installing just..."
+                curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
+                export PATH="/usr/local/bin:$PATH"
+            fi
+
+            # Run comprehensive test suite before deployment using just
+            echo "🚨 Running comprehensive test suite (API + Frontend) with just..."
+            if just test-full-stack; then
+                echo "✅ Comprehensive test suite passed - safe to deploy!"
+            else
+                echo "❌ Comprehensive test suite failed - blocking deployment"
+                exit 1
+            fi
 
             # Container-based deployment for Lambda
             echo "🐳 Building and deploying Lambda container..."
