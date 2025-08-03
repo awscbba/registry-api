@@ -180,7 +180,7 @@ async def create_subscription_v1(subscription_data: dict):
         )
 
         # FIXED: Pass SubscriptionCreate object directly instead of dict
-        created_subscription = await db_service.create_subscription(subscription_create)
+        created_subscription = db_service.create_subscription(subscription_create)
 
         return {
             "message": "Subscription created successfully",
@@ -287,7 +287,7 @@ async def check_subscription_exists_v2(check_data: dict):
             return {"subscribed": False, "version": "v2"}
 
         # Check if subscription exists
-        subscriptions = await db_service.get_subscriptions_by_person(existing_person.id)
+        subscriptions = db_service.get_subscriptions_by_person(existing_person.id)
         project_subscriptions = [
             sub for sub in subscriptions if sub.get("projectId") == project_id
         ]
@@ -387,7 +387,7 @@ async def create_subscription_v2(subscription_data: dict):
         )
 
         # FIXED: Pass SubscriptionCreate object directly instead of dict
-        created_subscription = await db_service.create_subscription(subscription_create)
+        created_subscription = db_service.create_subscription(subscription_create)
 
         return {
             "message": "Subscription created successfully",
