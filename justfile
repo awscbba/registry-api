@@ -186,53 +186,21 @@ test-comprehensive:
         exit 1
     fi
 
-# Run frontend tests only (if available)
-test-frontend:
-    #!/usr/bin/env bash
-    set -e
-    
-    echo "🎯 Running Frontend Tests Only"
-    echo "=============================="
-    
-    # Check if frontend directory exists and run tests
-    if [ -d "../registry-frontend" ]; then
-        cd ../registry-frontend
-        
-        echo "📦 Installing frontend dependencies..."
-        if npm install; then
-            echo "✅ Frontend dependencies installed"
-        else
-            echo "❌ Frontend dependency installation failed"
-            exit 1
-        fi
-        
-        echo "🧪 Running frontend test suite with just..."
-        if just test; then
-            echo "✅ Frontend tests passed (23/23)"
-        else
-            echo "❌ Frontend tests failed"
-            exit 1
-        fi
-        
-        cd ../registry-api
-    else
-        echo "❌ Frontend directory not found at ../registry-frontend"
-        exit 1
-    fi
+# Note: Frontend tests are now handled in the registry-frontend repo
+# This API repo focuses only on API testing and validation
 
-# Run comprehensive tests with frontend (if available)
-test-full-stack:
+# Run comprehensive API tests (frontend tests handled in separate repo)
+test-api-comprehensive:
     #!/usr/bin/env bash
     set -e
     
-    echo "🧪 Full Stack Test Suite"
-    echo "========================"
+    echo "🧪 Comprehensive API Test Suite"
+    echo "==============================="
     echo "📅 Start: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
     echo ""
     
     # Initialize test results
     API_TESTS_PASSED=false
-    FRONTEND_TESTS_PASSED=false
     OVERALL_SUCCESS=true
     
     echo "🔧 Running API Tests"
@@ -247,63 +215,28 @@ test-full-stack:
         echo "❌ API tests failed"
     fi
     
-    echo ""
-    echo "🎯 Running Frontend Tests"
-    echo "========================="
-    
-    # Check if frontend directory exists and run tests
-    if [ -d "../registry-frontend" ]; then
-        cd ../registry-frontend
-        
-        echo "📦 Installing frontend dependencies..."
-        if npm install; then
-            echo "✅ Frontend dependencies installed"
-        else
-            echo "❌ Frontend dependency installation failed"
-            OVERALL_SUCCESS=false
-            FRONTEND_TESTS_PASSED=false
-            cd ../registry-api
-            exit 1
-        fi
-        
-        echo "🧪 Running frontend test suite..."
-        if npm test; then
-            FRONTEND_TESTS_PASSED=true
-            echo "✅ Frontend tests passed (23/23)"
-        else
-            FRONTEND_TESTS_PASSED=false
-            OVERALL_SUCCESS=false
-            echo "❌ Frontend tests failed"
-        fi
-        
-        cd ../registry-api
-    else
-        echo "⚠️ Frontend directory not found - skipping frontend tests"
-        FRONTEND_TESTS_PASSED=true  # Don't fail if frontend not available
-    fi
-    
     # Generate comprehensive test summary
     echo ""
-    echo "📊 Full Stack Test Summary"
-    echo "=========================="
+    echo "📊 API Test Summary"
+    echo "=================="
     echo "API Tests: $([ "$API_TESTS_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
-    echo "Frontend Tests: $([ "$FRONTEND_TESTS_PASSED" = true ] && echo "✅ PASSED" || echo "❌ FAILED")"
     echo "Overall Status: $([ "$OVERALL_SUCCESS" = true ] && echo "✅ SUCCESS" || echo "❌ FAILURE")"
     echo ""
-    echo "🛡️ Production Bugs Prevented:"
-    echo "   - ✅ Undefined person ID validation (Frontend)"
-    echo "   - ✅ Method name mismatch detection (API)"
-    echo "   - ✅ Dead code endpoint identification (Frontend)"
-    echo "   - ✅ Response format consistency checks (Both)"
+    echo "🛡️ Production Bugs Prevented (API Side):"
+    echo "   - ✅ Method name mismatch detection"
+    echo "   - ✅ Async/sync consistency validation"
+    echo "   - ✅ Response format consistency checks"
+    echo "   - ✅ Database integration validation"
     echo ""
+    echo "ℹ️ Frontend tests run separately in registry-frontend repo"
     echo "⏱️ End: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
     
     # Exit with appropriate code for CI/CD
     if [ "$OVERALL_SUCCESS" = true ]; then
-        echo "🎉 All full stack tests passed! Safe to proceed with deployment."
+        echo "🎉 All API tests passed! Safe to proceed with deployment."
         exit 0
     else
-        echo "🚨 Some tests failed. Blocking deployment to prevent production issues!"
+        echo "🚨 Some API tests failed. Blocking deployment to prevent production issues!"
         exit 1
     fi
 
@@ -346,8 +279,7 @@ help:
     @echo "  test <file>            - Run specific test file"
     @echo "  test-coverage          - Run tests with coverage report"
     @echo "  test-comprehensive     - Comprehensive test suite for CI/CD"
-    @echo "  test-frontend          - Run frontend tests only (if available)"
-    @echo "  test-full-stack        - Full stack tests (API + Frontend)"
+    @echo "  test-api-comprehensive - Comprehensive API-only tests"
     @echo ""
     @echo "🔍 Code Quality:"
     @echo "  lint                   - Run code quality checks"
@@ -364,4 +296,6 @@ help:
     @echo "  - Method name mismatch detection"
     @echo "  - Async/sync consistency validation"
     @echo "  - Response format consistency checks"
-    @echo "  - Full stack testing with frontend integration"
+    @echo "  - API contract validation and endpoint testing"
+    @echo ""
+    @echo "ℹ️ Frontend tests are handled in the registry-frontend repo"
