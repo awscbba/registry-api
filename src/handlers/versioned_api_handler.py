@@ -1309,12 +1309,15 @@ async def get_project_subscribers_v2(project_id: str):
         enhanced_subscriptions = []
         for subscription in project_subscriptions:
             person_id = subscription.get("personId")
-            person_info = people_dict.get(person_id, {
-                "id": person_id,
-                "firstName": "Unknown",
-                "lastName": "User",
-                "email": "unknown@example.com"
-            })
+            person_info = people_dict.get(
+                person_id,
+                {
+                    "id": person_id,
+                    "firstName": "Unknown",
+                    "lastName": "User",
+                    "email": "unknown@example.com",
+                },
+            )
 
             enhanced_subscription = {
                 "id": subscription.get("id"),
@@ -1324,14 +1327,18 @@ async def get_project_subscribers_v2(project_id: str):
                 "subscribedAt": subscription.get("createdAt"),
                 "subscribedBy": subscription.get("subscribedBy"),
                 "notes": subscription.get("notes", ""),
-                "person": person_info
+                "person": person_info,
             }
             enhanced_subscriptions.append(enhanced_subscription)
 
         # Calculate metadata
         total_count = len(enhanced_subscriptions)
-        active_count = len([s for s in enhanced_subscriptions if s["status"] == "active"])
-        pending_count = len([s for s in enhanced_subscriptions if s["status"] == "pending"])
+        active_count = len(
+            [s for s in enhanced_subscriptions if s["status"] == "active"]
+        )
+        pending_count = len(
+            [s for s in enhanced_subscriptions if s["status"] == "pending"]
+        )
 
         response_data = {
             "subscribers": enhanced_subscriptions,
@@ -1340,8 +1347,8 @@ async def get_project_subscribers_v2(project_id: str):
                 "activeCount": active_count,
                 "pendingCount": pending_count,
                 "projectId": project_id,
-                "projectName": project.get("name", "Unknown Project")
-            }
+                "projectName": project.get("name", "Unknown Project"),
+            },
         }
 
         response = create_v2_response(response_data)
@@ -1390,15 +1397,19 @@ async def subscribe_person_to_project_v2(project_id: str, subscription_data: dic
         # Check if subscription already exists
         all_subscriptions = await db_service.get_all_subscriptions()
         existing_subscription = next(
-            (sub for sub in all_subscriptions 
-             if sub.get("personId") == person_id and sub.get("projectId") == project_id),
-            None
+            (
+                sub
+                for sub in all_subscriptions
+                if sub.get("personId") == person_id
+                and sub.get("projectId") == project_id
+            ),
+            None,
         )
 
         if existing_subscription:
             raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT, 
-                detail="Person is already subscribed to this project"
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Person is already subscribed to this project",
             )
 
         # Create subscription
@@ -1407,7 +1418,7 @@ async def subscribe_person_to_project_v2(project_id: str, subscription_data: dic
             personId=person_id,
             status=subscription_data.get("status", "active"),
             notes=subscription_data.get("notes", ""),
-            subscribedBy=subscription_data.get("subscribedBy")
+            subscribedBy=subscription_data.get("subscribedBy"),
         )
 
         created_subscription = db_service.create_subscription(subscription_create)
@@ -1425,8 +1436,8 @@ async def subscribe_person_to_project_v2(project_id: str, subscription_data: dic
                 "id": person.id,
                 "firstName": person.first_name,
                 "lastName": person.last_name,
-                "email": person.email
-            }
+                "email": person.email,
+            },
         }
 
         response = create_v2_response(response_data)
@@ -1446,10 +1457,14 @@ async def subscribe_person_to_project_v2(project_id: str, subscription_data: dic
 
 
 @v2_router.put("/projects/{project_id}/subscribers/{subscription_id}")
-async def update_project_subscription_v2(project_id: str, subscription_id: str, update_data: dict):
+async def update_project_subscription_v2(
+    project_id: str, subscription_id: str, update_data: dict
+):
     """Update a project subscription (v2)."""
     try:
-        logger.log_api_request("PUT", f"/v2/projects/{project_id}/subscribers/{subscription_id}")
+        logger.log_api_request(
+            "PUT", f"/v2/projects/{project_id}/subscribers/{subscription_id}"
+        )
 
         # Verify project exists
         project = db_service.get_project_by_id(project_id)
@@ -1461,9 +1476,13 @@ async def update_project_subscription_v2(project_id: str, subscription_id: str, 
         # Find the subscription
         all_subscriptions = await db_service.get_all_subscriptions()
         subscription = next(
-            (sub for sub in all_subscriptions 
-             if sub.get("id") == subscription_id and sub.get("projectId") == project_id),
-            None
+            (
+                sub
+                for sub in all_subscriptions
+                if sub.get("id") == subscription_id
+                and sub.get("projectId") == project_id
+            ),
+            None,
         )
 
         if not subscription:
@@ -1473,7 +1492,7 @@ async def update_project_subscription_v2(project_id: str, subscription_id: str, 
 
         # Create update object
         from ..models.subscription import SubscriptionUpdate
-        
+
         update_fields = {}
         if "status" in update_data:
             update_fields["status"] = update_data["status"]
@@ -1481,16 +1500,20 @@ async def update_project_subscription_v2(project_id: str, subscription_id: str, 
             update_fields["notes"] = update_data["notes"]
 
         subscription_update = SubscriptionUpdate(**update_fields)
-        updated_subscription = db_service.update_subscription(subscription_id, subscription_update)
-        
+        updated_subscription = db_service.update_subscription(
+            subscription_id, subscription_update
+        )
+
         if not updated_subscription:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to update subscription"
+                detail="Failed to update subscription",
             )
 
         response = create_v2_response(updated_subscription)
-        logger.log_api_response("PUT", f"/v2/projects/{project_id}/subscribers/{subscription_id}", 200)
+        logger.log_api_response(
+            "PUT", f"/v2/projects/{project_id}/subscribers/{subscription_id}", 200
+        )
         return response
 
     except HTTPException:
@@ -1510,7 +1533,9 @@ async def update_project_subscription_v2(project_id: str, subscription_id: str, 
 async def unsubscribe_person_from_project_v2(project_id: str, subscription_id: str):
     """Remove a person's subscription from a project (v2)."""
     try:
-        logger.log_api_request("DELETE", f"/v2/projects/{project_id}/subscribers/{subscription_id}")
+        logger.log_api_request(
+            "DELETE", f"/v2/projects/{project_id}/subscribers/{subscription_id}"
+        )
 
         # Verify project exists
         project = db_service.get_project_by_id(project_id)
@@ -1522,9 +1547,13 @@ async def unsubscribe_person_from_project_v2(project_id: str, subscription_id: s
         # Find the subscription
         all_subscriptions = await db_service.get_all_subscriptions()
         subscription = next(
-            (sub for sub in all_subscriptions 
-             if sub.get("id") == subscription_id and sub.get("projectId") == project_id),
-            None
+            (
+                sub
+                for sub in all_subscriptions
+                if sub.get("id") == subscription_id
+                and sub.get("projectId") == project_id
+            ),
+            None,
         )
 
         if not subscription:
@@ -1534,20 +1563,24 @@ async def unsubscribe_person_from_project_v2(project_id: str, subscription_id: s
 
         # Delete subscription
         success = db_service.delete_subscription(subscription_id)
-        
+
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to delete subscription"
+                detail="Failed to delete subscription",
             )
-        
-        response = create_v2_response({
-            "message": "Subscription removed successfully",
-            "subscriptionId": subscription_id,
-            "projectId": project_id
-        })
-        
-        logger.log_api_response("DELETE", f"/v2/projects/{project_id}/subscribers/{subscription_id}", 200)
+
+        response = create_v2_response(
+            {
+                "message": "Subscription removed successfully",
+                "subscriptionId": subscription_id,
+                "projectId": project_id,
+            }
+        )
+
+        logger.log_api_response(
+            "DELETE", f"/v2/projects/{project_id}/subscribers/{subscription_id}", 200
+        )
         return response
 
     except HTTPException:
