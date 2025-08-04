@@ -1323,10 +1323,14 @@ async def update_person_v2(person_id: str, person_update: dict):
             )
 
         # Convert dict to PersonUpdate object
+        logger.info(f"Creating PersonUpdate object with data: {person_update}")
         person_update_obj = PersonUpdate(**person_update)
+        logger.info(f"PersonUpdate object created successfully")
 
         # Update the person
+        logger.info(f"Calling db_service.update_person")
         updated_person = await db_service.update_person(person_id, person_update_obj)
+        logger.info(f"Person updated successfully, creating response")
 
         # Convert to response format
         person_data = {
@@ -1402,7 +1406,12 @@ async def update_person_v2(person_id: str, person_update: dict):
             operation="update_person_v2",
             person_id=person_id,
             error_type=type(e).__name__,
+            error_message=str(e),
+            error_details=repr(e),
         )
+        # Log the full traceback for debugging
+        import traceback
+        logger.error(f"Full traceback: {traceback.format_exc()}")
         raise handle_database_error("updating person", e)
 
 
