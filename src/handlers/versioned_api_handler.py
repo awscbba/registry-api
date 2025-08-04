@@ -1276,11 +1276,11 @@ async def get_person_v2(person_id: str):
                 person.date_of_birth.isoformat() if person.date_of_birth else ""
             ),
             "address": {
-                "country": person.address.get("country", "") if person.address else "",
-                "state": person.address.get("state", "") if person.address else "",
-                "city": person.address.get("city", "") if person.address else "",
-                "street": person.address.get("street", "") if person.address else "",
-                "postalCode": (person.address.postal_code if person.address else ""),
+                "country": person.address.country if person.address else "",
+                "state": person.address.state if person.address else "",
+                "city": person.address.city if person.address else "",
+                "street": person.address.street if person.address else "",
+                "postalCode": person.address.postal_code if person.address else "",
             },
             "isAdmin": person.is_admin,
             "createdAt": person.created_at.isoformat() if person.created_at else "",
@@ -1341,29 +1341,11 @@ async def update_person_v2(person_id: str, person_update: dict):
                 else ""
             ),
             "address": {
-                "country": (
-                    updated_person.address.get("country", "")
-                    if updated_person.address
-                    else ""
-                ),
-                "state": (
-                    updated_person.address.get("state", "")
-                    if updated_person.address
-                    else ""
-                ),
-                "city": (
-                    updated_person.address.get("city", "")
-                    if updated_person.address
-                    else ""
-                ),
-                "street": (
-                    updated_person.address.get("street", "")
-                    if updated_person.address
-                    else ""
-                ),
-                "postalCode": (
-                    updated_person.address.postal_code if updated_person.address else ""
-                ),
+                "country": updated_person.address.country if updated_person.address else "",
+                "state": updated_person.address.state if updated_person.address else "",
+                "city": updated_person.address.city if updated_person.address else "",
+                "street": updated_person.address.street if updated_person.address else "",
+                "postalCode": updated_person.address.postal_code if updated_person.address else "",
             },
             "isAdmin": updated_person.is_admin,
             "createdAt": (
