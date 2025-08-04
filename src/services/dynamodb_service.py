@@ -410,7 +410,7 @@ class DynamoDBService:
             "email": person.email,
             "phone": person.phone,
             "dateOfBirth": person.date_of_birth,
-            "address": person.address.model_dump(),
+            "address": self._normalize_address_for_storage(person.address.model_dump()),
             "createdAt": person.created_at.isoformat(),
             "updatedAt": person.updated_at.isoformat(),
         }
@@ -448,12 +448,32 @@ class DynamoDBService:
 
         return item
 
+    def _normalize_address_for_storage(self, address_dict: Dict[str, Any]) -> Dict[str, Any]:
+        """Normalize address field names for consistent storage"""
+        # Convert postalCode to postal_code for consistent storage
+        if "postalCode" in address_dict:
+            address_dict["postal_code"] = address_dict.pop("postalCode")
+        # Handle legacy zipCode field
+        elif "zipCode" in address_dict:
+            address_dict["postal_code"] = address_dict.pop("zipCode")
+        # Handle legacy zip_code field
+        elif "zip_code" in address_dict:
+            address_dict["postal_code"] = address_dict.pop("zip_code")
+        return address_dict
+
     def _item_to_person(self, item: Dict[str, Any]) -> Person:
         """Convert DynamoDB item to Person model with comprehensive field handling"""
         # Convert address field to match model expectations
         address_data = item["address"].copy()
-        if "zip_code" in address_data:
-            address_data["zipCode"] = address_data.pop("zip_code")
+        # Handle all possible postal code field variations
+        if "postal_code" in address_data:
+            address_data["postalCode"] = address_data.pop("postal_code")
+        elif "zip_code" in address_data:
+            # Handle legacy data that uses zip_code
+            address_data["postalCode"] = address_data.pop("zip_code")
+        elif "zipCode" in address_data:
+            # Handle legacy data that uses zipCode
+            address_data["postalCode"] = address_data.pop("zipCode")
 
         person_data = {
             "id": item["id"],
@@ -701,7 +721,11 @@ class DynamoDBService:
                 expression_attribute_values[":date_of_birth"] = value
             elif field == "address":
                 update_expression += ", address = :address"
-                expression_attribute_values[":address"] = value.model_dump()
+                # Ensure address uses the correct field names for storage
+                address_dict = value.model_dump()
+                # Normalize address field names for storage
+                address_dict = self._normalize_address_for_storage(address_dict)
+                expression_attribute_values[":address"] = address_dict
 
         try:
             response = self.table.update_item(

@@ -321,7 +321,7 @@ class PersonValidationService:
             "street": "Street address",
             "city": "City",
             "state": "State",
-            "zip_code": "ZIP code",
+            "postal_code": "Postal code",
             "country": "Country",
         }
 
@@ -334,16 +334,16 @@ class PersonValidationService:
                     code=ValidationErrorType.REQUIRED_FIELD,
                 )
 
-        # Validate ZIP code format (basic validation)
-        if hasattr(address, "zip_code") and address.zip_code:
-            zip_code = address.zip_code.strip()
+        # Validate postal code format (basic validation)
+        if hasattr(address, "postal_code") and address.postal_code:
+            postal_code = address.postal_code.strip()
             # US ZIP code format (5 digits or 5+4 format)
-            if not re.match(r"^\d{5}(-\d{4})?$", zip_code):
+            if not re.match(r"^\d{5}(-\d{4})?$", postal_code):
                 result.add_error(
-                    field="address.zip_code",
-                    message="ZIP code must be in format 12345 or 12345-6789",
+                    field="address.postal_code",
+                    message="Postal code must be in format 12345 or 12345-6789",
                     code=ValidationErrorType.INVALID_FORMAT,
-                    value=zip_code,
+                    value=postal_code,
                 )
 
     def _validate_name_fields(

@@ -10,7 +10,7 @@ class Address(BaseModel):
     street: str
     city: str
     state: str
-    zip_code: str = Field(alias="zipCode")
+    postal_code: str = Field(alias="postalCode")
     country: str
 
 

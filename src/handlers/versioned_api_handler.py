@@ -150,7 +150,7 @@ async def create_subscription_v1(subscription_data: dict):
         person_data.setdefault("dateOfBirth", "1990-01-01")  # Default date
         person_data.setdefault(
             "address",
-            {"street": "", "city": "", "state": "", "zipCode": "", "country": ""},
+            {"street": "", "city": "", "state": "", "postalCode": "", "country": ""},
         )
 
         # Validate person data
@@ -343,7 +343,7 @@ async def create_subscription_v2(subscription_data: dict):
         person_data.setdefault("dateOfBirth", "1990-01-01")  # Default date
         person_data.setdefault(
             "address",
-            {"street": "", "city": "", "state": "", "zipCode": "", "country": ""},
+            {"street": "", "city": "", "state": "", "postalCode": "", "country": ""},
         )
 
         # Validate person data
@@ -1281,7 +1281,7 @@ async def get_person_v2(person_id: str):
                 "city": person.address.get("city", "") if person.address else "",
                 "street": person.address.get("street", "") if person.address else "",
                 "postalCode": (
-                    person.address.get("postalCode", "") if person.address else ""
+                    person.address.postal_code if person.address else ""
                 ),
             },
             "isAdmin": person.is_admin,
@@ -1364,7 +1364,7 @@ async def update_person_v2(person_id: str, person_update: dict):
                     else ""
                 ),
                 "postalCode": (
-                    updated_person.address.get("postalCode", "")
+                    updated_person.address.postal_code
                     if updated_person.address
                     else ""
                 ),
