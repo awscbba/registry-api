@@ -1342,15 +1342,29 @@ async def update_person_v2(person_id: str, person_update: dict):
             ),
             "address": {
                 "country": (
-                    getattr(updated_person.address, 'country', '') if updated_person.address else ""
+                    getattr(updated_person.address, "country", "")
+                    if updated_person.address
+                    else ""
                 ),
-                "state": getattr(updated_person.address, 'state', '') if updated_person.address else "",
-                "city": getattr(updated_person.address, 'city', '') if updated_person.address else "",
+                "state": (
+                    getattr(updated_person.address, "state", "")
+                    if updated_person.address
+                    else ""
+                ),
+                "city": (
+                    getattr(updated_person.address, "city", "")
+                    if updated_person.address
+                    else ""
+                ),
                 "street": (
-                    getattr(updated_person.address, 'street', '') if updated_person.address else ""
+                    getattr(updated_person.address, "street", "")
+                    if updated_person.address
+                    else ""
                 ),
                 "postalCode": (
-                    getattr(updated_person.address, 'postal_code', '') if updated_person.address else ""
+                    getattr(updated_person.address, "postal_code", "")
+                    if updated_person.address
+                    else ""
                 ),
             },
             "isAdmin": updated_person.is_admin,
@@ -1364,14 +1378,16 @@ async def update_person_v2(person_id: str, person_update: dict):
                 if updated_person.updated_at
                 else ""
             ),
-            "isActive": getattr(updated_person, 'is_active', True),
-            "requirePasswordChange": getattr(updated_person, 'require_password_change', False),
+            "isActive": getattr(updated_person, "is_active", True),
+            "requirePasswordChange": getattr(
+                updated_person, "require_password_change", False
+            ),
             "lastLoginAt": (
                 updated_person.last_login_at.isoformat()
-                if getattr(updated_person, 'last_login_at', None)
+                if getattr(updated_person, "last_login_at", None)
                 else None
             ),
-            "failedLoginAttempts": getattr(updated_person, 'failed_login_attempts', 0),
+            "failedLoginAttempts": getattr(updated_person, "failed_login_attempts", 0),
         }
 
         response = create_v2_response(person_data)
