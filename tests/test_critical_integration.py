@@ -256,7 +256,19 @@ class TestCriticalIntegration:
 
         # Verify the update was called with correct parameters
         mock_db_service.get_person.assert_called_with("test-person-id")
-        mock_db_service.update_person.assert_called_with("test-person-id", update_data)
+
+        # Verify update_person was called with a PersonUpdate object
+        assert mock_db_service.update_person.call_count == 1
+        call_args = mock_db_service.update_person.call_args
+        assert call_args[0][0] == "test-person-id"
+
+        # Check that the second argument is a PersonUpdate object with correct data
+        person_update_obj = call_args[0][1]
+        from src.models.person import PersonUpdate
+
+        assert isinstance(person_update_obj, PersonUpdate)
+        assert person_update_obj.first_name == "Jane"
+        assert person_update_obj.last_name == "Smith"
 
     def test_all_v2_endpoints_exist(self, client):
         """

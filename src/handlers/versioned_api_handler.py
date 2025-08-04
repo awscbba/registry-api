@@ -828,9 +828,27 @@ async def create_project_v2(
                 detail="Project name is required",
             )
 
+        # Prepare project data with defaults for required fields
+        from datetime import datetime, timedelta
+        from ..models.project import ProjectCreate
+        
+        # Set default values for missing required fields
+        today = datetime.now().date()
+        project_create_data = {
+            "name": project_data["name"],
+            "description": project_data.get("description", ""),
+            "startDate": project_data.get("startDate", today.isoformat()),
+            "endDate": project_data.get("endDate", (today + timedelta(days=365)).isoformat()),
+            "maxParticipants": project_data.get("maxParticipants", 100),
+            "status": project_data.get("status", "active")
+        }
+        
+        # Convert dict to ProjectCreate object
+        project_create_obj = ProjectCreate(**project_create_data)
+        
         # Create project with current user as creator
         created_by = current_user.get("id") or current_user.get("sub")
-        project = db_service.create_project(project_data, created_by)
+        project = db_service.create_project(project_create_obj, created_by)
 
         response = create_v2_response(project)
         logger.log_api_response("POST", "/v2/projects", 201)
@@ -862,8 +880,12 @@ async def update_project_v2(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
             )
 
+        # Convert dict to ProjectUpdate object
+        from ..models.project import ProjectUpdate
+        project_update_obj = ProjectUpdate(**project_data)
+        
         # Update project
-        updated_project = db_service.update_project(project_id, project_data)
+        updated_project = db_service.update_project(project_id, project_update_obj)
         if not updated_project:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
@@ -1204,9 +1226,13 @@ async def update_admin_status(person_id: str, admin_data: dict):
                 status_code=status.HTTP_404_NOT_FOUND, detail="Person not found"
             )
 
-        # Update admin status
+        # Convert dict to PersonUpdate object
+        from ..models.person import PersonUpdate
         update_data = {"isAdmin": is_admin}
-        updated_person = await db_service.update_person(person_id, update_data)
+        person_update_obj = PersonUpdate(**update_data)
+        
+        # Update admin status
+        updated_person = await db_service.update_person(person_id, person_update_obj)
 
         return {
             "message": f"Admin status {'granted' if is_admin else 'revoked'} successfully",
@@ -1297,8 +1323,13 @@ async def update_person_v2(person_id: str, person_update: dict):
                 status_code=status.HTTP_404_NOT_FOUND, detail="Person not found"
             )
 
+        # Convert dict to PersonUpdate object
+        from ..models.person import PersonUpdate
+
+        person_update_obj = PersonUpdate(**person_update)
+
         # Update the person
-        updated_person = await db_service.update_person(person_id, person_update)
+        updated_person = await db_service.update_person(person_id, person_update_obj)
 
         # Convert to response format
         person_data = {
