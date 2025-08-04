@@ -1411,6 +1411,7 @@ async def update_person_v2(person_id: str, person_update: dict):
         )
         # Log the full traceback for debugging
         import traceback
+
         logger.error(f"Full traceback: {traceback.format_exc()}")
         raise handle_database_error("updating person", e)
 
