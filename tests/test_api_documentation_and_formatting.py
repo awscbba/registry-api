@@ -146,7 +146,7 @@ class TestCamelCaseConverter:
         """Test nested dictionary key conversion."""
         nested_dict = {
             "person_info": {"first_name": "John", "last_name": "Doe"},
-            "address_info": {"street_address": "123 Main St", "zip_code": "12345"},
+            "address_info": {"street_address": "123 Main St", "postal_code": "12345"},
         }
 
         camel_dict = CamelCaseConverter.convert_dict_keys(nested_dict)
@@ -303,14 +303,14 @@ class TestPersonResponseFormatting:
             "street": "123 Main St",
             "city": "Anytown",
             "state": "CA",
-            "zip_code": "12345",
+            "postal_code": "12345",
             "country": "USA",
         }
 
         camel_case_data = CamelCaseConverter.convert_response_data(address_data)
 
         assert "postalCode" in camel_case_data
-        assert "zip_code" not in camel_case_data
+        assert "postal_code" not in camel_case_data
         assert camel_case_data["postalCode"] == "12345"
 
 

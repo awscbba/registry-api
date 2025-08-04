@@ -130,7 +130,7 @@ class TestEnhancedPersonUpdate:
         )
 
         assert address.street == "123 Main St"
-        assert address.zip_code == "12345"  # Internal field name
+        assert address.postal_code == "12345"  # Internal field name
 
     @pytest.mark.asyncio
     async def test_validation_result_class(self):

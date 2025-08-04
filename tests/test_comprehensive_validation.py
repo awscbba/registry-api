@@ -224,7 +224,7 @@ class TestComprehensiveValidation:
         validation_service._validate_address(invalid_zip_address, result)
         assert result.is_valid is False
         assert len(result.errors) >= 1
-        assert any(error.field == "address.zip_code" for error in result.errors)
+        assert any(error.field == "address.postal_code" for error in result.errors)
 
         # Setup - None address
         result = ValidationResult()

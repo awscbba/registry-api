@@ -216,13 +216,14 @@ class TestCriticalIntegration:
         mock_person.email = "john@example.com"
         mock_person.phone = "+1234567890"
         mock_person.date_of_birth = datetime.fromisoformat("1990-01-01")
-        mock_person.address = {
-            "street": "123 Main St",
-            "city": "Test City",
-            "state": "Test State",
-            "country": "Test Country",
-            "postalCode": "12345",
-        }
+        from src.models.person import Address
+        mock_person.address = Address(
+            street="123 Main St",
+            city="Test City",
+            state="Test State",
+            country="Test Country",
+            postalCode="12345",
+        )
         mock_person.is_admin = False
         mock_person.created_at = datetime.fromisoformat("2025-01-01T00:00:00")
         mock_person.updated_at = datetime.fromisoformat("2025-01-01T00:00:00")
