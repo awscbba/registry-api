@@ -15,6 +15,7 @@ from ..models.subscription import SubscriptionCreate
 from ..models.auth import LoginRequest, LoginResponse
 from ..services.dynamodb_service import DynamoDBService
 from ..services.auth_service import AuthService
+from ..middleware.auth_middleware import get_current_user
 from ..utils.error_handler import StandardErrorHandler, handle_database_error
 from ..utils.logging_config import get_handler_logger
 from ..utils.response_models import (
@@ -782,6 +783,145 @@ async def get_admin_projects():
             error_type=type(e).__name__,
         )
         raise handle_database_error("getting admin projects", e)
+
+
+@v2_router.get("/projects/{project_id}")
+async def get_project_v2(project_id: str):
+    """Get a specific project by ID (v2)."""
+    try:
+        logger.log_api_request("GET", f"/v2/projects/{project_id}")
+
+        project = db_service.get_project_by_id(project_id)
+        if not project:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+            )
+
+        response = create_v2_response(project)
+        logger.log_api_response("GET", f"/v2/projects/{project_id}", 200)
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            "Failed to get project",
+            operation="get_project_v2",
+            project_id=project_id,
+            error_type=type(e).__name__,
+        )
+        raise handle_database_error("getting project", e)
+
+
+@v2_router.post("/projects", status_code=status.HTTP_201_CREATED)
+async def create_project_v2(
+    project_data: dict, current_user: dict = Depends(get_current_user)
+):
+    """Create a new project (v2)."""
+    try:
+        logger.log_api_request("POST", "/v2/projects")
+
+        # Validate required fields
+        if not project_data.get("name"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Project name is required",
+            )
+
+        # Create project with current user as creator
+        created_by = current_user.get("id") or current_user.get("sub")
+        project = db_service.create_project(project_data, created_by)
+
+        response = create_v2_response(project)
+        logger.log_api_response("POST", "/v2/projects", 201)
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            "Failed to create project",
+            operation="create_project_v2",
+            error_type=type(e).__name__,
+        )
+        raise handle_database_error("creating project", e)
+
+
+@v2_router.put("/projects/{project_id}")
+async def update_project_v2(
+    project_id: str, project_data: dict, current_user: dict = Depends(get_current_user)
+):
+    """Update a project (v2)."""
+    try:
+        logger.log_api_request("PUT", f"/v2/projects/{project_id}")
+
+        # Check if project exists
+        existing_project = db_service.get_project_by_id(project_id)
+        if not existing_project:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+            )
+
+        # Update project
+        updated_project = db_service.update_project(project_id, project_data)
+        if not updated_project:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+            )
+
+        response = create_v2_response(updated_project)
+        logger.log_api_response("PUT", f"/v2/projects/{project_id}", 200)
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            "Failed to update project",
+            operation="update_project_v2",
+            project_id=project_id,
+            error_type=type(e).__name__,
+        )
+        raise handle_database_error("updating project", e)
+
+
+@v2_router.delete("/projects/{project_id}")
+async def delete_project_v2(
+    project_id: str, current_user: dict = Depends(get_current_user)
+):
+    """Delete a project (v2)."""
+    try:
+        logger.log_api_request("DELETE", f"/v2/projects/{project_id}")
+
+        # Check if project exists
+        existing_project = db_service.get_project_by_id(project_id)
+        if not existing_project:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+            )
+
+        # Delete project
+        success = db_service.delete_project(project_id)
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to delete project",
+            )
+
+        response = create_v2_response({"deleted": True, "project_id": project_id})
+        logger.log_api_response("DELETE", f"/v2/projects/{project_id}", 200)
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            "Failed to delete project",
+            operation="delete_project_v2",
+            project_id=project_id,
+            error_type=type(e).__name__,
+        )
+        raise handle_database_error("deleting project", e)
 
 
 @v2_router.get("/admin/subscriptions")

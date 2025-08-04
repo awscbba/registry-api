@@ -285,6 +285,11 @@ class TestCriticalIntegration:
             ("POST", "/v2/projects/test-project/subscribers"),
             ("PUT", "/v2/projects/test-project/subscribers/test-subscription"),
             ("DELETE", "/v2/projects/test-project/subscribers/test-subscription"),
+            # New project CRUD endpoints
+            ("GET", "/v2/projects/test-project-id"),
+            ("POST", "/v2/projects"),
+            ("PUT", "/v2/projects/test-project-id"),
+            ("DELETE", "/v2/projects/test-project-id"),
         ]
 
         missing_endpoints = []
