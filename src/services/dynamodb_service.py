@@ -728,6 +728,21 @@ class DynamoDBService:
                 # Normalize address field names for storage
                 address_dict = self._normalize_address_for_storage(address_dict)
                 expression_attribute_values[":address"] = address_dict
+            elif field == "is_admin":
+                update_expression += ", isAdmin = :is_admin"
+                expression_attribute_values[":is_admin"] = value
+            elif field == "is_active":
+                update_expression += ", isActive = :is_active"
+                expression_attribute_values[":is_active"] = value
+            elif field == "failed_login_attempts":
+                update_expression += ", failedLoginAttempts = :failed_login_attempts"
+                expression_attribute_values[":failed_login_attempts"] = value
+            elif field == "account_locked_until":
+                update_expression += ", accountLockedUntil = :account_locked_until"
+                expression_attribute_values[":account_locked_until"] = value.isoformat() if value else None
+            elif field == "require_password_change":
+                update_expression += ", requirePasswordChange = :require_password_change"
+                expression_attribute_values[":require_password_change"] = value
 
         try:
             response = self.table.update_item(
@@ -1576,11 +1591,25 @@ class DynamoDBService:
             update_expression += ", #status = :status"
             expression_values[":status"] = project_data.status.value
 
+        if project_data.category is not None:
+            update_expression += ", category = :category"
+            expression_values[":category"] = project_data.category
+
+        if project_data.location is not None:
+            update_expression += ", #location = :location"
+            expression_values[":location"] = project_data.location
+
+        if project_data.requirements is not None:
+            update_expression += ", requirements = :requirements"
+            expression_values[":requirements"] = project_data.requirements
+
         expression_names = {}
         if project_data.name is not None:
             expression_names["#name"] = "name"
         if project_data.status is not None:
             expression_names["#status"] = "status"
+        if project_data.location is not None:
+            expression_names["#location"] = "location"
 
         try:
             response = self.projects_table.update_item(

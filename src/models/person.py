@@ -41,6 +41,7 @@ class PersonUpdate(BaseModel):
     failed_login_attempts: Optional[int] = Field(None, alias="failedLoginAttempts")
     account_locked_until: Optional[datetime] = Field(None, alias="accountLockedUntil")
     is_active: Optional[bool] = Field(None, alias="isActive")
+    require_password_change: Optional[bool] = Field(None, alias="requirePasswordChange")
 
 
 class Person(PersonBase):

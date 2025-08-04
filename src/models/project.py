@@ -28,6 +28,15 @@ class ProjectBase(BaseModel):
     status: ProjectStatus = Field(
         default=ProjectStatus.ACTIVE, description="Project status"
     )
+    category: Optional[str] = Field(
+        None, max_length=100, description="Project category"
+    )
+    location: Optional[str] = Field(
+        None, max_length=200, description="Project location"
+    )
+    requirements: Optional[str] = Field(
+        None, max_length=500, description="Project requirements"
+    )
 
 
 class ProjectCreate(ProjectBase):
@@ -53,6 +62,15 @@ class ProjectUpdate(BaseModel):
         None, ge=1, le=1000, description="Maximum number of participants"
     )
     status: Optional[ProjectStatus] = Field(None, description="Project status")
+    category: Optional[str] = Field(
+        None, max_length=100, description="Project category"
+    )
+    location: Optional[str] = Field(
+        None, max_length=200, description="Project location"
+    )
+    requirements: Optional[str] = Field(
+        None, max_length=500, description="Project requirements"
+    )
 
 
 class ProjectResponse(ProjectBase):

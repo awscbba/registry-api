@@ -55,7 +55,7 @@ test-critical:
 # Run critical tests that are known to pass (for CI/CD)
 test-critical-passing:
     @just print-info "Running critical integration tests (passing subset)..."
-    @uv run pytest tests/test_critical_integration.py::TestCriticalIntegration::test_api_service_method_consistency tests/test_critical_integration.py::TestCriticalIntegration::test_async_sync_consistency tests/test_critical_integration.py::TestCriticalIntegration::test_v2_response_format_consistency tests/test_critical_integration.py::TestProductionHealthChecks::test_production_api_health tests/test_address_field_standardization.py -v
+    @uv run pytest tests/test_critical_integration.py::TestCriticalIntegration::test_api_service_method_consistency tests/test_critical_integration.py::TestCriticalIntegration::test_async_sync_consistency tests/test_critical_integration.py::TestCriticalIntegration::test_v2_response_format_consistency tests/test_critical_integration.py::TestProductionHealthChecks::test_production_api_health tests/test_address_field_standardization.py tests/test_person_update_fix.py tests/test_person_update_address_fix.py -v
     @just print-success "Critical integration tests (passing) completed"
 
 # Run modernized async/sync validation tests
