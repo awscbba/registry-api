@@ -32,7 +32,7 @@ class TestProjectCRUDIntegration:
             "id": "test-user-id",
             "sub": "test-user-sub",
             "email": "admin@example.com",
-            "is_admin": True
+            "is_admin": True,
         }
 
     @pytest.fixture
@@ -46,7 +46,7 @@ class TestProjectCRUDIntegration:
             "status": "active",
             "createdBy": "test-user-id",
             "createdAt": "2025-01-01T00:00:00Z",
-            "updatedAt": "2025-01-01T00:00:00Z"
+            "updatedAt": "2025-01-01T00:00:00Z",
         }
 
     @pytest.fixture(autouse=True)
@@ -59,7 +59,9 @@ class TestProjectCRUDIntegration:
         app.dependency_overrides.clear()
 
     @patch("src.handlers.versioned_api_handler.db_service")
-    def test_create_project_workflow(self, mock_db_service, client, mock_user, sample_project):
+    def test_create_project_workflow(
+        self, mock_db_service, client, mock_user, sample_project
+    ):
         """Test complete project creation workflow"""
         # Setup mocks
         mock_db_service.create_project.return_value = sample_project
@@ -82,7 +84,9 @@ class TestProjectCRUDIntegration:
         assert data["data"]["name"] == "Test Project"
 
         # Verify service was called correctly
-        mock_db_service.create_project.assert_called_once_with(create_data, "test-user-id")
+        mock_db_service.create_project.assert_called_once_with(
+            create_data, "test-user-id"
+        )
 
     @patch("src.handlers.versioned_api_handler.db_service")
     def test_get_project_by_id_workflow(self, mock_db_service, client, sample_project):
@@ -119,11 +123,13 @@ class TestProjectCRUDIntegration:
         assert "Project not found" in data["detail"]
 
     @patch("src.handlers.versioned_api_handler.db_service")
-    def test_update_project_workflow(self, mock_db_service, client, mock_user, sample_project):
+    def test_update_project_workflow(
+        self, mock_db_service, client, mock_user, sample_project
+    ):
         """Test complete project update workflow"""
         # Setup mocks
         mock_db_service.get_project_by_id.return_value = sample_project
-        
+
         updated_project = {**sample_project, "name": "Updated Project Name"}
         mock_db_service.update_project.return_value = updated_project
 
@@ -142,7 +148,9 @@ class TestProjectCRUDIntegration:
 
         # Verify service calls
         mock_db_service.get_project_by_id.assert_called_once_with("test-project-id")
-        mock_db_service.update_project.assert_called_once_with("test-project-id", update_data)
+        mock_db_service.update_project.assert_called_once_with(
+            "test-project-id", update_data
+        )
 
     @patch("src.handlers.versioned_api_handler.db_service")
     def test_update_project_not_found(self, mock_db_service, client, mock_user):
@@ -159,7 +167,9 @@ class TestProjectCRUDIntegration:
         assert "Project not found" in data["detail"]
 
     @patch("src.handlers.versioned_api_handler.db_service")
-    def test_delete_project_workflow(self, mock_db_service, client, mock_user, sample_project):
+    def test_delete_project_workflow(
+        self, mock_db_service, client, mock_user, sample_project
+    ):
         """Test complete project deletion workflow"""
         # Setup mocks
         mock_db_service.get_project_by_id.return_value = sample_project
@@ -216,7 +226,7 @@ class TestProjectCRUDIntegration:
             "description": "Testing complete CRUD workflow",
             "maxParticipants": 25,
         }
-        
+
         created_project = {
             "id": "crud-test-id",
             "name": "CRUD Test Project",
@@ -233,7 +243,7 @@ class TestProjectCRUDIntegration:
 
         # Step 2: Read project
         mock_db_service.get_project_by_id.return_value = created_project
-        
+
         read_response = client.get("/v2/projects/crud-test-id")
         assert read_response.status_code == 200
         assert read_response.json()["data"]["id"] == "crud-test-id"
@@ -249,7 +259,7 @@ class TestProjectCRUDIntegration:
 
         # Step 4: Delete project
         mock_db_service.delete_project.return_value = True
-        
+
         delete_response = client.delete("/v2/projects/crud-test-id")
         assert delete_response.status_code == 200
         assert delete_response.json()["data"]["deleted"] is True
@@ -267,7 +277,7 @@ class TestProjectCRUDIntegration:
             ("GET", "/v2/projects/test-id"),
             ("POST", "/v2/projects"),
             ("PUT", "/v2/projects/test-id"),
-            ("DELETE", "/v2/projects/test-id")
+            ("DELETE", "/v2/projects/test-id"),
         ]
 
         for method, endpoint in endpoints_to_test:
@@ -281,7 +291,9 @@ class TestProjectCRUDIntegration:
                 response = client.delete(endpoint)
 
             # Should not be 404 (route not found), should be auth error or other business logic error
-            assert response.status_code != 404, f"Endpoint {method} {endpoint} not found (route-level 404)"
+            assert (
+                response.status_code != 404
+            ), f"Endpoint {method} {endpoint} not found (route-level 404)"
 
 
 if __name__ == "__main__":
