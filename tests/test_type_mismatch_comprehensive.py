@@ -33,7 +33,7 @@ class TestTypeMismatchComprehensive:
             "id": "test-user-id",
             "sub": "test-user-sub",
             "email": "admin@example.com",
-            "is_admin": True
+            "is_admin": True,
         }
 
     @pytest.fixture(autouse=True)
@@ -50,15 +50,15 @@ class TestTypeMismatchComprehensive:
             "id": "test-project-id",
             "name": "Test Project",
             "description": "A test project",
-            "status": "active"
+            "status": "active",
         }
-        
+
         mock_db_service.create_project.return_value = mock_project
 
         project_data = {
             "name": "Test Project",
             "description": "A test project",
-            "maxParticipants": 50
+            "maxParticipants": 50,
         }
 
         response = client.post("/v2/projects", json=project_data)
@@ -72,7 +72,7 @@ class TestTypeMismatchComprehensive:
         # Verify the service method was called
         assert mock_db_service.create_project.call_count == 1
         call_args = mock_db_service.create_project.call_args
-        
+
         # Check if the first argument is a ProjectCreate object or dict
         project_arg = call_args[0][0]
         print(f"Project argument type: {type(project_arg)}")
@@ -80,8 +80,11 @@ class TestTypeMismatchComprehensive:
 
         # This test will help us identify if we need to fix this endpoint
         from src.models.project import ProjectCreate
+
         if not isinstance(project_arg, ProjectCreate):
-            print("⚠️  ISSUE FOUND: create_project called with dict instead of ProjectCreate object")
+            print(
+                "⚠️  ISSUE FOUND: create_project called with dict instead of ProjectCreate object"
+            )
 
     @patch("src.handlers.versioned_api_handler.db_service")
     def test_project_update_type_mismatch(self, mock_db_service, client):
@@ -90,16 +93,13 @@ class TestTypeMismatchComprehensive:
             "id": "test-project-id",
             "name": "Updated Project",
             "description": "Updated description",
-            "status": "active"
+            "status": "active",
         }
-        
+
         mock_db_service.get_project_by_id.return_value = mock_project
         mock_db_service.update_project.return_value = mock_project
 
-        update_data = {
-            "name": "Updated Project",
-            "description": "Updated description"
-        }
+        update_data = {"name": "Updated Project", "description": "Updated description"}
 
         response = client.put("/v2/projects/test-project-id", json=update_data)
 
@@ -112,7 +112,7 @@ class TestTypeMismatchComprehensive:
         # Verify the service method was called
         assert mock_db_service.update_project.call_count == 1
         call_args = mock_db_service.update_project.call_args
-        
+
         # Check if the second argument is a ProjectUpdate object or dict
         project_update_arg = call_args[0][1]
         print(f"Project update argument type: {type(project_update_arg)}")
@@ -120,14 +120,17 @@ class TestTypeMismatchComprehensive:
 
         # This test will help us identify if we need to fix this endpoint
         from src.models.project import ProjectUpdate
+
         if not isinstance(project_update_arg, ProjectUpdate):
-            print("⚠️  ISSUE FOUND: update_project called with dict instead of ProjectUpdate object")
+            print(
+                "⚠️  ISSUE FOUND: update_project called with dict instead of ProjectUpdate object"
+            )
 
     @patch("src.handlers.versioned_api_handler.db_service")
     def test_admin_status_update_type_mismatch(self, mock_db_service, client):
         """Test that admin status update converts dict to PersonUpdate object"""
         from datetime import datetime
-        
+
         mock_person = Mock()
         mock_person.id = "test-person-id"
         mock_person.first_name = "John"
@@ -160,7 +163,7 @@ class TestTypeMismatchComprehensive:
         # Verify the service method was called
         assert mock_db_service.update_person.call_count == 1
         call_args = mock_db_service.update_person.call_args
-        
+
         # Check if the second argument is a PersonUpdate object or dict
         person_update_arg = call_args[0][1]
         print(f"Person update argument type: {type(person_update_arg)}")
@@ -168,8 +171,11 @@ class TestTypeMismatchComprehensive:
 
         # This test will help us identify if we need to fix this endpoint
         from src.models.person import PersonUpdate
+
         if not isinstance(person_update_arg, PersonUpdate):
-            print("⚠️  ISSUE FOUND: update_person called with dict instead of PersonUpdate object")
+            print(
+                "⚠️  ISSUE FOUND: update_person called with dict instead of PersonUpdate object"
+            )
 
     def test_all_endpoints_for_500_errors(self, client):
         """Test all potentially problematic endpoints for 500 errors"""
@@ -182,12 +188,12 @@ class TestTypeMismatchComprehensive:
 
         for method, endpoint, data in test_cases:
             print(f"\nTesting {method} {endpoint}")
-            
+
             if method == "POST":
                 response = client.post(endpoint, json=data)
             elif method == "PUT":
                 response = client.put(endpoint, json=data)
-            
+
             print(f"Status: {response.status_code}")
             if response.status_code >= 500:
                 print(f"⚠️  500 ERROR FOUND: {method} {endpoint}")

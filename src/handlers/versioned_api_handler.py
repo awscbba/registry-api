@@ -831,21 +831,23 @@ async def create_project_v2(
         # Prepare project data with defaults for required fields
         from datetime import datetime, timedelta
         from ..models.project import ProjectCreate
-        
+
         # Set default values for missing required fields
         today = datetime.now().date()
         project_create_data = {
             "name": project_data["name"],
             "description": project_data.get("description", ""),
             "startDate": project_data.get("startDate", today.isoformat()),
-            "endDate": project_data.get("endDate", (today + timedelta(days=365)).isoformat()),
+            "endDate": project_data.get(
+                "endDate", (today + timedelta(days=365)).isoformat()
+            ),
             "maxParticipants": project_data.get("maxParticipants", 100),
-            "status": project_data.get("status", "active")
+            "status": project_data.get("status", "active"),
         }
-        
+
         # Convert dict to ProjectCreate object
         project_create_obj = ProjectCreate(**project_create_data)
-        
+
         # Create project with current user as creator
         created_by = current_user.get("id") or current_user.get("sub")
         project = db_service.create_project(project_create_obj, created_by)
@@ -882,8 +884,9 @@ async def update_project_v2(
 
         # Convert dict to ProjectUpdate object
         from ..models.project import ProjectUpdate
+
         project_update_obj = ProjectUpdate(**project_data)
-        
+
         # Update project
         updated_project = db_service.update_project(project_id, project_update_obj)
         if not updated_project:
@@ -1228,9 +1231,10 @@ async def update_admin_status(person_id: str, admin_data: dict):
 
         # Convert dict to PersonUpdate object
         from ..models.person import PersonUpdate
+
         update_data = {"isAdmin": is_admin}
         person_update_obj = PersonUpdate(**update_data)
-        
+
         # Update admin status
         updated_person = await db_service.update_person(person_id, person_update_obj)
 
