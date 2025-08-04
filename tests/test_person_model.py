@@ -6,7 +6,11 @@ from src.models.person import Person, PersonCreate, PersonUpdate, Address
 def test_person_create():
     """Test PersonCreate model"""
     address = Address(
-        street="123 Main St", city="Anytown", state="CA", postalCode="12345", country="USA"
+        street="123 Main St",
+        city="Anytown",
+        state="CA",
+        postalCode="12345",
+        country="USA",
     )
 
     person_data = PersonCreate(
@@ -29,7 +33,11 @@ def test_person_create():
 def test_person_create_new():
     """Test Person.create_new method"""
     address = Address(
-        street="123 Main St", city="Anytown", state="CA", postalCode="12345", country="USA"
+        street="123 Main St",
+        city="Anytown",
+        state="CA",
+        postalCode="12345",
+        country="USA",
     )
 
     person_data = PersonCreate(

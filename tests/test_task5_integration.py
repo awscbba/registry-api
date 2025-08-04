@@ -33,7 +33,11 @@ async def test_enhanced_update_functionality():
 
     # Valid update
     valid_address = Address(
-        street="123 Main St", city="Anytown", state="CA", postalCode="12345", country="USA"
+        street="123 Main St",
+        city="Anytown",
+        state="CA",
+        postalCode="12345",
+        country="USA",
     )
 
     valid_update = PersonUpdate(
