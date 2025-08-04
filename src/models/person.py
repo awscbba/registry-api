@@ -48,12 +48,6 @@ class Person(PersonBase):
     id: str
     created_at: datetime = Field(alias="createdAt")
     updated_at: datetime = Field(alias="updatedAt")
-    password_hash: Optional[str] = Field(None, alias="password_hash")
-    require_password_change: Optional[bool] = Field(
-        default=False, alias="requirePasswordChange"
-    )
-    is_active: Optional[bool] = Field(default=True, alias="isActive")
-    last_login_at: Optional[datetime] = Field(None, alias="lastLoginAt")
 
     # Password-related fields (optional, for authentication)
     password_hash: Optional[str] = Field(
@@ -62,7 +56,7 @@ class Person(PersonBase):
     password_salt: Optional[str] = Field(
         None, exclude=True
     )  # Never include in API responses
-    require_password_change: bool = False
+    require_password_change: bool = Field(default=False, alias="requirePasswordChange")
     last_password_change: Optional[datetime] = Field(None, alias="lastPasswordChange")
     password_history: List[str] = Field(
         default_factory=list, exclude=True
