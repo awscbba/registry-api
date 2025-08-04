@@ -84,9 +84,17 @@ class TestProjectCRUDIntegration:
         assert data["data"]["name"] == "Test Project"
 
         # Verify service was called correctly
-        mock_db_service.create_project.assert_called_once_with(
-            create_data, "test-user-id"
-        )
+        assert mock_db_service.create_project.call_count == 1
+        call_args = mock_db_service.create_project.call_args
+        assert call_args[0][1] == "test-user-id"  # Second argument should be user ID
+        
+        # Check that the first argument is a ProjectCreate object with correct data
+        project_create_obj = call_args[0][0]
+        from src.models.project import ProjectCreate
+        assert isinstance(project_create_obj, ProjectCreate)
+        assert project_create_obj.name == "Test Project"
+        assert project_create_obj.description == "A test project for integration testing"
+        assert project_create_obj.maxParticipants == 50
 
     @patch("src.handlers.versioned_api_handler.db_service")
     def test_get_project_by_id_workflow(self, mock_db_service, client, sample_project):
@@ -148,9 +156,17 @@ class TestProjectCRUDIntegration:
 
         # Verify service calls
         mock_db_service.get_project_by_id.assert_called_once_with("test-project-id")
-        mock_db_service.update_project.assert_called_once_with(
-            "test-project-id", update_data
-        )
+        
+        # Verify update_project was called with a ProjectUpdate object
+        assert mock_db_service.update_project.call_count == 1
+        call_args = mock_db_service.update_project.call_args
+        assert call_args[0][0] == "test-project-id"
+        
+        # Check that the second argument is a ProjectUpdate object with correct data
+        project_update_obj = call_args[0][1]
+        from src.models.project import ProjectUpdate
+        assert isinstance(project_update_obj, ProjectUpdate)
+        assert project_update_obj.name == "Updated Project Name"
 
     @patch("src.handlers.versioned_api_handler.db_service")
     def test_update_project_not_found(self, mock_db_service, client, mock_user):

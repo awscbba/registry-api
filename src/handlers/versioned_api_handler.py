@@ -11,7 +11,8 @@ from fastapi import FastAPI, HTTPException, status, Request, Depends, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 
 from ..models.person import PersonCreate, PersonUpdate, PersonResponse
-from ..models.subscription import SubscriptionCreate
+from ..models.project import ProjectCreate, ProjectUpdate
+from ..models.subscription import SubscriptionCreate, SubscriptionUpdate
 from ..models.auth import LoginRequest, LoginResponse
 from ..services.dynamodb_service import DynamoDBService
 from ..services.auth_service import AuthService
@@ -830,7 +831,6 @@ async def create_project_v2(
 
         # Prepare project data with defaults for required fields
         from datetime import datetime, timedelta
-        from ..models.project import ProjectCreate
 
         # Set default values for missing required fields
         today = datetime.now().date()
@@ -883,7 +883,6 @@ async def update_project_v2(
             )
 
         # Convert dict to ProjectUpdate object
-        from ..models.project import ProjectUpdate
 
         project_update_obj = ProjectUpdate(**project_data)
 
@@ -1230,8 +1229,6 @@ async def update_admin_status(person_id: str, admin_data: dict):
             )
 
         # Convert dict to PersonUpdate object
-        from ..models.person import PersonUpdate
-
         update_data = {"isAdmin": is_admin}
         person_update_obj = PersonUpdate(**update_data)
 
@@ -1328,8 +1325,6 @@ async def update_person_v2(person_id: str, person_update: dict):
             )
 
         # Convert dict to PersonUpdate object
-        from ..models.person import PersonUpdate
-
         person_update_obj = PersonUpdate(**person_update)
 
         # Update the person
@@ -1663,7 +1658,6 @@ async def update_project_subscription_v2(
             )
 
         # Create update object
-        from ..models.subscription import SubscriptionUpdate
 
         update_fields = {}
         if "status" in update_data:
