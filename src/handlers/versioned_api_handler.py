@@ -1280,9 +1280,7 @@ async def get_person_v2(person_id: str):
                 "state": person.address.get("state", "") if person.address else "",
                 "city": person.address.get("city", "") if person.address else "",
                 "street": person.address.get("street", "") if person.address else "",
-                "postalCode": (
-                    person.address.postal_code if person.address else ""
-                ),
+                "postalCode": (person.address.postal_code if person.address else ""),
             },
             "isAdmin": person.is_admin,
             "createdAt": person.created_at.isoformat() if person.created_at else "",
@@ -1364,9 +1362,7 @@ async def update_person_v2(person_id: str, person_update: dict):
                     else ""
                 ),
                 "postalCode": (
-                    updated_person.address.postal_code
-                    if updated_person.address
-                    else ""
+                    updated_person.address.postal_code if updated_person.address else ""
                 ),
             },
             "isAdmin": updated_person.is_admin,

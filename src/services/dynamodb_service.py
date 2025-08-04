@@ -448,7 +448,9 @@ class DynamoDBService:
 
         return item
 
-    def _normalize_address_for_storage(self, address_dict: Dict[str, Any]) -> Dict[str, Any]:
+    def _normalize_address_for_storage(
+        self, address_dict: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Normalize address field names for consistent storage"""
         # Convert postalCode to postal_code for consistent storage
         if "postalCode" in address_dict:
