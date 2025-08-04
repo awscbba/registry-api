@@ -1342,15 +1342,15 @@ async def update_person_v2(person_id: str, person_update: dict):
             ),
             "address": {
                 "country": (
-                    updated_person.address.country if updated_person.address else ""
+                    getattr(updated_person.address, 'country', '') if updated_person.address else ""
                 ),
-                "state": updated_person.address.state if updated_person.address else "",
-                "city": updated_person.address.city if updated_person.address else "",
+                "state": getattr(updated_person.address, 'state', '') if updated_person.address else "",
+                "city": getattr(updated_person.address, 'city', '') if updated_person.address else "",
                 "street": (
-                    updated_person.address.street if updated_person.address else ""
+                    getattr(updated_person.address, 'street', '') if updated_person.address else ""
                 ),
                 "postalCode": (
-                    updated_person.address.postal_code if updated_person.address else ""
+                    getattr(updated_person.address, 'postal_code', '') if updated_person.address else ""
                 ),
             },
             "isAdmin": updated_person.is_admin,
@@ -1364,14 +1364,14 @@ async def update_person_v2(person_id: str, person_update: dict):
                 if updated_person.updated_at
                 else ""
             ),
-            "isActive": updated_person.is_active,
-            "requirePasswordChange": updated_person.require_password_change,
+            "isActive": getattr(updated_person, 'is_active', True),
+            "requirePasswordChange": getattr(updated_person, 'require_password_change', False),
             "lastLoginAt": (
                 updated_person.last_login_at.isoformat()
-                if updated_person.last_login_at
+                if getattr(updated_person, 'last_login_at', None)
                 else None
             ),
-            "failedLoginAttempts": updated_person.failed_login_attempts or 0,
+            "failedLoginAttempts": getattr(updated_person, 'failed_login_attempts', 0),
         }
 
         response = create_v2_response(person_data)
