@@ -65,7 +65,7 @@ class TestPersonUpdateFix:
             city="Anytown",
             state="CA",
             postalCode="12345",
-            country="USA"
+            country="USA",
         )
         mock_existing_person.is_admin = False
         mock_existing_person.is_active = True
@@ -88,7 +88,7 @@ class TestPersonUpdateFix:
             city="Newtown",
             state="NY",
             postalCode="54321",
-            country="USA"
+            country="USA",
         )
         mock_updated_person.is_admin = True
         mock_updated_person.is_active = False
@@ -114,11 +114,11 @@ class TestPersonUpdateFix:
                 "city": "Newtown",
                 "state": "NY",
                 "postalCode": "54321",
-                "country": "USA"
+                "country": "USA",
             },
             "isAdmin": True,
             "isActive": False,
-            "failedLoginAttempts": 2
+            "failedLoginAttempts": 2,
         }
 
         # Make the request
@@ -131,14 +131,18 @@ class TestPersonUpdateFix:
         try:
             response_json = response.json()
             print(f"✅ Response is valid JSON")
-            
+
             # Verify the PersonUpdate object was created correctly
             mock_db_service.update_person.assert_called_once()
             call_args = mock_db_service.update_person.call_args
-            person_update_obj = call_args[0][1]  # Second argument is the PersonUpdate object
-            
+            person_update_obj = call_args[0][
+                1
+            ]  # Second argument is the PersonUpdate object
+
             # Verify all fields are present in the PersonUpdate object
-            assert isinstance(person_update_obj, PersonUpdate), "Should be PersonUpdate object"
+            assert isinstance(
+                person_update_obj, PersonUpdate
+            ), "Should be PersonUpdate object"
             assert person_update_obj.first_name == "Jane"
             assert person_update_obj.last_name == "Smith"
             assert person_update_obj.email == "updated@example.com"
@@ -148,9 +152,9 @@ class TestPersonUpdateFix:
             assert person_update_obj.is_active == False
             assert person_update_obj.failed_login_attempts == 2
             assert person_update_obj.address is not None
-            
+
             print("✅ All PersonUpdate fields properly handled")
-                
+
         except json.JSONDecodeError as e:
             print(f"❌ Response is not valid JSON: {e}")
             print(f"Raw response: {response.text}")
@@ -162,11 +166,11 @@ class TestPersonUpdateFix:
     def test_person_update_model_validation(self):
         """Test PersonUpdate model validation with all fields"""
         from src.models.person import Address
-        
+
         # Test with all valid fields
         update_data = {
             "firstName": "Jane",
-            "lastName": "Smith", 
+            "lastName": "Smith",
             "email": "test@example.com",
             "phone": "123-456-7890",
             "dateOfBirth": "1990-01-01",
@@ -175,17 +179,17 @@ class TestPersonUpdateFix:
                 "city": "Anytown",
                 "state": "CA",
                 "postalCode": "12345",
-                "country": "USA"
+                "country": "USA",
             },
             "isAdmin": True,
             "isActive": False,
-            "failedLoginAttempts": 3
+            "failedLoginAttempts": 3,
         }
-        
+
         try:
             person_update = PersonUpdate(**update_data)
             print("✅ PersonUpdate model validation successful")
-            
+
             # Verify all fields are accessible
             assert person_update.first_name == "Jane"
             assert person_update.last_name == "Smith"
@@ -197,41 +201,41 @@ class TestPersonUpdateFix:
             assert person_update.failed_login_attempts == 3
             assert person_update.address is not None
             assert person_update.address.street == "123 Main St"
-            
+
             print("✅ All PersonUpdate fields accessible")
-            
+
         except Exception as e:
             print(f"❌ PersonUpdate model validation failed: {e}")
             assert False, f"PersonUpdate should validate successfully: {e}"
 
     def test_person_update_partial_fields(self):
         """Test PersonUpdate with only some fields (partial update)"""
-        
+
         # Test with only some fields
         update_data = {
             "firstName": "UpdatedName",
             "isAdmin": True,
-            "failedLoginAttempts": 1
+            "failedLoginAttempts": 1,
         }
-        
+
         try:
             person_update = PersonUpdate(**update_data)
             print("✅ Partial PersonUpdate validation successful")
-            
+
             # Verify specified fields are set
             assert person_update.first_name == "UpdatedName"
             assert person_update.is_admin == True
             assert person_update.failed_login_attempts == 1
-            
+
             # Verify unspecified fields are None
             assert person_update.last_name is None
             assert person_update.email is None
             assert person_update.phone is None
             assert person_update.address is None
             assert person_update.is_active is None
-            
+
             print("✅ Partial PersonUpdate fields handled correctly")
-            
+
         except Exception as e:
             print(f"❌ Partial PersonUpdate validation failed: {e}")
             assert False, f"Partial PersonUpdate should validate successfully: {e}"

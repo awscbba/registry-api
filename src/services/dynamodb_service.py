@@ -739,9 +739,13 @@ class DynamoDBService:
                 expression_attribute_values[":failed_login_attempts"] = value
             elif field == "account_locked_until":
                 update_expression += ", accountLockedUntil = :account_locked_until"
-                expression_attribute_values[":account_locked_until"] = value.isoformat() if value else None
+                expression_attribute_values[":account_locked_until"] = (
+                    value.isoformat() if value else None
+                )
             elif field == "require_password_change":
-                update_expression += ", requirePasswordChange = :require_password_change"
+                update_expression += (
+                    ", requirePasswordChange = :require_password_change"
+                )
                 expression_attribute_values[":require_password_change"] = value
 
         try:
