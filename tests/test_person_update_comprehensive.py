@@ -205,10 +205,21 @@ class TestPersonUpdateComprehensive:
             # Verify all expected fields are in the update data
             # Note: Check what fields are actually present after model_dump
             print(f"Update data fields: {list(update_data.keys())}")
-            
+
             # Verify key fields that should be present when set
             # Note: model_dump() returns the actual field names (snake_case), not aliases
-            key_fields_present = ["first_name", "last_name", "email", "phone", "date_of_birth", "address", "is_admin", "is_active", "failed_login_attempts", "require_password_change"]
+            key_fields_present = [
+                "first_name",
+                "last_name",
+                "email",
+                "phone",
+                "date_of_birth",
+                "address",
+                "is_admin",
+                "is_active",
+                "failed_login_attempts",
+                "require_password_change",
+            ]
             for field in key_fields_present:
                 assert field in update_data, f"Field {field} should be in update data"
 
@@ -251,7 +262,10 @@ class TestPersonUpdateComprehensive:
 
         # Should return validation error (422) or internal server error (500)
         # In some cases, validation errors may be caught as 500 due to error handling
-        assert response.status_code in [422, 500], f"Expected 422 or 500, got {response.status_code}"
+        assert response.status_code in [
+            422,
+            500,
+        ], f"Expected 422 or 500, got {response.status_code}"
         print("✅ Invalid email validation error handled correctly")
 
     def test_person_update_edge_cases(self):
@@ -287,13 +301,21 @@ class TestPersonUpdateComprehensive:
         try:
             # When we explicitly set None, it's still "set" so exclude_unset won't exclude it
             # We need to use exclude_none=True to exclude None values
-            none_values_update = PersonUpdate(lastName="Smith")  # Only set lastName using alias
+            none_values_update = PersonUpdate(
+                lastName="Smith"
+            )  # Only set lastName using alias
             dumped = none_values_update.model_dump(exclude_unset=True)
-            
+
             # Only last_name should be present since it's the only field we set
-            assert "last_name" in dumped, f"last_name should be in dumped data: {dumped}"
-            assert "first_name" not in dumped, f"first_name should not be in dumped data: {dumped}"
-            assert "email" not in dumped, f"email should not be in dumped data: {dumped}"
+            assert (
+                "last_name" in dumped
+            ), f"last_name should be in dumped data: {dumped}"
+            assert (
+                "first_name" not in dumped
+            ), f"first_name should not be in dumped data: {dumped}"
+            assert (
+                "email" not in dumped
+            ), f"email should not be in dumped data: {dumped}"
             print("✅ None values properly excluded")
         except Exception as e:
             assert False, f"None values should be handled correctly: {e}"
