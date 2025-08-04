@@ -92,11 +92,41 @@ sam local start-api
 
 ### Testing
 
-The API includes comprehensive unit tests for:
-- Data model validation
-- CRUD operations
-- Error handling
-- Input sanitization
+The API includes comprehensive test coverage with **12 critical tests** that prevent production issues:
+
+#### Critical Test Suite (Pre-Push Validation)
+- **API Service Method Consistency**: Ensures all endpoints have proper async/sync patterns
+- **Response Format Consistency**: Validates V2 API response structure
+- **Production Health Checks**: Tests actual production API endpoints
+- **Address Field Standardization** (8 tests): Prevents field naming issues that caused 500 errors
+  - Address model validation with postal_code/postalCode alias
+  - DynamoDB normalization for all field variations (postalCode, zipCode, zip_code)
+  - Legacy data compatibility testing
+  - End-to-end address field consistency
+
+#### Running Tests
+```bash
+# Run critical tests (runs automatically on git push)
+just test-critical-passing
+
+# Run all tests
+just test-all
+
+# Run specific test categories
+just test-async          # Async/sync validation tests
+just test-critical       # All critical integration tests
+```
+
+#### Git Hook Setup
+```bash
+# Install pre-push hooks (runs critical tests automatically)
+./scripts/setup-git-hooks.sh
+```
+
+The pre-push hook automatically runs:
+- Black code formatting
+- Flake8 linting
+- 12 critical tests (prevents broken code from being pushed)
 
 ## Deployment
 
