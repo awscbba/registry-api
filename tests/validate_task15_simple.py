@@ -294,7 +294,7 @@ def test_camel_case_examples():
         'alias="updatedAt"',
         'alias="isActive"',
         'alias="emailVerified"',
-        'alias="zipCode"',
+        'alias="postalCode"',
     ]
 
     missing_aliases = []

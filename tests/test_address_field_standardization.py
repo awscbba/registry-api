@@ -91,17 +91,17 @@ class TestAddressFieldStandardization:
                 "expected_postal_code": "12345",
                 "description": "postalCode field"
             },
-            # Legacy zipCode format
+            # Legacy postalCode format
             {
                 "input": {
                     "street": "456 Oak Ave",
                     "city": "Test City",
                     "state": "NY",
-                    "zipCode": "67890", 
+                    "postalCode": "67890", 
                     "country": "USA"
                 },
                 "expected_postal_code": "67890",
-                "description": "legacy zipCode field"
+                "description": "legacy postalCode field"
             },
             # Legacy zip_code format
             {
@@ -126,7 +126,7 @@ class TestAddressFieldStandardization:
             
             # Should remove the original field name
             original_field = None
-            for field in ["postalCode", "zipCode", "zip_code"]:
+            for field in ["postalCode", "postalCode", "zip_code"]:
                 if field in test_case["input"]:
                     original_field = field
                     break
@@ -178,7 +178,7 @@ class TestAddressFieldStandardization:
                 "updatedAt": "2023-01-01T00:00:00",
                 "description": "legacy zip_code field"
             },
-            # Legacy zipCode format
+            # Legacy postalCode format
             {
                 "id": "125",
                 "firstName": "Bob",
@@ -190,12 +190,12 @@ class TestAddressFieldStandardization:
                     "street": "789 Pine St",
                     "city": "Test City",
                     "state": "TX",
-                    "zipCode": "54321",
+                    "postalCode": "54321",
                     "country": "USA"
                 },
                 "createdAt": "2023-01-01T00:00:00",
                 "updatedAt": "2023-01-01T00:00:00", 
-                "description": "legacy zipCode field"
+                "description": "legacy postalCode field"
             }
         ]
         
@@ -288,13 +288,13 @@ class TestAddressFieldStandardization:
                 },
                 "expected": "11111"
             },
-            # Even older system used zipCode
+            # Even older system used postalCode
             {
                 "address": {
                     "street": "Ancient Ave",
                     "city": "Historic City",
                     "state": "NY", 
-                    "zipCode": "22222",
+                    "postalCode": "22222",
                     "country": "USA"
                 },
                 "expected": "22222"

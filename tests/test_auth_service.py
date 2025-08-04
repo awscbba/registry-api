@@ -31,7 +31,7 @@ def sample_person():
             street="123 Main St",
             city="Anytown",
             state="CA",
-            zipCode="12345",
+            postalCode="12345",
             country="USA",
         ),
         createdAt=datetime.now(timezone.utc),

@@ -153,7 +153,7 @@ class TestCamelCaseConverter:
 
         expected = {
             "personInfo": {"firstName": "John", "lastName": "Doe"},
-            "addressInfo": {"streetAddress": "123 Main St", "zipCode": "12345"},
+            "addressInfo": {"streetAddress": "123 Main St", "postalCode": "12345"},
         }
 
         assert camel_dict == expected
@@ -309,9 +309,9 @@ class TestPersonResponseFormatting:
 
         camel_case_data = CamelCaseConverter.convert_response_data(address_data)
 
-        assert "zipCode" in camel_case_data
+        assert "postalCode" in camel_case_data
         assert "zip_code" not in camel_case_data
-        assert camel_case_data["zipCode"] == "12345"
+        assert camel_case_data["postalCode"] == "12345"
 
 
 class TestAPIDocumentationFile:

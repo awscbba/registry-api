@@ -163,7 +163,7 @@ class TestAuthIntegrationSimple:
                     "street": "123 Main St",
                     "city": "Test City",
                     "state": "TS",
-                    "zipCode": "12345",
+                    "postalCode": "12345",
                     "country": "Test Country",
                 },
             },

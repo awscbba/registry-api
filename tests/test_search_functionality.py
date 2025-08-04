@@ -36,7 +36,7 @@ def create_mock_person(
             "street": "123 Test St",
             "city": "Test City",
             "state": "TS",
-            "zipCode": "12345",
+            "postalCode": "12345",
             "country": "Test Country",
         },
         createdAt=datetime.utcnow(),

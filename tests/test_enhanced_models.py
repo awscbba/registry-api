@@ -31,7 +31,7 @@ async def test_enhanced_models():
 
     # Test Address model
     address = Address(
-        street="123 Main St", city="Anytown", state="CA", zipCode="12345", country="USA"
+        street="123 Main St", city="Anytown", state="CA", postalCode="12345", country="USA"
     )
     print(f"✓ Address model created: {address.street}, {address.city}")
 

@@ -59,7 +59,7 @@ def verify_person_response_model():
                 "street": "123 Main St",
                 "city": "Test City",
                 "state": "CA",
-                "zipCode": "12345",
+                "postalCode": "12345",
                 "country": "USA",
             },
             created_at=datetime.utcnow(),

@@ -31,7 +31,7 @@ class TestEnhancedPersonUpdate:
             street="123 Main St",
             city="Anytown",
             state="CA",
-            zipCode="12345",
+            postalCode="12345",
             country="USA",
         )
 
@@ -120,12 +120,12 @@ class TestEnhancedPersonUpdate:
         assert update2.email == "jane@example.com"
 
     def test_address_model_with_alias(self):
-        """Test Address model works with zipCode alias."""
+        """Test Address model works with postalCode alias."""
         address = Address(
             street="123 Main St",
             city="Anytown",
             state="CA",
-            zipCode="12345",
+            postalCode="12345",
             country="USA",
         )
 

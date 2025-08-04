@@ -52,7 +52,7 @@ class TestPersonValidationService:
                 street="123 Main St",
                 city="Anytown",
                 state="CA",
-                zipCode="12345",
+                postalCode="12345",
                 country="USA",
             ),
         )
@@ -99,7 +99,7 @@ class TestPersonValidationService:
                 street="123 Main St",
                 city="Anytown",
                 state="CA",
-                zipCode="12345",  # Use the alias
+                postalCode="12345",  # Use the alias
                 country="USA",
             ),
         )
@@ -207,7 +207,7 @@ class TestPersonValidationService:
             street="123 Main St",
             city="",  # Empty city - should be caught by validation
             state="CA",
-            zipCode="12345",  # Use the alias
+            postalCode="12345",  # Use the alias
             country="",  # Empty country - should be caught by validation
         )
         validation_service.mock_db.get_person_by_email.return_value = None

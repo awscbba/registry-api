@@ -57,7 +57,7 @@ class TestComprehensiveValidation:
                 street="123 Main St",
                 city="Anytown",
                 state="CA",
-                zipCode="12345",
+                postalCode="12345",
                 country="USA",
             ),
         )
@@ -205,7 +205,7 @@ class TestComprehensiveValidation:
             street="123 Main St",
             city="",  # Empty city
             state="CA",
-            zipCode="12345",
+            postalCode="12345",
             country="",  # Empty country
         )
         validation_service._validate_address(incomplete_address, result)
@@ -218,7 +218,7 @@ class TestComprehensiveValidation:
             street="123 Main St",
             city="Anytown",
             state="CA",
-            zipCode="invalid",  # Invalid ZIP
+            postalCode="invalid",  # Invalid ZIP
             country="USA",
         )
         validation_service._validate_address(invalid_zip_address, result)
@@ -302,7 +302,7 @@ class TestComprehensiveValidation:
             phone="123",  # Too short
             dateOfBirth="2099-01-01",  # Future date
             address=Address(
-                street="", city="", state="", zipCode="invalid", country=""
+                street="", city="", state="", postalCode="invalid", country=""
             ),
         )
         validation_service.mock_db.get_person_by_email.return_value = None
