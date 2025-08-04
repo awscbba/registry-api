@@ -270,6 +270,7 @@ help:
     @echo "🚀 Setup & Installation:"
     @echo "  setup                  - Setup Python environment with uv"
     @echo "  install                - Install dependencies"
+    @echo "  setup-hooks            - Install git hooks (pre-push validation)"
     @echo ""
     @echo "🧪 Testing Commands:"
     @echo "  test-critical          - Run critical integration tests (catches production bugs)"
@@ -299,3 +300,41 @@ help:
     @echo "  - API contract validation and endpoint testing"
     @echo ""
     @echo "ℹ️ Frontend tests are handled in the registry-frontend repo"
+
+# Setup git hooks for development
+setup-hooks:
+    @just print-info "Setting up git hooks for registry-api..."
+    @echo ""
+    
+    # Check if we're in the right directory
+    @if [ ! -f "pyproject.toml" ]; then \
+        echo "❌ Error: Not in registry-api root directory"; \
+        echo "📍 Current directory: $(pwd)"; \
+        echo "💡 Run 'just setup-hooks' from the registry-api root directory"; \
+        exit 1; \
+    fi
+    
+    # Copy the pre-push hook
+    @echo "📋 Installing pre-push hook..."
+    @cp .githooks/pre-push .git/hooks/pre-push
+    
+    # Make sure it's executable
+    @chmod +x .git/hooks/pre-push
+    
+    @just print-success "Git hooks installed successfully!"
+    @echo ""
+    @echo "📝 The pre-push hook will now:"
+    @echo "   • Run black formatter"
+    @echo "   • Run flake8 linter" 
+    @echo "   • Run 12 critical tests (including address field standardization tests)"
+    @echo "   • Prevent pushes if any checks fail"
+    @echo ""
+    @echo "🧪 Critical tests include:"
+    @echo "   • API service method consistency"
+    @echo "   • Async/sync consistency validation"
+    @echo "   • V2 response format consistency"
+    @echo "   • Production health checks"
+    @echo "   • Address field standardization (8 tests)"
+    @echo ""
+    @echo "💡 To run the critical tests manually: just test-critical-passing"
+    @echo "🔍 To run all tests: just test-all"

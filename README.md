@@ -120,7 +120,7 @@ just test-critical       # All critical integration tests
 #### Git Hook Setup
 ```bash
 # Install pre-push hooks (runs critical tests automatically)
-./scripts/setup-git-hooks.sh
+just setup-hooks
 ```
 
 The pre-push hook automatically runs:
