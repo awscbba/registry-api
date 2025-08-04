@@ -217,6 +217,7 @@ class TestCriticalIntegration:
         mock_person.phone = "+1234567890"
         mock_person.date_of_birth = datetime.fromisoformat("1990-01-01")
         from src.models.person import Address
+
         mock_person.address = Address(
             street="123 Main St",
             city="Test City",
