@@ -1341,8 +1341,13 @@ async def update_person_v2(person_id: str, person_update: dict):
             "phone": updated_person.phone or "",
             "dateOfBirth": (
                 updated_person.date_of_birth.isoformat()
-                if updated_person.date_of_birth and hasattr(updated_person.date_of_birth, 'isoformat')
-                else str(updated_person.date_of_birth) if updated_person.date_of_birth else ""
+                if updated_person.date_of_birth
+                and hasattr(updated_person.date_of_birth, "isoformat")
+                else (
+                    str(updated_person.date_of_birth)
+                    if updated_person.date_of_birth
+                    else ""
+                )
             ),
             "address": {
                 "country": (
@@ -1374,12 +1379,14 @@ async def update_person_v2(person_id: str, person_update: dict):
             "isAdmin": updated_person.is_admin,
             "createdAt": (
                 updated_person.created_at.isoformat()
-                if updated_person.created_at and hasattr(updated_person.created_at, 'isoformat')
+                if updated_person.created_at
+                and hasattr(updated_person.created_at, "isoformat")
                 else str(updated_person.created_at) if updated_person.created_at else ""
             ),
             "updatedAt": (
                 updated_person.updated_at.isoformat()
-                if updated_person.updated_at and hasattr(updated_person.updated_at, 'isoformat')
+                if updated_person.updated_at
+                and hasattr(updated_person.updated_at, "isoformat")
                 else str(updated_person.updated_at) if updated_person.updated_at else ""
             ),
             "isActive": getattr(updated_person, "is_active", True),
@@ -1388,8 +1395,13 @@ async def update_person_v2(person_id: str, person_update: dict):
             ),
             "lastLoginAt": (
                 updated_person.last_login_at.isoformat()
-                if getattr(updated_person, "last_login_at", None) and hasattr(updated_person.last_login_at, 'isoformat')
-                else str(updated_person.last_login_at) if getattr(updated_person, "last_login_at", None) else None
+                if getattr(updated_person, "last_login_at", None)
+                and hasattr(updated_person.last_login_at, "isoformat")
+                else (
+                    str(updated_person.last_login_at)
+                    if getattr(updated_person, "last_login_at", None)
+                    else None
+                )
             ),
             "failedLoginAttempts": getattr(updated_person, "failed_login_attempts", 0),
         }
