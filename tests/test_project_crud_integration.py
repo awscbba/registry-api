@@ -5,7 +5,7 @@ These tests ensure complete project management functionality works end-to-end.
 """
 
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, AsyncMock
 from fastapi.testclient import TestClient
 
 # Import the actual modules to test
@@ -64,7 +64,7 @@ class TestProjectCRUDIntegration:
     ):
         """Test complete project creation workflow"""
         # Setup mocks
-        mock_db_service.create_project.return_value = sample_project
+        mock_db_service.create_project = AsyncMock(return_value=sample_project)
 
         # Test data
         create_data = {
@@ -103,7 +103,7 @@ class TestProjectCRUDIntegration:
     def test_get_project_by_id_workflow(self, mock_db_service, client, sample_project):
         """Test retrieving a specific project by ID"""
         # Setup mock
-        mock_db_service.get_project_by_id.return_value = sample_project
+        mock_db_service.get_project_by_id = AsyncMock(return_value=sample_project)
 
         # Make request
         response = client.get("/v2/projects/test-project-id")
@@ -123,7 +123,7 @@ class TestProjectCRUDIntegration:
     def test_get_project_not_found(self, mock_db_service, client):
         """Test handling of non-existent project"""
         # Setup mock to return None
-        mock_db_service.get_project_by_id.return_value = None
+        mock_db_service.get_project_by_id = AsyncMock(return_value=None)
 
         # Make request
         response = client.get("/v2/projects/non-existent-id")
@@ -139,10 +139,10 @@ class TestProjectCRUDIntegration:
     ):
         """Test complete project update workflow"""
         # Setup mocks
-        mock_db_service.get_project_by_id.return_value = sample_project
+        mock_db_service.get_project_by_id = AsyncMock(return_value=sample_project)
 
         updated_project = {**sample_project, "name": "Updated Project Name"}
-        mock_db_service.update_project.return_value = updated_project
+        mock_db_service.update_project = AsyncMock(return_value=updated_project)
 
         # Test data
         update_data = {"name": "Updated Project Name"}
@@ -176,7 +176,7 @@ class TestProjectCRUDIntegration:
     def test_update_project_not_found(self, mock_db_service, client, mock_user):
         """Test updating non-existent project"""
         # Setup mocks
-        mock_db_service.get_project_by_id.return_value = None
+        mock_db_service.get_project_by_id = AsyncMock(return_value=None)
 
         # Make request
         response = client.put("/v2/projects/non-existent-id", json={"name": "Updated"})
@@ -192,8 +192,8 @@ class TestProjectCRUDIntegration:
     ):
         """Test complete project deletion workflow"""
         # Setup mocks
-        mock_db_service.get_project_by_id.return_value = sample_project
-        mock_db_service.delete_project.return_value = True
+        mock_db_service.get_project_by_id = AsyncMock(return_value=sample_project)
+        mock_db_service.delete_project = AsyncMock(return_value=True)
 
         # Make request
         response = client.delete("/v2/projects/test-project-id")
@@ -214,7 +214,7 @@ class TestProjectCRUDIntegration:
     def test_delete_project_not_found(self, mock_db_service, client, mock_user):
         """Test deleting non-existent project"""
         # Setup mocks
-        mock_db_service.get_project_by_id.return_value = None
+        mock_db_service.get_project_by_id = AsyncMock(return_value=None)
 
         # Make request
         response = client.delete("/v2/projects/non-existent-id")
@@ -255,14 +255,14 @@ class TestProjectCRUDIntegration:
             "status": "active",
             "createdBy": "test-user-id",
         }
-        mock_db_service.create_project.return_value = created_project
+        mock_db_service.create_project = AsyncMock(return_value=created_project)
 
         create_response = client.post("/v2/projects", json=create_data)
         assert create_response.status_code == 201
         assert create_response.json()["data"]["name"] == "CRUD Test Project"
 
         # Step 2: Read project
-        mock_db_service.get_project_by_id.return_value = created_project
+        mock_db_service.get_project_by_id = AsyncMock(return_value=created_project)
 
         read_response = client.get("/v2/projects/crud-test-id")
         assert read_response.status_code == 200
@@ -271,14 +271,14 @@ class TestProjectCRUDIntegration:
         # Step 3: Update project
         update_data = {"name": "Updated CRUD Test Project"}
         updated_project = {**created_project, "name": "Updated CRUD Test Project"}
-        mock_db_service.update_project.return_value = updated_project
+        mock_db_service.update_project = AsyncMock(return_value=updated_project)
 
         update_response = client.put("/v2/projects/crud-test-id", json=update_data)
         assert update_response.status_code == 200
         assert update_response.json()["data"]["name"] == "Updated CRUD Test Project"
 
         # Step 4: Delete project
-        mock_db_service.delete_project.return_value = True
+        mock_db_service.delete_project = AsyncMock(return_value=True)
 
         delete_response = client.delete("/v2/projects/crud-test-id")
         assert delete_response.status_code == 200
