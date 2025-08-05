@@ -118,7 +118,7 @@ def test_person_update_api():
                 else:
                     print("      ❓ Response format unclear")
 
-            except:
+            except Exception:
                 print("   ⚠️ Could not parse response JSON")
 
         else:
