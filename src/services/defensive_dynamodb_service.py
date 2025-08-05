@@ -277,11 +277,13 @@ class DefensiveDynamoDBService:
 
         normalized = address_dict.copy()
 
-        # Convert postalCode to postal_code for consistent storage
+        # Convert various postal code field names to postal_code for consistent storage
         if "postalCode" in normalized:
             normalized["postal_code"] = normalized.pop("postalCode")
         elif "zipCode" in normalized:
             normalized["postal_code"] = normalized.pop("zipCode")
+        elif "zip_code" in normalized:
+            normalized["postal_code"] = normalized.pop("zip_code")
 
         return normalized
 
