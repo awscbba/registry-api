@@ -17,7 +17,9 @@ from ..models.security_event import (
     SecurityEventSeverity,
     get_default_severity,
 )
-from ..services.defensive_dynamodb_service import DefensiveDynamoDBService as DynamoDBService
+from ..services.defensive_dynamodb_service import (
+    DefensiveDynamoDBService as DynamoDBService,
+)
 
 
 class LogLevel(str, Enum):

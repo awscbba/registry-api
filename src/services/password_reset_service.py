@@ -18,7 +18,9 @@ from ..models.password_reset import (
     PasswordResetConfig,
 )
 from ..models.person import Person
-from ..services.defensive_dynamodb_service import DefensiveDynamoDBService as DynamoDBService
+from ..services.defensive_dynamodb_service import (
+    DefensiveDynamoDBService as DynamoDBService,
+)
 from ..utils.password_utils import PasswordHasher, PasswordValidator
 
 logger = logging.getLogger(__name__)
