@@ -140,7 +140,8 @@ class TestCriticalFixes:
         }
 
         # Methods that should NOT be awaited (sync methods)
-        sync_db_methods = {"get_project_by_id"}
+        # Note: In DefensiveDynamoDBService, all database methods are async for consistency
+        sync_db_methods = set()
 
         class DatabaseCallChecker(ast.NodeVisitor):
             def __init__(self):

@@ -130,7 +130,8 @@ class TestAsyncCorrectness:
             source = f.read()
 
         # Methods that should NOT be awaited (sync methods)
-        sync_db_methods = ["get_project_by_id"]
+        # Note: In DefensiveDynamoDBService, all database methods are async for consistency
+        sync_db_methods = []
 
         incorrect_await = []
         for method in sync_db_methods:
