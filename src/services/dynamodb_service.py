@@ -749,9 +749,11 @@ class DynamoDBService:
                 update_expression += ", accountLockedUntil = :account_locked_until"
                 if value is None:
                     expression_attribute_values[":account_locked_until"] = None
-                elif hasattr(value, 'isoformat'):
+                elif hasattr(value, "isoformat"):
                     # Value is a datetime object
-                    expression_attribute_values[":account_locked_until"] = value.isoformat()
+                    expression_attribute_values[":account_locked_until"] = (
+                        value.isoformat()
+                    )
                 else:
                     # Value is already a string (ISO format)
                     expression_attribute_values[":account_locked_until"] = value
