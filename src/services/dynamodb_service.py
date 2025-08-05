@@ -725,7 +725,12 @@ class DynamoDBService:
                 update_expression += ", address = :address"
                 # Ensure address uses the correct field names for storage
                 if value is not None:
-                    address_dict = value.model_dump()
+                    # Check if value is already a dict (from model_dump) or an Address object
+                    if hasattr(value, 'model_dump'):
+                        address_dict = value.model_dump()
+                    else:
+                        # Value is already a dictionary from PersonUpdate.model_dump()
+                        address_dict = value
                     # Normalize address field names for storage
                     address_dict = self._normalize_address_for_storage(address_dict)
                     expression_attribute_values[":address"] = address_dict
