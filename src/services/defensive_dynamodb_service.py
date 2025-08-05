@@ -253,7 +253,7 @@ class DefensiveDynamoDBService:
             person.require_password_change = item.get("requirePasswordChange", False)
             person.failed_login_attempts = item.get("failedLoginAttempts", 0)
             person.email_verified = item.get("emailVerified", False)
-            
+
             # Handle password-related fields for authentication
             if item.get("password_hash"):
                 person.password_hash = item["password_hash"]
