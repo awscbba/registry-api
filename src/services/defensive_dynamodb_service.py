@@ -382,21 +382,29 @@ class DefensiveDynamoDBService:
                         address_dict
                     )
                     expression_values[":address"] = normalized_address
-                    
+
                     # Handle case where update_expression might be empty (address-only update)
                     if update_expression.strip():
                         update_expression += ", address = :address"
                     else:
                         # If no other fields, create a proper SET expression
-                        update_expression = "SET updatedAt = :updated_at, address = :address"
-                        expression_values[":updated_at"] = safe_isoformat(datetime.utcnow())
+                        update_expression = (
+                            "SET updatedAt = :updated_at, address = :address"
+                        )
+                        expression_values[":updated_at"] = safe_isoformat(
+                            datetime.utcnow()
+                        )
                 else:
                     expression_values[":address"] = {}
                     if update_expression.strip():
                         update_expression += ", address = :address"
                     else:
-                        update_expression = "SET updatedAt = :updated_at, address = :address"
-                        expression_values[":updated_at"] = safe_isoformat(datetime.utcnow())
+                        update_expression = (
+                            "SET updatedAt = :updated_at, address = :address"
+                        )
+                        expression_values[":updated_at"] = safe_isoformat(
+                            datetime.utcnow()
+                        )
 
             # Log sanitized update data
             sanitized_data = sanitize_for_logging(update_data)
