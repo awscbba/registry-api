@@ -1346,6 +1346,109 @@ async def get_people_v2(email: str = None):
         raise handle_database_error("getting people (v2)", e)
 
 
+@v2_router.post("/people", status_code=status.HTTP_201_CREATED)
+async def create_person_v2(person_data: PersonCreate):
+    """Create a new person (v2)."""
+    try:
+        logger.log_api_request("POST", "/v2/people")
+        
+        # Create the person
+        created_person = await db_service.create_person(person_data)
+        
+        # Convert to response format
+        person_response_data = {
+            "id": created_person.id,
+            "email": created_person.email,
+            "firstName": created_person.first_name,
+            "lastName": created_person.last_name,
+            "phone": created_person.phone or "",
+            "dateOfBirth": (
+                created_person.date_of_birth.isoformat()
+                if created_person.date_of_birth
+                and hasattr(created_person.date_of_birth, "isoformat")
+                else (
+                    str(created_person.date_of_birth)
+                    if created_person.date_of_birth
+                    else ""
+                )
+            ),
+            "address": {
+                "country": (
+                    getattr(created_person.address, "country", "")
+                    if created_person.address
+                    else ""
+                ),
+                "state": (
+                    getattr(created_person.address, "state", "")
+                    if created_person.address
+                    else ""
+                ),
+                "city": (
+                    getattr(created_person.address, "city", "")
+                    if created_person.address
+                    else ""
+                ),
+                "street": (
+                    getattr(created_person.address, "street", "")
+                    if created_person.address
+                    else ""
+                ),
+                "postalCode": (
+                    getattr(created_person.address, "postal_code", "")
+                    if created_person.address
+                    else ""
+                ),
+            },
+            "isAdmin": created_person.is_admin,
+            "createdAt": (
+                created_person.created_at.isoformat()
+                if created_person.created_at
+                and hasattr(created_person.created_at, "isoformat")
+                else str(created_person.created_at) if created_person.created_at else ""
+            ),
+            "updatedAt": (
+                created_person.updated_at.isoformat()
+                if created_person.updated_at
+                and hasattr(created_person.updated_at, "isoformat")
+                else str(created_person.updated_at) if created_person.updated_at else ""
+            ),
+            "isActive": getattr(created_person, "is_active", True),
+            "requirePasswordChange": getattr(
+                created_person, "require_password_change", False
+            ),
+            "lastLoginAt": (
+                created_person.last_login_at.isoformat()
+                if getattr(created_person, "last_login_at", None)
+                and hasattr(created_person.last_login_at, "isoformat")
+                else (
+                    str(created_person.last_login_at)
+                    if getattr(created_person, "last_login_at", None)
+                    else None
+                )
+            ),
+            "failedLoginAttempts": getattr(created_person, "failed_login_attempts", 0),
+        }
+
+        response = create_v2_response(person_response_data)
+        logger.log_api_response("POST", "/v2/people", 201)
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            "Failed to create person",
+            operation="create_person_v2",
+            error_type=type(e).__name__,
+            error_message=str(e),
+            error_details=repr(e),
+        )
+        # Log the full traceback for debugging
+        import traceback
+        logger.error(f"Full traceback: {traceback.format_exc()}")
+        raise handle_database_error("creating person", e)
+
+
 @v2_router.put("/people/{person_id}/admin")
 async def update_admin_status(person_id: str, admin_data: dict):
     """Update admin status for a person (admin only)."""
