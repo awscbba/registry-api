@@ -344,7 +344,7 @@ class DefensiveDynamoDBService:
                 self.logger.info(f"No fields to update for person {person_id}")
                 return existing_person
 
-            # Build update expression safely
+            # Build update expression safely (exclude address as it's handled separately)
             field_mappings = {
                 "first_name": "firstName",
                 "last_name": "lastName",
@@ -358,8 +358,11 @@ class DefensiveDynamoDBService:
                 "last_login_at": "lastLoginAt",
             }
 
+            # Exclude address from update_data for safe_update_expression_builder
+            update_data_without_address = {k: v for k, v in update_data.items() if k != "address"}
+
             update_expression, expression_values, expression_names = (
-                safe_update_expression_builder(update_data, field_mappings)
+                safe_update_expression_builder(update_data_without_address, field_mappings)
             )
 
             # Handle address field specially
