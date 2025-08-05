@@ -53,7 +53,7 @@ class TestTypeMismatchComprehensive:
             "status": "active",
         }
 
-        mock_db_service.create_project.return_value = mock_project
+        mock_db_service.create_project = AsyncMock(return_value=mock_project)
 
         project_data = {
             "name": "Test Project",
@@ -96,8 +96,8 @@ class TestTypeMismatchComprehensive:
             "status": "active",
         }
 
-        mock_db_service.get_project_by_id.return_value = mock_project
-        mock_db_service.update_project.return_value = mock_project
+        mock_db_service.get_project_by_id = AsyncMock(return_value=mock_project)
+        mock_db_service.update_project = AsyncMock(return_value=mock_project)
 
         update_data = {"name": "Updated Project", "description": "Updated description"}
 

@@ -156,12 +156,20 @@ class TestVersionedAPIHandlerSource:
             "check_email_uniqueness",
             "clear_account_lockout",
             "create_person",
+            "create_project",
+            "create_subscription",
             "delete_person",
+            "delete_project",
+            "delete_subscription",
             "get_account_lockout",
             "get_all_projects",
             "get_all_subscriptions",
             "get_person",
             "get_person_by_email",
+            "get_project_by_id",
+            "get_subscription_by_id",
+            "get_subscriptions_by_person",
+            "get_subscriptions_by_project",
             "list_people",
             "log_security_event",
             "save_account_lockout",
@@ -169,10 +177,12 @@ class TestVersionedAPIHandlerSource:
             "update_last_login",
             "update_person",
             "update_person_password_fields",
+            "update_project",
+            "update_subscription",
         ]
 
-        # Methods that should NOT be awaited (sync methods)
-        sync_db_methods = ["get_project_by_id"]
+        # Methods that should NOT be awaited (sync methods) - all DefensiveDynamoDBService methods are async
+        sync_db_methods = []
 
         missing_await = []
         incorrect_await = []

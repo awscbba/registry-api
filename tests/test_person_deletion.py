@@ -74,12 +74,12 @@ class TestPersonDeletionService:
                 "createdAt": "2024-01-02T00:00:00Z",
             },
         ]
-        self.mock_db_service.get_subscriptions_by_person = Mock(
+        self.mock_db_service.get_subscriptions_by_person = AsyncMock(
             return_value=mock_subscriptions
         )
 
         # Mock projects
-        self.mock_db_service.get_project_by_id = Mock(
+        self.mock_db_service.get_project_by_id = AsyncMock(
             return_value={"name": "Test Project"}
         )
 
@@ -116,7 +116,7 @@ class TestPersonDeletionService:
                 "createdAt": "2024-01-01T00:00:00Z",
             }
         ]
-        self.mock_db_service.get_subscriptions_by_person = Mock(
+        self.mock_db_service.get_subscriptions_by_person = AsyncMock(
             return_value=mock_subscriptions
         )
 
@@ -224,7 +224,7 @@ class TestPersonDeletionService:
         self.mock_db_service.get_person = AsyncMock(return_value=self.mock_person)
 
         # Mock no active subscriptions
-        self.mock_db_service.get_subscriptions_by_person = Mock(return_value=[])
+        self.mock_db_service.get_subscriptions_by_person = AsyncMock(return_value=[])
 
         # Mock successful deletion
         self.mock_db_service.delete_person = AsyncMock(return_value=True)
