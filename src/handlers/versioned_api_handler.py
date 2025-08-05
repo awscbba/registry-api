@@ -14,7 +14,7 @@ from ..models.person import PersonCreate, PersonUpdate, PersonResponse
 from ..models.project import ProjectCreate, ProjectUpdate
 from ..models.subscription import SubscriptionCreate, SubscriptionUpdate
 from ..models.auth import LoginRequest, LoginResponse
-from ..services.dynamodb_service import DynamoDBService
+from ..services.defensive_dynamodb_service import DefensiveDynamoDBService as DynamoDBService
 from ..services.auth_service import AuthService
 from ..middleware.auth_middleware import get_current_user
 from ..utils.error_handler import StandardErrorHandler, handle_database_error

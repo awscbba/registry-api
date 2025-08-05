@@ -20,7 +20,7 @@ from ..models.person import (
 from ..models.auth import LoginRequest, LoginResponse
 from ..models.error_handling import APIException, ErrorCode
 from ..models.security_event import SecurityEventType
-from ..services.dynamodb_service import DynamoDBService
+from ..services.defensive_dynamodb_service import DefensiveDynamoDBService as DynamoDBService
 from ..services.auth_service import AuthService
 from ..services.password_management_service import PasswordManagementService
 from ..services.person_validation_service import PersonValidationService

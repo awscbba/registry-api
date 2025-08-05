@@ -8,7 +8,7 @@ while the frontend is being updated to handle the new API format.
 from fastapi import FastAPI, HTTPException, status, Request, Depends
 from typing import List
 from ..models.person import PersonResponse
-from ..services.dynamodb_service import DynamoDBService
+from ..services.defensive_dynamodb_service import DefensiveDynamoDBService as DynamoDBService
 from ..middleware.auth_middleware import get_current_user, require_no_password_change
 
 app = FastAPI()

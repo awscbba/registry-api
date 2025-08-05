@@ -15,7 +15,7 @@ from ..models.auth import (
     AuthenticatedUser,
 )
 from ..models.person import Person
-from ..services.dynamodb_service import DynamoDBService
+from ..services.defensive_dynamodb_service import DefensiveDynamoDBService as DynamoDBService
 from ..utils.password_utils import PasswordHasher
 from ..utils.jwt_utils import create_tokens_for_user
 
