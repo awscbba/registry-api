@@ -783,21 +783,25 @@ class DefensiveDynamoDBService:
             if existing_subscription:
                 # If subscription exists and is inactive, reactivate it
                 if existing_subscription.get("status") == "inactive":
-                    self.logger.info(f"Reactivating existing subscription {existing_subscription['id']}")
-                    
+                    self.logger.info(
+                        f"Reactivating existing subscription {existing_subscription['id']}"
+                    )
+
                     # Update the existing subscription
                     subscription_update = SubscriptionUpdate(
                         status=safe_enum_value(subscription_data.status, "pending"),
-                        notes=safe_field_access(subscription_data, "notes", "")
+                        notes=safe_field_access(subscription_data, "notes", ""),
                     )
-                    
+
                     updated_subscription = await self.update_subscription(
                         existing_subscription["id"], subscription_update
                     )
                     return updated_subscription
                 else:
                     # Subscription already exists and is active/pending
-                    self.logger.warning(f"Subscription already exists for person {subscription_data.personId} and project {subscription_data.projectId}")
+                    self.logger.warning(
+                        f"Subscription already exists for person {subscription_data.personId} and project {subscription_data.projectId}"
+                    )
                     return existing_subscription
 
             # Create new subscription if none exists
@@ -966,16 +970,18 @@ class DefensiveDynamoDBService:
         try:
             # Get all subscriptions for the person
             person_subscriptions = await self.get_subscriptions_by_person(person_id)
-            
+
             # Find subscription for the specific project
             for subscription in person_subscriptions:
                 if subscription.get("projectId") == project_id:
                     return subscription
-            
+
             return None
 
         except Exception as e:
-            self.logger.error(f"Error checking existing subscription for person {person_id} and project {project_id}: {e}")
+            self.logger.error(
+                f"Error checking existing subscription for person {person_id} and project {project_id}: {e}"
+            )
             return None
 
     @database_operation("delete_subscription")
