@@ -1351,10 +1351,10 @@ async def create_person_v2(person_data: PersonCreate):
     """Create a new person (v2)."""
     try:
         logger.log_api_request("POST", "/v2/people")
-        
+
         # Create the person
         created_person = await db_service.create_person(person_data)
-        
+
         # Convert to response format
         person_response_data = {
             "id": created_person.id,
@@ -1445,6 +1445,7 @@ async def create_person_v2(person_data: PersonCreate):
         )
         # Log the full traceback for debugging
         import traceback
+
         logger.error(f"Full traceback: {traceback.format_exc()}")
         raise handle_database_error("creating person", e)
 
