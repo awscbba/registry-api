@@ -8,7 +8,7 @@ from typing import Optional, Tuple, List, Dict, Any
 
 from ..models.person import Person, PasswordUpdateRequest, PasswordUpdateResponse
 from ..models.auth import SecurityEvent
-from ..services.dynamodb_service import DynamoDBService
+from ..services.defensive_dynamodb_service import DefensiveDynamoDBService as DynamoDBService
 from ..utils.password_utils import (
     PasswordValidator,
     PasswordHasher,

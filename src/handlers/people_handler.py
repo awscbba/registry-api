@@ -1891,7 +1891,7 @@ async def get_projects():
 async def get_project(project_id: str):
     """Get a specific project by ID"""
     try:
-        project = db_service.get_project_by_id(project_id)
+        project = await db_service.get_project_by_id(project_id)
         if not project:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
@@ -1965,7 +1965,7 @@ async def delete_project(
 ):
     """Delete a project"""
     try:
-        success = db_service.delete_project(project_id)
+        success = await db_service.delete_project(project_id)
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
@@ -1993,7 +1993,7 @@ async def get_subscriptions():
 async def get_subscription(subscription_id: str):
     """Get a specific subscription by ID"""
     try:
-        subscription = db_service.get_subscription_by_id(subscription_id)
+        subscription = await db_service.get_subscription_by_id(subscription_id)
         if not subscription:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Subscription not found"
@@ -2021,7 +2021,7 @@ async def create_subscription(subscription_data: dict):
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Person not found"
             )
 
-        project = db_service.get_project_by_id(subscription_create.projectId)
+        project = await db_service.get_project_by_id(subscription_create.projectId)
         if not project:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Project not found"
@@ -2077,7 +2077,7 @@ async def update_subscription(subscription_id: str, subscription_data: dict):
 async def delete_subscription(subscription_id: str):
     """Delete a subscription"""
     try:
-        success = db_service.delete_subscription(subscription_id)
+        success = await db_service.delete_subscription(subscription_id)
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Subscription not found"
@@ -2109,8 +2109,8 @@ async def create_subscription_with_person(subscription_data: dict):
         # Validate person data
         person_create = PersonCreate(**person_data)
 
-        # Verify project exists (this method is NOT async)
-        project = db_service.get_project_by_id(project_id)
+        # Verify project exists
+        project = await db_service.get_project_by_id(project_id)
         if not project:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Project not found"
@@ -2161,7 +2161,7 @@ async def get_person_subscriptions(person_id: str):
                 status_code=status.HTTP_404_NOT_FOUND, detail="Person not found"
             )
 
-        subscriptions = db_service.get_subscriptions_by_person(person_id)
+        subscriptions = await db_service.get_subscriptions_by_person(person_id)
         return {"subscriptions": subscriptions, "count": len(subscriptions)}
     except HTTPException:
         raise
@@ -2174,13 +2174,13 @@ async def get_project_subscriptions(project_id: str):
     """Get all subscriptions for a specific project"""
     try:
         # Verify project exists
-        project = db_service.get_project_by_id(project_id)
+        project = await db_service.get_project_by_id(project_id)
         if not project:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
             )
 
-        subscriptions = db_service.get_subscriptions_by_project(project_id)
+        subscriptions = await db_service.get_subscriptions_by_project(project_id)
         return {"subscriptions": subscriptions, "count": len(subscriptions)}
     except HTTPException:
         raise

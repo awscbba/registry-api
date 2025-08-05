@@ -14,7 +14,7 @@ from ..models.security_event import (
     SecurityEventType,
     SecurityEventSeverity,
 )
-from .dynamodb_service import DynamoDBService
+from .defensive_dynamodb_service import DefensiveDynamoDBService as DynamoDBService
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ class PersonDeletionService:
                 )
 
             # Check for existing subscriptions
-            subscriptions = self.db_service.get_subscriptions_by_person(person_id)
+            subscriptions = await self.db_service.get_subscriptions_by_person(person_id)
             active_subscriptions = [
                 sub
                 for sub in subscriptions
@@ -64,7 +64,7 @@ class PersonDeletionService:
                 # Create referential integrity error response
                 related_records = []
                 for sub in active_subscriptions:
-                    project = self.db_service.get_project_by_id(
+                    project = await self.db_service.get_project_by_id(
                         sub.get("projectId", "")
                     )
                     related_records.append(
@@ -250,7 +250,7 @@ class PersonDeletionService:
                 )
 
             # Final check for subscriptions (in case they were added between initiation and confirmation)
-            subscriptions = self.db_service.get_subscriptions_by_person(person_id)
+            subscriptions = await self.db_service.get_subscriptions_by_person(person_id)
             active_subscriptions = [
                 sub
                 for sub in subscriptions
@@ -263,7 +263,7 @@ class PersonDeletionService:
 
                 related_records = []
                 for sub in active_subscriptions:
-                    project = self.db_service.get_project_by_id(
+                    project = await self.db_service.get_project_by_id(
                         sub.get("projectId", "")
                     )
                     related_records.append(

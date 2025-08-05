@@ -11,7 +11,7 @@ from enum import Enum
 import hashlib
 
 from ..models.error_handling import ErrorContext, APIException, ErrorCode
-from ..services.dynamodb_service import DynamoDBService
+from ..services.defensive_dynamodb_service import DefensiveDynamoDBService as DynamoDBService
 from ..services.logging_service import logging_service
 
 

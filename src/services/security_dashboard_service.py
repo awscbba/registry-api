@@ -10,7 +10,7 @@ from boto3.dynamodb.conditions import Key, Attr
 import json
 from decimal import Decimal
 
-from .dynamodb_service import DynamoDBService
+from .defensive_dynamodb_service import DefensiveDynamoDBService as DynamoDBService
 from ..models.security_event import SecurityEvent, SecurityEventType
 from ..utils.date_utils import format_datetime, parse_datetime
 

@@ -11,7 +11,7 @@ from typing import Optional, Tuple
 from ..models.email import EmailRequest, EmailType
 from ..models.person import Person
 from .email_service import EmailService
-from .dynamodb_service import DynamoDBService
+from .defensive_dynamodb_service import DefensiveDynamoDBService as DynamoDBService
 
 logger = logging.getLogger(__name__)
 
