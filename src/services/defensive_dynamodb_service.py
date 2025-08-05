@@ -26,6 +26,7 @@ from ..models.person import Person, PersonCreate, PersonUpdate
 from ..models.project import ProjectCreate, ProjectUpdate
 from ..models.subscription import SubscriptionCreate, SubscriptionUpdate
 from ..models.error_handling import ErrorContext
+from ..models.auth import AccountLockout
 from ..utils.defensive_utils import (
     safe_isoformat,
     safe_enum_value,
@@ -644,15 +645,13 @@ class DefensiveDynamoDBService:
     @database_operation("get_account_lockout")
     async def get_account_lockout(
         self, person_id: str, context: Optional[ErrorContext] = None
-    ) -> Optional["AccountLockout"]:
+    ) -> Optional[AccountLockout]:
         """Get account lockout information for a person"""
         if not self.lockout_table:
             self.logger.warning("Lockout table not available")
             return None
 
         try:
-            from ..models.auth import AccountLockout
-
             response = self.lockout_table.get_item(Key={"personId": person_id})
 
             if "Item" in response:
@@ -674,7 +673,7 @@ class DefensiveDynamoDBService:
 
     @database_operation("save_account_lockout")
     async def save_account_lockout(
-        self, lockout_info: "AccountLockout", context: Optional[ErrorContext] = None
+        self, lockout_info: AccountLockout, context: Optional[ErrorContext] = None
     ):
         """Save account lockout information"""
         if not self.lockout_table:
