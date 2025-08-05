@@ -118,19 +118,21 @@ class TestPersonCreation:
         """Test that address fields are properly normalized"""
         # The API expects postalCode, not zipCode at the input level
         # The normalization happens in the service layer for data coming from the database
-        
+
         # Test that the API correctly accepts postalCode
         response = client.post("/v2/people", json=sample_person_data)
-        
+
         # Should succeed with postalCode
-        assert response.status_code == 201 or response.status_code == 500  # 500 if DB service fails
-        
+        assert (
+            response.status_code == 201 or response.status_code == 500
+        )  # 500 if DB service fails
+
         # Test that zipCode is rejected at the API level
         sample_person_data["address"]["zipCode"] = "54321"
         del sample_person_data["address"]["postalCode"]
-        
+
         response = client.post("/v2/people", json=sample_person_data)
-        
+
         # Should return validation error for missing postalCode
         assert response.status_code == 422
         error_detail = response.json()
