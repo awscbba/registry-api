@@ -7,10 +7,12 @@ from enum import Enum
 class ProjectStatus(str, Enum):
     """Project status enumeration"""
 
+    PENDING = "pending"
     ACTIVE = "active"
-    INACTIVE = "inactive"
+    ONGOING = "ongoing"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
+    INACTIVE = "inactive"  # Deprecated, use cancelled instead
 
 
 class ProjectBase(BaseModel):
@@ -26,7 +28,7 @@ class ProjectBase(BaseModel):
         ..., ge=1, le=1000, description="Maximum number of participants"
     )
     status: ProjectStatus = Field(
-        default=ProjectStatus.ACTIVE, description="Project status"
+        default=ProjectStatus.PENDING, description="Project status"
     )
     category: Optional[str] = Field(
         None, max_length=100, description="Project category"
