@@ -724,10 +724,13 @@ class DynamoDBService:
             elif field == "address":
                 update_expression += ", address = :address"
                 # Ensure address uses the correct field names for storage
-                address_dict = value.model_dump()
-                # Normalize address field names for storage
-                address_dict = self._normalize_address_for_storage(address_dict)
-                expression_attribute_values[":address"] = address_dict
+                if value is not None:
+                    address_dict = value.model_dump()
+                    # Normalize address field names for storage
+                    address_dict = self._normalize_address_for_storage(address_dict)
+                    expression_attribute_values[":address"] = address_dict
+                else:
+                    expression_attribute_values[":address"] = None
             elif field == "is_admin":
                 update_expression += ", isAdmin = :is_admin"
                 expression_attribute_values[":is_admin"] = value
