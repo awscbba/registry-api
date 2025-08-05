@@ -208,11 +208,13 @@ class DefensiveDynamoDBService:
             # Handle address field safely
             address_data = item.get("address", {})
             if address_data and isinstance(address_data, dict):
-                # Normalize postal code field
+                # Normalize postal code field - handle ALL variants
                 if "postal_code" in address_data:
                     address_data["postalCode"] = address_data.pop("postal_code")
                 elif "zip_code" in address_data:
                     address_data["postalCode"] = address_data.pop("zip_code")
+                elif "zipCode" in address_data:
+                    address_data["postalCode"] = address_data.pop("zipCode")
 
             # Build person data with safe field access
             person_data = {
