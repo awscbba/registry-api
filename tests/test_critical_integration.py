@@ -24,7 +24,9 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../src"))
 
 from src.handlers.versioned_api_handler import app
-from src.services.defensive_dynamodb_service import DefensiveDynamoDBService as DynamoDBService
+from src.services.defensive_dynamodb_service import (
+    DefensiveDynamoDBService as DynamoDBService,
+)
 
 
 class TestCriticalIntegration:
@@ -431,9 +433,15 @@ class TestCriticalIntegration:
             return_value={"id": "test-subscription", "status": "cancelled"}
         )
         mock_db_service.delete_subscription = AsyncMock(return_value=True)
-        mock_db_service.get_subscriptions_by_person = AsyncMock(return_value=[mock_subscription])
-        mock_db_service.create_project = AsyncMock(return_value={"id": "test-project", "name": "Test Project"})
-        mock_db_service.update_project = AsyncMock(return_value={"id": "test-project", "name": "Updated Project"})
+        mock_db_service.get_subscriptions_by_person = AsyncMock(
+            return_value=[mock_subscription]
+        )
+        mock_db_service.create_project = AsyncMock(
+            return_value={"id": "test-project", "name": "Test Project"}
+        )
+        mock_db_service.update_project = AsyncMock(
+            return_value={"id": "test-project", "name": "Updated Project"}
+        )
         mock_db_service.delete_project = AsyncMock(return_value=True)
 
         # Test 1: GET subscribers for project (should return existing subscription)

@@ -785,7 +785,9 @@ class DefensiveDynamoDBService:
             raise
 
     @database_operation("get_subscription_by_id")
-    async def get_subscription_by_id(self, subscription_id: str) -> Optional[Dict[str, Any]]:
+    async def get_subscription_by_id(
+        self, subscription_id: str
+    ) -> Optional[Dict[str, Any]]:
         """Get a subscription by ID with defensive programming"""
         if not self.subscriptions_table:
             self.logger.warning("Subscriptions table not available")
@@ -827,7 +829,9 @@ class DefensiveDynamoDBService:
                 return []
 
     @database_operation("get_subscriptions_by_project")
-    async def get_subscriptions_by_project(self, project_id: str) -> List[Dict[str, Any]]:
+    async def get_subscriptions_by_project(
+        self, project_id: str
+    ) -> List[Dict[str, Any]]:
         """Get all subscriptions for a project with defensive programming"""
         if not self.subscriptions_table:
             self.logger.warning("Subscriptions table not available")

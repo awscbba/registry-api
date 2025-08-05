@@ -1014,7 +1014,9 @@ async def update_project_v2(
         project_update_obj = ProjectUpdate(**project_data)
 
         # Update project
-        updated_project = await db_service.update_project(project_id, project_update_obj)
+        updated_project = await db_service.update_project(
+            project_id, project_update_obj
+        )
         if not updated_project:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
