@@ -47,6 +47,24 @@ This directory contains maintenance and analysis scripts for the registry-api.
 - Tests patched logic
 - Provides next steps for deployment
 
+### `debug-person-update-issue.py`
+**Purpose**: Debug specific person update issues causing 500 errors
+**Usage**: `python scripts/debug-person-update-issue.py`
+**What it does**:
+- Tests person GET and UPDATE operations
+- Tests various data scenarios (empty fields, nulls, etc.)
+- Identifies specific causes of 500 errors
+- Tests with different authentication headers
+
+### `test-project-subscription-api.py`
+**Purpose**: Test project and subscription API endpoints
+**Usage**: `python scripts/test-project-subscription-api.py`
+**What it does**:
+- Tests project CRUD operations
+- Tests subscription CRUD operations
+- Identifies enum handling issues
+- Validates API response formats
+
 ## Development Scripts
 
 ### `pre-commit-check.sh`

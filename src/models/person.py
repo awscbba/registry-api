@@ -116,8 +116,8 @@ class PersonResponse(BaseModel):
             phone=person.phone,
             dateOfBirth=person.date_of_birth,
             address=person.address,
-            createdAt=person.created_at.isoformat(),
-            updatedAt=person.updated_at.isoformat(),
+            createdAt=person.created_at.isoformat() if person.created_at and hasattr(person.created_at, 'isoformat') else str(person.created_at) if person.created_at else "",
+            updatedAt=person.updated_at.isoformat() if person.updated_at and hasattr(person.updated_at, 'isoformat') else str(person.updated_at) if person.updated_at else "",
             isActive=person.is_active,
             emailVerified=person.email_verified,
         )
@@ -155,17 +155,17 @@ class PersonAdminResponse(BaseModel):
             phone=person.phone,
             dateOfBirth=person.date_of_birth,
             address=person.address,
-            createdAt=person.created_at.isoformat(),
-            updatedAt=person.updated_at.isoformat(),
+            createdAt=person.created_at.isoformat() if person.created_at and hasattr(person.created_at, 'isoformat') else str(person.created_at) if person.created_at else "",
+            updatedAt=person.updated_at.isoformat() if person.updated_at and hasattr(person.updated_at, 'isoformat') else str(person.updated_at) if person.updated_at else "",
             requirePasswordChange=person.require_password_change,
             failedLoginAttempts=person.failed_login_attempts,
             accountLockedUntil=(
                 person.account_locked_until.isoformat()
-                if person.account_locked_until
-                else None
+                if person.account_locked_until and hasattr(person.account_locked_until, 'isoformat')
+                else str(person.account_locked_until) if person.account_locked_until else None
             ),
             lastLoginAt=(
-                person.last_login_at.isoformat() if person.last_login_at else None
+                person.last_login_at.isoformat() if person.last_login_at and hasattr(person.last_login_at, 'isoformat') else str(person.last_login_at) if person.last_login_at else None
             ),
             isActive=person.is_active,
             emailVerified=person.email_verified,
