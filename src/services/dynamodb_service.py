@@ -410,9 +410,9 @@ class DynamoDBService:
             "email": person.email,
             "phone": person.phone,
             "dateOfBirth": person.date_of_birth,
-            "address": self._normalize_address_for_storage(person.address.model_dump() if person.address and hasattr(person.address, 'model_dump') else {}),
-            "createdAt": person.created_at.isoformat() if person.created_at and hasattr(person.created_at, 'isoformat') else str(person.created_at) if person.created_at else "",
-            "updatedAt": person.updated_at.isoformat() if person.updated_at and hasattr(person.updated_at, 'isoformat') else str(person.updated_at) if person.updated_at else "",
+            "address": self._normalize_address_for_storage(person.address.model_dump()),
+            "createdAt": person.created_at.isoformat(),
+            "updatedAt": person.updated_at.isoformat(),
         }
 
         # Add password-related fields with proper handling
