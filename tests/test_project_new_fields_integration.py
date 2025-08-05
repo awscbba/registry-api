@@ -124,7 +124,9 @@ class TestProjectNewFieldsIntegration:
         )
 
         # Mock the database service methods
-        mock_db_service.get_project_by_id = AsyncMock(return_value=mock_existing_project)
+        mock_db_service.get_project_by_id = AsyncMock(
+            return_value=mock_existing_project
+        )
         mock_db_service.update_project = AsyncMock(return_value=mock_updated_project)
 
         # Test data for update with new fields
