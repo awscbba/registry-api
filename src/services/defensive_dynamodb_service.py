@@ -17,7 +17,7 @@ import boto3
 from boto3.dynamodb.conditions import Key, Attr
 from botocore.exceptions import ClientError
 from typing import List, Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 import uuid
 import logging
@@ -81,6 +81,74 @@ class DefensiveDynamoDBService:
             self.subscriptions_table = None
             self.audit_table = None
             self.lockout_table = None
+
+    def _person_to_item(self, person: Person) -> Dict[str, Any]:
+        """Convert Person model to DynamoDB item (alias for compatibility)"""
+        return self._safe_person_to_item(person)
+
+    def _item_to_person(self, item: Dict[str, Any]) -> Person:
+        """Convert DynamoDB item to Person model (alias for compatibility)"""
+        return self._safe_item_to_person(item)
+
+    def _handle_database_error(
+        self, operation: str, error: Exception, context: Optional[ErrorContext] = None
+    ) -> Exception:
+        """Handle database errors with defensive programming"""
+        error_message = f"Database operation '{operation}' failed: {str(error)}"
+        self.logger.error(error_message)
+
+        if isinstance(error, ClientError):
+            error_code = error.response.get("Error", {}).get("Code", "Unknown")
+            if error_code == "ResourceNotFoundException":
+                return Exception(f"Resource not found during {operation}")
+            elif error_code == "ConditionalCheckFailedException":
+                return Exception(f"Conditional check failed during {operation}")
+            elif error_code == "ValidationException":
+                return Exception(f"Validation error during {operation}")
+
+        return Exception(error_message)
+
+    async def _log_database_operation(
+        self,
+        operation: str,
+        table_name: str,
+        record_id: str,
+        context: Optional[ErrorContext] = None,
+        before_state: Optional[Dict[str, Any]] = None,
+        after_state: Optional[Dict[str, Any]] = None,
+        success: bool = True,
+        error_message: Optional[str] = None,
+        additional_data: Optional[Dict[str, Any]] = None,
+    ):
+        """Log database operations for audit trail"""
+        try:
+            log_entry = {
+                "operation": operation,
+                "table_name": table_name,
+                "record_id": record_id,
+                "success": success,
+                "timestamp": safe_isoformat(datetime.utcnow()),
+            }
+
+            if context:
+                log_entry.update(
+                    {
+                        "user_id": context.user_id,
+                        "request_id": context.request_id,
+                        "ip_address": context.ip_address,
+                    }
+                )
+
+            if error_message:
+                log_entry["error_message"] = error_message
+
+            if additional_data:
+                log_entry["additional_data"] = additional_data
+
+            self.logger.info(f"Database operation logged: {operation}")
+
+        except Exception as e:
+            self.logger.error(f"Failed to log database operation: {e}")
 
     def _safe_person_to_item(self, person: Person) -> Dict[str, Any]:
         """Safely convert Person model to DynamoDB item"""
@@ -347,9 +415,146 @@ class DefensiveDynamoDBService:
             self.logger.error(f"Error getting person {person_id}: {e}")
             raise
 
+    @database_operation("list_people")
+    async def list_people(
+        self, limit: int = 100, context: Optional[ErrorContext] = None
+    ) -> List[Person]:
+        """List all people with defensive programming"""
+        try:
+            response = self.table.scan(Limit=limit)
+            people = []
+            for item in response.get("Items", []):
+                people.append(self._safe_item_to_person(item))
+
+            return people
+
+        except Exception as e:
+            self.logger.error(f"Error listing people: {e}")
+            raise
+
+    @database_operation("delete_person")
+    async def delete_person(
+        self, person_id: str, context: Optional[ErrorContext] = None
+    ) -> bool:
+        """Delete a person with defensive programming"""
+        try:
+            # Check if person exists first
+            existing_person = await self.get_person(person_id, context)
+            if not existing_person:
+                return False
+
+            self.table.delete_item(Key={"id": person_id})
+            return True
+
+        except Exception as e:
+            self.logger.error(f"Error deleting person {person_id}: {e}")
+            raise
+
+    @database_operation("search_people")
+    async def search_people(
+        self,
+        search_params: Dict[str, Any],
+        context: Optional[ErrorContext] = None,
+    ) -> List[Person]:
+        """Search people with defensive programming"""
+        try:
+            # For now, implement basic scan with filters
+            # In production, this should use proper GSI queries
+            response = self.table.scan()
+            people = []
+
+            for item in response.get("Items", []):
+                person = self._safe_item_to_person(item)
+                # Simple filtering logic - can be enhanced
+                matches = True
+                for key, value in search_params.items():
+                    if hasattr(person, key):
+                        person_value = safe_field_access(person, key, "")
+                        if value.lower() not in str(person_value).lower():
+                            matches = False
+                            break
+
+                if matches:
+                    people.append(person)
+
+            return people
+
+        except Exception as e:
+            self.logger.error(f"Error searching people: {e}")
+            raise
+
+    @database_operation("check_email_uniqueness")
+    async def check_email_uniqueness(
+        self,
+        email: str,
+        exclude_person_id: Optional[str] = None,
+        context: Optional[ErrorContext] = None,
+    ) -> bool:
+        """Check if email is unique with defensive programming"""
+        try:
+            existing_person = await self.get_person_by_email(email, context)
+
+            if not existing_person:
+                return True
+
+            if exclude_person_id and existing_person.id == exclude_person_id:
+                return True
+
+            return False
+
+        except Exception as e:
+            self.logger.error(f"Error checking email uniqueness for {email}: {e}")
+            raise
+
+    @database_operation("update_person_password_fields")
+    async def update_person_password_fields(
+        self,
+        person_id: str,
+        password_hash: Optional[str] = None,
+        failed_attempts: Optional[int] = None,
+        locked_until: Optional[datetime] = None,
+        context: Optional[ErrorContext] = None,
+    ):
+        """Update person password-related fields with defensive programming"""
+        try:
+            update_expression_parts = []
+            expression_values = {}
+
+            if password_hash is not None:
+                update_expression_parts.append("passwordHash = :password_hash")
+                expression_values[":password_hash"] = password_hash
+
+            if failed_attempts is not None:
+                update_expression_parts.append("failedLoginAttempts = :failed_attempts")
+                expression_values[":failed_attempts"] = failed_attempts
+
+            if locked_until is not None:
+                update_expression_parts.append("accountLockedUntil = :locked_until")
+                expression_values[":locked_until"] = safe_isoformat(locked_until)
+
+            if not update_expression_parts:
+                return None
+
+            update_expression = "SET " + ", ".join(update_expression_parts)
+            update_expression += ", updatedAt = :updated_at"
+            expression_values[":updated_at"] = safe_isoformat(datetime.utcnow())
+
+            response = self.table.update_item(
+                Key={"id": person_id},
+                UpdateExpression=update_expression,
+                ExpressionAttributeValues=expression_values,
+                ReturnValues="ALL_NEW",
+            )
+
+            return response.get("Attributes")
+
+        except Exception as e:
+            self.logger.error(f"Error updating password fields for {person_id}: {e}")
+            raise
+
     # Project operations with defensive programming
     @database_operation("create_project")
-    def create_project(
+    async def create_project(
         self, project_data: ProjectCreate, created_by: str = "system"
     ) -> Dict[str, Any]:
         """Create a project with defensive programming"""
@@ -399,7 +604,7 @@ class DefensiveDynamoDBService:
             raise
 
     @database_operation("update_project")
-    def update_project(
+    async def update_project(
         self, project_id: str, project_data: ProjectUpdate
     ) -> Optional[Dict[str, Any]]:
         """Update a project with defensive programming"""
@@ -439,9 +644,54 @@ class DefensiveDynamoDBService:
             self.logger.error(f"Error updating project {project_id}: {e}")
             raise
 
+    @database_operation("get_all_projects")
+    async def get_all_projects(self) -> List[Dict[str, Any]]:
+        """Get all projects with defensive programming"""
+        if not self.projects_table:
+            self.logger.warning("Projects table not available")
+            return []
+
+        try:
+            response = self.projects_table.scan()
+            return response.get("Items", [])
+
+        except Exception as e:
+            self.logger.error(f"Error getting all projects: {e}")
+            raise
+
+    @database_operation("get_project_by_id")
+    async def get_project_by_id(self, project_id: str) -> Optional[Dict[str, Any]]:
+        """Get a project by ID with defensive programming"""
+        if not self.projects_table:
+            self.logger.warning("Projects table not available")
+            return None
+
+        try:
+            response = self.projects_table.get_item(Key={"id": project_id})
+            return response.get("Item")
+
+        except Exception as e:
+            self.logger.error(f"Error getting project {project_id}: {e}")
+            raise
+
+    @database_operation("delete_project")
+    async def delete_project(self, project_id: str) -> bool:
+        """Delete a project with defensive programming"""
+        if not self.projects_table:
+            self.logger.warning("Projects table not available")
+            return False
+
+        try:
+            self.projects_table.delete_item(Key={"id": project_id})
+            return True
+
+        except Exception as e:
+            self.logger.error(f"Error deleting project {project_id}: {e}")
+            raise
+
     # Subscription operations with defensive programming
     @database_operation("create_subscription")
-    def create_subscription(
+    async def create_subscription(
         self, subscription_data: SubscriptionCreate
     ) -> Dict[str, Any]:
         """Create a subscription with defensive programming"""
@@ -481,7 +731,7 @@ class DefensiveDynamoDBService:
             raise
 
     @database_operation("update_subscription")
-    def update_subscription(
+    async def update_subscription(
         self, subscription_id: str, subscription_data: SubscriptionUpdate
     ) -> Optional[Dict[str, Any]]:
         """Update a subscription with defensive programming"""
@@ -517,6 +767,105 @@ class DefensiveDynamoDBService:
 
         except Exception as e:
             self.logger.error(f"Error updating subscription {subscription_id}: {e}")
+            raise
+
+    @database_operation("get_all_subscriptions")
+    async def get_all_subscriptions(self) -> List[Dict[str, Any]]:
+        """Get all subscriptions with defensive programming"""
+        if not self.subscriptions_table:
+            self.logger.warning("Subscriptions table not available")
+            return []
+
+        try:
+            response = self.subscriptions_table.scan()
+            return response.get("Items", [])
+
+        except Exception as e:
+            self.logger.error(f"Error getting all subscriptions: {e}")
+            raise
+
+    @database_operation("get_subscription_by_id")
+    async def get_subscription_by_id(self, subscription_id: str) -> Optional[Dict[str, Any]]:
+        """Get a subscription by ID with defensive programming"""
+        if not self.subscriptions_table:
+            self.logger.warning("Subscriptions table not available")
+            return None
+
+        try:
+            response = self.subscriptions_table.get_item(Key={"id": subscription_id})
+            return response.get("Item")
+
+        except Exception as e:
+            self.logger.error(f"Error getting subscription {subscription_id}: {e}")
+            raise
+
+    @database_operation("get_subscriptions_by_person")
+    async def get_subscriptions_by_person(self, person_id: str) -> List[Dict[str, Any]]:
+        """Get all subscriptions for a person with defensive programming"""
+        if not self.subscriptions_table:
+            self.logger.warning("Subscriptions table not available")
+            return []
+
+        try:
+            response = self.subscriptions_table.query(
+                IndexName="PersonIndex",
+                KeyConditionExpression=Key("personId").eq(person_id),
+            )
+            return response.get("Items", [])
+
+        except Exception as e:
+            self.logger.error(
+                f"Error getting subscriptions for person {person_id}: {e}"
+            )
+            # Fallback to scan if GSI doesn't exist
+            try:
+                response = self.subscriptions_table.scan(
+                    FilterExpression=Attr("personId").eq(person_id)
+                )
+                return response.get("Items", [])
+            except Exception:
+                return []
+
+    @database_operation("get_subscriptions_by_project")
+    async def get_subscriptions_by_project(self, project_id: str) -> List[Dict[str, Any]]:
+        """Get all subscriptions for a project with defensive programming"""
+        if not self.subscriptions_table:
+            self.logger.warning("Subscriptions table not available")
+            return []
+
+        try:
+            response = self.subscriptions_table.query(
+                IndexName="ProjectIndex",
+                KeyConditionExpression=Key("projectId").eq(project_id),
+            )
+            return response.get("Items", [])
+
+        except Exception as e:
+            self.logger.error(
+                f"Error getting subscriptions for project {project_id}: {e}"
+            )
+            # Fallback to scan if GSI doesn't exist
+            try:
+                response = self.subscriptions_table.scan(
+                    FilterExpression=Attr("projectId").eq(project_id)
+                )
+                return response.get("Items", [])
+            except Exception:
+                return []
+
+    @database_operation("delete_subscription")
+    async def delete_subscription(self, subscription_id: str) -> bool:
+        """Delete a subscription with defensive programming"""
+        if not self.subscriptions_table:
+            self.logger.warning("Subscriptions table not available")
+            return False
+
+        try:
+            self.subscriptions_table.delete_item(Key={"id": subscription_id})
+            return True
+
+        except Exception as e:
+            self.logger.error(f"Error deleting subscription {subscription_id}: {e}")
             raise
 
     # ==================== AUTHENTICATION METHODS ====================

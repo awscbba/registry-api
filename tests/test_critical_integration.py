@@ -24,7 +24,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../src"))
 
 from src.handlers.versioned_api_handler import app
-from src.services.dynamodb_service import DynamoDBService
+from src.services.defensive_dynamodb_service import DefensiveDynamoDBService as DynamoDBService
 
 
 class TestCriticalIntegration:
@@ -400,7 +400,7 @@ class TestCriticalIntegration:
         that was previously dead code.
         """
         # Mock project exists
-        mock_db_service.get_project_by_id = Mock(
+        mock_db_service.get_project_by_id = AsyncMock(
             return_value={"id": "test-project", "name": "Test Project"}
         )
 
@@ -426,11 +426,15 @@ class TestCriticalIntegration:
             return_value=[mock_subscription]
         )
         mock_db_service.list_people = AsyncMock(return_value=[mock_person])
-        mock_db_service.create_subscription = Mock(return_value=mock_subscription)
-        mock_db_service.update_subscription = Mock(
+        mock_db_service.create_subscription = AsyncMock(return_value=mock_subscription)
+        mock_db_service.update_subscription = AsyncMock(
             return_value={"id": "test-subscription", "status": "cancelled"}
         )
-        mock_db_service.delete_subscription = Mock(return_value=True)
+        mock_db_service.delete_subscription = AsyncMock(return_value=True)
+        mock_db_service.get_subscriptions_by_person = AsyncMock(return_value=[mock_subscription])
+        mock_db_service.create_project = AsyncMock(return_value={"id": "test-project", "name": "Test Project"})
+        mock_db_service.update_project = AsyncMock(return_value={"id": "test-project", "name": "Updated Project"})
+        mock_db_service.delete_project = AsyncMock(return_value=True)
 
         # Test 1: GET subscribers for project (should return existing subscription)
         response = client.get("/v2/projects/test-project/subscribers")
