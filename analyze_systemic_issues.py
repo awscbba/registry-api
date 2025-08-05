@@ -33,7 +33,7 @@ def analyze_systemic_issues():
                     for i, line in enumerate(lines, 1):
                         if re.search(isoformat_pattern, line):
                             # Check if there's a safety check
-                            context = "\n".join(lines[max(0, i - 3):i + 2])
+                            context = "\n".join(lines[max(0, i - 3) : i + 2])
                             if (
                                 "hasattr" not in context
                                 and "if.*isoformat" not in context
@@ -68,7 +68,7 @@ def analyze_systemic_issues():
 
                     for i, line in enumerate(lines, 1):
                         if re.search(value_pattern, line):
-                            context = "\n".join(lines[max(0, i - 3):i + 2])
+                            context = "\n".join(lines[max(0, i - 3) : i + 2])
                             if "hasattr" not in context and "if.*value" not in context:
                                 issues["unsafe_value"].append(
                                     {
@@ -98,7 +98,7 @@ def analyze_systemic_issues():
 
                     for i, line in enumerate(lines, 1):
                         if re.search(fromisoformat_pattern, line):
-                            context = "\n".join(lines[max(0, i - 3):i + 2])
+                            context = "\n".join(lines[max(0, i - 3) : i + 2])
                             if "if " not in context or "and " not in context:
                                 issues["unsafe_fromisoformat"].append(
                                     {
