@@ -1402,22 +1402,22 @@ async def get_person_v2(person_id: str):
             "lastName": person.last_name,
             "phone": person.phone or "",
             "dateOfBirth": (
-                person.date_of_birth.isoformat() if person.date_of_birth else ""
+                person.date_of_birth.isoformat() if person.date_of_birth and hasattr(person.date_of_birth, 'isoformat') else str(person.date_of_birth) if person.date_of_birth else ""
             ),
             "address": {
-                "country": person.address.country if person.address else "",
-                "state": person.address.state if person.address else "",
-                "city": person.address.city if person.address else "",
-                "street": person.address.street if person.address else "",
-                "postalCode": person.address.postal_code if person.address else "",
+                "country": getattr(person.address, 'country', '') if person.address else "",
+                "state": getattr(person.address, 'state', '') if person.address else "",
+                "city": getattr(person.address, 'city', '') if person.address else "",
+                "street": getattr(person.address, 'street', '') if person.address else "",
+                "postalCode": getattr(person.address, 'postal_code', '') if person.address else "",
             },
             "isAdmin": person.is_admin,
-            "createdAt": person.created_at.isoformat() if person.created_at else "",
-            "updatedAt": person.updated_at.isoformat() if person.updated_at else "",
+            "createdAt": person.created_at.isoformat() if person.created_at and hasattr(person.created_at, 'isoformat') else str(person.created_at) if person.created_at else "",
+            "updatedAt": person.updated_at.isoformat() if person.updated_at and hasattr(person.updated_at, 'isoformat') else str(person.updated_at) if person.updated_at else "",
             "isActive": person.is_active,
             "requirePasswordChange": person.require_password_change,
             "lastLoginAt": (
-                person.last_login_at.isoformat() if person.last_login_at else None
+                person.last_login_at.isoformat() if person.last_login_at and hasattr(person.last_login_at, 'isoformat') else str(person.last_login_at) if person.last_login_at else None
             ),
             "failedLoginAttempts": person.failed_login_attempts or 0,
         }

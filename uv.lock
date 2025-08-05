@@ -728,6 +728,7 @@ dependencies = [
     { name = "pytest-mock" },
     { name = "python-json-logger" },
     { name = "python-multipart" },
+    { name = "requests" },
 ]
 
 [package.dev-dependencies]
@@ -755,6 +756,7 @@ requires-dist = [
     { name = "pytest-mock", specifier = "==3.14.0" },
     { name = "python-json-logger", specifier = "==2.0.7" },
     { name = "python-multipart", specifier = ">=0.0.7" },
+    { name = "requests", specifier = ">=2.32.4" },
 ]
 
 [package.metadata.requires-dev]
