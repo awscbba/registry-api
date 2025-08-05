@@ -375,13 +375,18 @@ class DefensiveDynamoDBService:
             self.logger.info(f"Updating person {person_id} with data: {sanitized_data}")
 
             # Perform update
-            response = self.table.update_item(
-                Key={"id": person_id},
-                UpdateExpression=update_expression,
-                ExpressionAttributeValues=expression_values,
-                ExpressionAttributeNames=expression_names if expression_names else None,
-                ReturnValues="ALL_NEW",
-            )
+            update_params = {
+                "Key": {"id": person_id},
+                "UpdateExpression": update_expression,
+                "ExpressionAttributeValues": expression_values,
+                "ReturnValues": "ALL_NEW",
+            }
+            
+            # Only add ExpressionAttributeNames if it's not empty
+            if expression_names:
+                update_params["ExpressionAttributeNames"] = expression_names
+                
+            response = self.table.update_item(**update_params)
 
             updated_person = self._safe_item_to_person(response["Attributes"])
             return updated_person
