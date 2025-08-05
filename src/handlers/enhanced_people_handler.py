@@ -181,7 +181,12 @@ async def get_current_user_info(
             "lastLoginAt": (
                 current_user.last_login_at.isoformat()
                 if current_user.last_login_at
-                else None
+                and hasattr(current_user.last_login_at, "isoformat")
+                else (
+                    str(current_user.last_login_at)
+                    if current_user.last_login_at
+                    else None
+                )
             ),
         }
 
