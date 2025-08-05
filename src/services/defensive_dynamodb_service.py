@@ -642,11 +642,11 @@ class DefensiveDynamoDBService:
                 "ExpressionAttributeValues": expression_values,
                 "ReturnValues": "ALL_NEW",
             }
-            
+
             # Only add ExpressionAttributeNames if it's not empty
             if expression_names:
                 update_params["ExpressionAttributeNames"] = expression_names
-                
+
             response = self.projects_table.update_item(**update_params)
 
             return response.get("Attributes")
@@ -773,11 +773,11 @@ class DefensiveDynamoDBService:
                 "ExpressionAttributeValues": expression_values,
                 "ReturnValues": "ALL_NEW",
             }
-            
+
             # Only add ExpressionAttributeNames if it's not empty
             if expression_names:
                 update_params["ExpressionAttributeNames"] = expression_names
-                
+
             response = self.subscriptions_table.update_item(**update_params)
 
             return response.get("Attributes")
