@@ -635,13 +635,19 @@ class DefensiveDynamoDBService:
                     expression_names["#status"] = "status"
                     update_expression += ", #status = :status"
 
-            response = self.projects_table.update_item(
-                Key={"id": project_id},
-                UpdateExpression=update_expression,
-                ExpressionAttributeValues=expression_values,
-                ExpressionAttributeNames=expression_names if expression_names else None,
-                ReturnValues="ALL_NEW",
-            )
+            # Build update parameters
+            update_params = {
+                "Key": {"id": project_id},
+                "UpdateExpression": update_expression,
+                "ExpressionAttributeValues": expression_values,
+                "ReturnValues": "ALL_NEW",
+            }
+            
+            # Only add ExpressionAttributeNames if it's not empty
+            if expression_names:
+                update_params["ExpressionAttributeNames"] = expression_names
+                
+            response = self.projects_table.update_item(**update_params)
 
             return response.get("Attributes")
 
@@ -760,13 +766,19 @@ class DefensiveDynamoDBService:
                     expression_names["#status"] = "status"
                     update_expression += ", #status = :status"
 
-            response = self.subscriptions_table.update_item(
-                Key={"id": subscription_id},
-                UpdateExpression=update_expression,
-                ExpressionAttributeValues=expression_values,
-                ExpressionAttributeNames=expression_names if expression_names else None,
-                ReturnValues="ALL_NEW",
-            )
+            # Build update parameters
+            update_params = {
+                "Key": {"id": subscription_id},
+                "UpdateExpression": update_expression,
+                "ExpressionAttributeValues": expression_values,
+                "ReturnValues": "ALL_NEW",
+            }
+            
+            # Only add ExpressionAttributeNames if it's not empty
+            if expression_names:
+                update_params["ExpressionAttributeNames"] = expression_names
+                
+            response = self.subscriptions_table.update_item(**update_params)
 
             return response.get("Attributes")
 
