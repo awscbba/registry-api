@@ -58,6 +58,12 @@ class DefensiveDynamoDBService:
         self.subscriptions_table_name = os.environ.get(
             "SUBSCRIPTIONS_TABLE_NAME", "SubscriptionsTable"
         )
+        
+        # Authentication tables
+        self.audit_table_name = os.environ.get("AUDIT_TABLE_NAME", "AuditLogsTable")
+        self.lockout_table_name = os.environ.get(
+            "LOCKOUT_TABLE_NAME", "AccountLockoutTable"
+        )
 
         self.logger = logging.getLogger(__name__)
 
@@ -66,10 +72,14 @@ class DefensiveDynamoDBService:
             self.subscriptions_table = self.dynamodb.Table(
                 self.subscriptions_table_name
             )
+            self.audit_table = self.dynamodb.Table(self.audit_table_name)
+            self.lockout_table = self.dynamodb.Table(self.lockout_table_name)
         except Exception as e:
             self.logger.warning(f"Error initializing additional tables: {e}")
             self.projects_table = None
             self.subscriptions_table = None
+            self.audit_table = None
+            self.lockout_table = None
 
     def _safe_person_to_item(self, person: Person) -> Dict[str, Any]:
         """Safely convert Person model to DynamoDB item"""
@@ -506,4 +516,197 @@ class DefensiveDynamoDBService:
 
         except Exception as e:
             self.logger.error(f"Error updating subscription {subscription_id}: {e}")
+            raise
+    # ==================== AUTHENTICATION METHODS ====================
+
+    @database_operation("get_person_by_email")
+    async def get_person_by_email(
+        self, email: str, context: Optional[ErrorContext] = None
+    ) -> Optional[Person]:
+        """Get a person by email address with defensive programming"""
+        try:
+            # Use EmailIndex GSI for efficient email lookups
+            response = self.table.query(
+                IndexName="EmailIndex",
+                KeyConditionExpression=Key("email").eq(email),
+                Limit=1,
+            )
+
+            items = response.get("Items", [])
+            if items:
+                person = self._item_to_person(items[0])
+                return person
+
+            return None
+
+        except ClientError as e:
+            self.logger.error(f"Error getting person by email {email}: {e}")
+            raise
+
+    @database_operation("update_last_login")
+    async def update_last_login(
+        self,
+        person_id: str,
+        login_time: datetime,
+        context: Optional[ErrorContext] = None,
+    ):
+        """Update the last login timestamp for a person"""
+        try:
+            response = self.table.update_item(
+                Key={"id": person_id},
+                UpdateExpression="SET lastLoginAt = :login_time, updatedAt = :updated_at",
+                ExpressionAttributeValues={
+                    ":login_time": safe_isoformat(login_time),
+                    ":updated_at": safe_isoformat(datetime.utcnow()),
+                },
+                ReturnValues="ALL_NEW",
+            )
+
+            return "Attributes" in response
+
+        except ClientError as e:
+            self.logger.error(f"Error updating last login for {person_id}: {e}")
+            raise
+
+    @database_operation("log_security_event")
+    async def log_security_event(
+        self, security_event, context: Optional[ErrorContext] = None
+    ):
+        """Log a security event to the audit table"""
+        if not self.audit_table:
+            self.logger.warning("Audit table not available, security event not logged")
+            return
+
+        try:
+            # Handle both old SecurityEvent format and new SecurityEvent format
+            if hasattr(security_event, "to_dict"):
+                item = security_event.to_dict()
+            else:
+                # Old SecurityEvent format - maintain backward compatibility
+                event_id = str(uuid.uuid4())
+                item = {
+                    "id": event_id,
+                    "personId": safe_field_access(security_event, "person_id"),
+                    "action": safe_field_access(security_event, "action", "unknown"),
+                    "timestamp": safe_isoformat(
+                        safe_field_access(security_event, "timestamp", datetime.utcnow())
+                    ),
+                    "success": safe_field_access(security_event, "success", False),
+                    "eventType": safe_enum_value(
+                        safe_field_access(security_event, "event_type", "UNKNOWN")
+                    ),
+                }
+
+                # Add optional fields safely
+                ip_address = safe_field_access(security_event, "ip_address")
+                if ip_address:
+                    item["ipAddress"] = ip_address
+
+                user_agent = safe_field_access(security_event, "user_agent")
+                if user_agent:
+                    item["userAgent"] = user_agent
+
+                details = safe_field_access(security_event, "details")
+                if details:
+                    item["details"] = details
+
+                severity = safe_field_access(security_event, "severity")
+                if severity:
+                    item["severity"] = safe_enum_value(severity)
+
+            # Add context information if available
+            if context:
+                if "ipAddress" not in item and context.ip_address:
+                    item["ipAddress"] = context.ip_address
+                if "userAgent" not in item and context.user_agent:
+                    item["userAgent"] = context.user_agent
+                if "userId" not in item and context.user_id:
+                    item["userId"] = context.user_id
+                if "requestId" not in item and context.request_id:
+                    item["requestId"] = context.request_id
+
+            # Ensure required fields exist
+            if "timestamp" not in item:
+                item["timestamp"] = safe_isoformat(datetime.utcnow())
+            if "id" not in item:
+                item["id"] = str(uuid.uuid4())
+
+            self.audit_table.put_item(Item=item)
+            return item.get("id")
+
+        except Exception as e:
+            self.logger.error(f"Failed to log security event: {e}")
+            return None
+
+    @database_operation("get_account_lockout")
+    async def get_account_lockout(
+        self, person_id: str, context: Optional[ErrorContext] = None
+    ) -> Optional["AccountLockout"]:
+        """Get account lockout information for a person"""
+        if not self.lockout_table:
+            self.logger.warning("Lockout table not available")
+            return None
+
+        try:
+            from ..models.auth import AccountLockout
+
+            response = self.lockout_table.get_item(Key={"personId": person_id})
+
+            if "Item" in response:
+                item = response["Item"]
+                lockout = AccountLockout(
+                    person_id=item["personId"],
+                    failed_attempts=item.get("failedAttempts", 0),
+                    locked_until=safe_datetime_parse(item.get("lockedUntil")),
+                    last_attempt_at=safe_datetime_parse(item["lastAttemptAt"]),
+                    ip_addresses=item.get("ipAddresses", []),
+                )
+                return lockout
+
+            return None
+
+        except Exception as e:
+            self.logger.error(f"Error getting account lockout for {person_id}: {e}")
+            raise
+
+    @database_operation("save_account_lockout")
+    async def save_account_lockout(
+        self, lockout_info: "AccountLockout", context: Optional[ErrorContext] = None
+    ):
+        """Save account lockout information"""
+        if not self.lockout_table:
+            self.logger.warning("Lockout table not available")
+            return
+
+        try:
+            item = {
+                "personId": lockout_info.person_id,
+                "failedAttempts": lockout_info.failed_attempts,
+                "lastAttemptAt": safe_isoformat(lockout_info.last_attempt_at),
+                "ipAddresses": lockout_info.ip_addresses,
+            }
+
+            if lockout_info.locked_until:
+                item["lockedUntil"] = safe_isoformat(lockout_info.locked_until)
+
+            self.lockout_table.put_item(Item=item)
+
+        except Exception as e:
+            self.logger.error(f"Error saving account lockout for {lockout_info.person_id}: {e}")
+            raise
+
+    @database_operation("clear_account_lockout")
+    async def clear_account_lockout(
+        self, person_id: str, context: Optional[ErrorContext] = None
+    ):
+        """Clear account lockout information"""
+        if not self.lockout_table:
+            self.logger.warning("Lockout table not available")
+            return
+
+        try:
+            self.lockout_table.delete_item(Key={"personId": person_id})
+
+        except Exception as e:
+            self.logger.error(f"Error clearing account lockout for {person_id}: {e}")
             raise

@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 from src.handlers.people_handler import app
 from src.models.person import Person, PersonUpdate, AdminUnlockRequest, Address
 from src.models.auth import AuthenticatedUser
-from src.services.dynamodb_service import DynamoDBService
+from src.services.defensive_dynamodb_service import DefensiveDynamoDBService as DynamoDBService
 
 
 # Mock the DynamoDB service

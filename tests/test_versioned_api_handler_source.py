@@ -45,7 +45,7 @@ class TestVersionedAPIHandlerSource:
         """Test that the handler has required imports"""
         required_imports = [
             "from fastapi import FastAPI",
-            "from ..services.dynamodb_service import DynamoDBService",
+            "from ..services.defensive_dynamodb_service import",
             "from ..utils.error_handler import",
             "from ..utils.logging_config import",
             "from ..utils.response_models import",
