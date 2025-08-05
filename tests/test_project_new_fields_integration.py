@@ -19,7 +19,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../src"))
 
 from src.handlers.versioned_api_handler import app, get_current_user
 from src.models.project import ProjectStatus, ProjectUpdate, ProjectCreate
-from src.services.defensive_dynamodb_service import DefensiveDynamoDBService as DynamoDBService
+from src.services.defensive_dynamodb_service import (
+    DefensiveDynamoDBService as DynamoDBService,
+)
 
 
 class TestProjectNewFieldsIntegration:

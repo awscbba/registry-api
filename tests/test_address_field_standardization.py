@@ -8,7 +8,9 @@ that were causing 500 errors in person update operations are properly handled.
 import pytest
 from datetime import datetime
 from src.models.person import Address, PersonCreate, PersonUpdate
-from src.services.defensive_dynamodb_service import DefensiveDynamoDBService as DynamoDBService
+from src.services.defensive_dynamodb_service import (
+    DefensiveDynamoDBService as DynamoDBService,
+)
 
 
 class TestAddressFieldStandardization:
