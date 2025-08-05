@@ -174,7 +174,8 @@ class TestProjectNewFieldsIntegration:
         assert project_update_obj.location == "In-person - Conference Center"
         assert project_update_obj.requirements == "Advanced programming skills required"
 
-    def test_dynamodb_service_update_with_new_fields(self):
+    @pytest.mark.asyncio
+    async def test_dynamodb_service_update_with_new_fields(self):
         """Test that DynamoDB service properly handles new fields in update"""
 
         # Create a mock DynamoDB service
@@ -205,8 +206,8 @@ class TestProjectNewFieldsIntegration:
             requirements="Advanced skills",
         )
 
-        # Call the update method
-        result = db_service.update_project("test-project-id", project_update)
+        # Call the update method (now async)
+        result = await db_service.update_project("test-project-id", project_update)
 
         # Verify the update_item was called
         mock_table.update_item.assert_called_once()
