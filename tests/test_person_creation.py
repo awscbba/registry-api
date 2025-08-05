@@ -49,6 +49,7 @@ class TestPersonCreation:
         """Test successful person creation"""
         # Mock the database service
         from datetime import datetime
+
         mock_person = Person(
             id="test-id-123",
             email=sample_person_data["email"],
@@ -99,10 +100,14 @@ class TestPersonCreation:
         assert response.status_code == 422
 
     @patch("src.handlers.versioned_api_handler.db_service")
-    def test_create_person_database_error(self, mock_db_service, client, sample_person_data):
+    def test_create_person_database_error(
+        self, mock_db_service, client, sample_person_data
+    ):
         """Test person creation with database error"""
         # Mock database error
-        mock_db_service.create_person = AsyncMock(side_effect=Exception("Database error"))
+        mock_db_service.create_person = AsyncMock(
+            side_effect=Exception("Database error")
+        )
 
         response = client.post("/v2/people", json=sample_person_data)
 
@@ -117,6 +122,7 @@ class TestPersonCreation:
 
         with patch("src.handlers.versioned_api_handler.db_service") as mock_db_service:
             from datetime import datetime
+
             mock_person = Person(
                 id="test-id-123",
                 email=sample_person_data["email"],
