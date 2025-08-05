@@ -1539,7 +1539,7 @@ class DynamoDBService:
             "startDate": project_data.startDate,
             "endDate": project_data.endDate,
             "maxParticipants": project_data.maxParticipants,
-            "status": project_data.status.value,
+            "status": project_data.status.value if hasattr(project_data.status, 'value') else project_data.status,
             "createdBy": created_by,
             "createdAt": now.isoformat(),
             "updatedAt": now.isoformat(),
@@ -1608,7 +1608,11 @@ class DynamoDBService:
 
         if project_data.status is not None:
             update_expression += ", #status = :status"
-            expression_values[":status"] = project_data.status.value
+            # Handle both enum objects and string values
+            if hasattr(project_data.status, 'value'):
+                expression_values[":status"] = project_data.status.value
+            else:
+                expression_values[":status"] = project_data.status
 
         if project_data.category is not None:
             update_expression += ", category = :category"
@@ -1679,7 +1683,7 @@ class DynamoDBService:
             "id": subscription_id,
             "personId": subscription_data.personId,
             "projectId": subscription_data.projectId,
-            "status": subscription_data.status.value,
+            "status": subscription_data.status.value if hasattr(subscription_data.status, 'value') else subscription_data.status,
             "notes": subscription_data.notes,
             "createdAt": now.isoformat(),
             "updatedAt": now.isoformat(),
@@ -1762,7 +1766,11 @@ class DynamoDBService:
 
         if subscription_data.status is not None:
             update_expression += ", #status = :status"
-            expression_values[":status"] = subscription_data.status.value
+            # Handle both enum objects and string values
+            if hasattr(subscription_data.status, 'value'):
+                expression_values[":status"] = subscription_data.status.value
+            else:
+                expression_values[":status"] = subscription_data.status
 
         if subscription_data.notes is not None:
             update_expression += ", notes = :notes"
