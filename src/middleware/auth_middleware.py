@@ -9,7 +9,9 @@ import logging
 
 from ..utils.jwt_utils import JWTManager
 from ..models.auth import AuthenticatedUser
-from ..services.defensive_dynamodb_service import DefensiveDynamoDBService as DynamoDBService
+from ..services.defensive_dynamodb_service import (
+    DefensiveDynamoDBService as DynamoDBService,
+)
 
 logger = logging.getLogger(__name__)
 

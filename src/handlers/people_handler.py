@@ -22,7 +22,9 @@ from ..models.person import (
     AdminUnlockResponse,
 )
 from ..models.auth import LoginRequest, LoginResponse
-from ..services.defensive_dynamodb_service import DefensiveDynamoDBService as DynamoDBService
+from ..services.defensive_dynamodb_service import (
+    DefensiveDynamoDBService as DynamoDBService,
+)
 from ..services.auth_service import AuthService
 from ..services.password_management_service import PasswordManagementService
 from ..services.person_validation_service import PersonValidationService
