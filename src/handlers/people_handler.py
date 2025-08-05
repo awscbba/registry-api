@@ -1881,7 +1881,7 @@ async def delete_person(
 async def get_projects():
     """Get all projects"""
     try:
-        projects = db_service.get_all_projects()
+        projects = await db_service.get_all_projects()
         return {"projects": projects, "count": len(projects)}
     except Exception as e:
         raise handle_database_error("getting projects", e)
@@ -1916,7 +1916,7 @@ async def create_project(
 
         # Create project with current user as creator
         created_by = current_user.get("email", "admin")
-        project = db_service.create_project(project_create, created_by)
+        project = await db_service.create_project(project_create, created_by)
 
         return project
     except ValueError as e:
@@ -1940,7 +1940,7 @@ async def update_project(
         project_update = ProjectUpdate(**project_data)
 
         # Update project
-        updated_project = db_service.update_project(project_id, project_update)
+        updated_project = await db_service.update_project(project_id, project_update)
 
         if not updated_project:
             raise HTTPException(
@@ -1983,7 +1983,7 @@ async def delete_project(
 async def get_subscriptions():
     """Get all subscriptions"""
     try:
-        subscriptions = db_service.get_all_subscriptions()
+        subscriptions = await db_service.get_all_subscriptions()
         return {"subscriptions": subscriptions, "count": len(subscriptions)}
     except Exception as e:
         raise handle_database_error("getting subscriptions", e)
@@ -2028,7 +2028,7 @@ async def create_subscription(subscription_data: dict):
             )
 
         # Create subscription
-        subscription = db_service.create_subscription(subscription_create)
+        subscription = await db_service.create_subscription(subscription_create)
 
         return subscription
     except HTTPException:
@@ -2052,7 +2052,7 @@ async def update_subscription(subscription_id: str, subscription_data: dict):
         subscription_update = SubscriptionUpdate(**subscription_data)
 
         # Update subscription
-        updated_subscription = db_service.update_subscription(
+        updated_subscription = await db_service.update_subscription(
             subscription_id, subscription_update
         )
 
@@ -2136,7 +2136,7 @@ async def create_subscription_with_person(subscription_data: dict):
         )
 
         # Create subscription (this method is NOT async, but expects SubscriptionCreate object)
-        created_subscription = db_service.create_subscription(subscription_create)
+        created_subscription = await db_service.create_subscription(subscription_create)
 
         return {
             "message": "Subscription created successfully",

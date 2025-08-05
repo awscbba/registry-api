@@ -12,7 +12,7 @@
 |----------|--------------|-------------|
 | **API Documentation** | [api/API_DOCUMENTATION.md](../registry-documentation/api/API_DOCUMENTATION.md) | Complete API reference |
 | **API Endpoints Review** | [api/API_ENDPOINTS_REVIEW.md](../registry-documentation/api/API_ENDPOINTS_REVIEW.md) | Endpoint analysis and review |
-| **API Workflow Improvements** | [api/API_WORKFLOW_IMPROVEMENTS.md](../registry-documentation/api/API_WORKFLOW_IMPROVEMENTS.md) | Development best practices |
+| **API Development Guide** | [api/API_DEVELOPMENT_GUIDE.md](../registry-documentation/api/API_DEVELOPMENT_GUIDE.md) | Development best practices |
 | **API PR Template** | [templates/api-pr-template-detailed.md](../registry-documentation/templates/api-pr-template-detailed.md) | Standardized PR template |
 | **Test Fixes Summary** | [troubleshooting/TEST_FIXES_SUMMARY.md](../registry-documentation/troubleshooting/TEST_FIXES_SUMMARY.md) | Testing improvements |
 | **Flake8 Improvements** | [workflows/FLAKE8_IMPROVEMENTS.md](../registry-documentation/workflows/FLAKE8_IMPROVEMENTS.md) | Code quality improvements |
@@ -21,7 +21,7 @@
 
 ### Getting Started
 1. [API Documentation](../registry-documentation/api/API_DOCUMENTATION.md) - Complete API reference
-2. [API Workflow Improvements](../registry-documentation/api/API_WORKFLOW_IMPROVEMENTS.md) - Development best practices
+2. [API Development Guide](../registry-documentation/api/API_DEVELOPMENT_GUIDE.md) - Development best practices
 3. [API PR Template](../registry-documentation/templates/api-pr-template-detailed.md) - PR guidelines
 
 ### Troubleshooting
