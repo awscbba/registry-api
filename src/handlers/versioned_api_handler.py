@@ -370,38 +370,39 @@ async def create_subscription_v2(subscription_data: dict):
             if project_status == "ongoing":
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Este proyecto está en curso y no acepta nuevas suscripciones. Contacte al administrador si necesita unirse."
+                    detail="Este proyecto está en curso y no acepta nuevas suscripciones. Contacte al administrador si necesita unirse.",
                 )
             elif project_status == "completed":
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Este proyecto ha sido completado y no acepta nuevas suscripciones."
+                    detail="Este proyecto ha sido completado y no acepta nuevas suscripciones.",
                 )
             elif project_status == "cancelled":
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Este proyecto ha sido cancelado y no acepta nuevas suscripciones."
+                    detail="Este proyecto ha sido cancelado y no acepta nuevas suscripciones.",
                 )
             else:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Este proyecto no está disponible para suscripciones."
+                    detail="Este proyecto no está disponible para suscripciones.",
                 )
 
         # Check project capacity if maxParticipants is set
         max_participants = project.get("maxParticipants")
         if max_participants and max_participants > 0:
             # Get current active subscriptions count
-            project_subscriptions = await db_service.get_subscriptions_by_project(project_id)
+            project_subscriptions = await db_service.get_subscriptions_by_project(
+                project_id
+            )
             active_subscriptions = [
-                sub for sub in project_subscriptions 
-                if sub.get("status") == "active"
+                sub for sub in project_subscriptions if sub.get("status") == "active"
             ]
-            
+
             if len(active_subscriptions) >= max_participants:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Este proyecto ha alcanzado su capacidad máxima de {max_participants} participantes."
+                    detail=f"Este proyecto ha alcanzado su capacidad máxima de {max_participants} participantes.",
                 )
 
         # FIXED: Added proper await keywords with error handling
