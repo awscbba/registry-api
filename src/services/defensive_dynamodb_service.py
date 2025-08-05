@@ -759,7 +759,7 @@ class DefensiveDynamoDBService:
     async def create_subscription(
         self, subscription_data: SubscriptionCreate
     ) -> Dict[str, Any]:
-        """Create a subscription with defensive programming"""
+        """Create a subscription with defensive programming and duplicate prevention"""
         if not self.subscriptions_table:
             raise Exception("Subscriptions table not available")
 
@@ -775,6 +775,32 @@ class DefensiveDynamoDBService:
                     f"Missing required fields: {', '.join(missing_fields)}"
                 )
 
+            # Check for existing subscription
+            existing_subscription = await self.get_existing_subscription(
+                subscription_data.personId, subscription_data.projectId
+            )
+
+            if existing_subscription:
+                # If subscription exists and is inactive, reactivate it
+                if existing_subscription.get("status") == "inactive":
+                    self.logger.info(f"Reactivating existing subscription {existing_subscription['id']}")
+                    
+                    # Update the existing subscription
+                    subscription_update = SubscriptionUpdate(
+                        status=safe_enum_value(subscription_data.status, "pending"),
+                        notes=safe_field_access(subscription_data, "notes", "")
+                    )
+                    
+                    updated_subscription = await self.update_subscription(
+                        existing_subscription["id"], subscription_update
+                    )
+                    return updated_subscription
+                else:
+                    # Subscription already exists and is active/pending
+                    self.logger.warning(f"Subscription already exists for person {subscription_data.personId} and project {subscription_data.projectId}")
+                    return existing_subscription
+
+            # Create new subscription if none exists
             subscription_id = str(uuid.uuid4())
             now = datetime.utcnow()
 
@@ -927,6 +953,30 @@ class DefensiveDynamoDBService:
                 return response.get("Items", [])
             except Exception:
                 return []
+
+    @database_operation("get_existing_subscription")
+    async def get_existing_subscription(
+        self, person_id: str, project_id: str
+    ) -> Optional[Dict[str, Any]]:
+        """Check if a person already has a subscription for a project"""
+        if not self.subscriptions_table:
+            self.logger.warning("Subscriptions table not available")
+            return None
+
+        try:
+            # Get all subscriptions for the person
+            person_subscriptions = await self.get_subscriptions_by_person(person_id)
+            
+            # Find subscription for the specific project
+            for subscription in person_subscriptions:
+                if subscription.get("projectId") == project_id:
+                    return subscription
+            
+            return None
+
+        except Exception as e:
+            self.logger.error(f"Error checking existing subscription for person {person_id} and project {project_id}: {e}")
+            return None
 
     @database_operation("delete_subscription")
     async def delete_subscription(self, subscription_id: str) -> bool:

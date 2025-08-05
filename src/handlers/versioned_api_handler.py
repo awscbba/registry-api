@@ -375,6 +375,40 @@ async def create_subscription_v2(subscription_data: dict):
             # Use existing person - existing_person is a Person object
             person_id = existing_person.id
             logger.info(f"Using existing person: {person_id}")
+            
+            # Check for existing subscription before creating
+            existing_subscription = await db_service.get_existing_subscription(
+                person_id, project_id
+            )
+            
+            if existing_subscription:
+                # Handle existing subscription based on status
+                if existing_subscription.get("status") == "inactive":
+                    # Reactivate declined subscription
+                    subscription_update = SubscriptionUpdate(
+                        status="pending",
+                        notes=notes or "Reactivated subscription"
+                    )
+                    updated_subscription = await db_service.update_subscription(
+                        existing_subscription["id"], subscription_update
+                    )
+                    
+                    return {
+                        "message": "Subscription reactivated successfully",
+                        "subscription": updated_subscription,
+                        "person_created": False,
+                        "reactivated": True,
+                        "version": "v2",
+                    }
+                else:
+                    # Subscription already exists and is active/pending
+                    return {
+                        "message": "Subscription already exists",
+                        "subscription": existing_subscription,
+                        "person_created": False,
+                        "already_exists": True,
+                        "version": "v2",
+                    }
         else:
             # FIXED: Added proper await keyword with error handling
             try:
