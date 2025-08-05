@@ -501,7 +501,7 @@ class DynamoDBService:
             person.password_salt = item["passwordSalt"]
         if "requirePasswordChange" in item:
             person.require_password_change = item["requirePasswordChange"]
-        if "lastPasswordChange" in item:
+        if "lastPasswordChange" in item and item["lastPasswordChange"]:
             person.last_password_change = datetime.fromisoformat(
                 item["lastPasswordChange"]
             )
@@ -509,11 +509,11 @@ class DynamoDBService:
             person.password_history = item["passwordHistory"]
         if "failedLoginAttempts" in item:
             person.failed_login_attempts = item["failedLoginAttempts"]
-        if "accountLockedUntil" in item:
+        if "accountLockedUntil" in item and item["accountLockedUntil"]:
             person.account_locked_until = datetime.fromisoformat(
                 item["accountLockedUntil"]
             )
-        if "lastLoginAt" in item:
+        if "lastLoginAt" in item and item["lastLoginAt"]:
             person.last_login_at = datetime.fromisoformat(item["lastLoginAt"])
         if "isActive" in item:
             person.is_active = item["isActive"]
