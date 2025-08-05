@@ -359,10 +359,14 @@ class DefensiveDynamoDBService:
             }
 
             # Exclude address from update_data for safe_update_expression_builder
-            update_data_without_address = {k: v for k, v in update_data.items() if k != "address"}
+            update_data_without_address = {
+                k: v for k, v in update_data.items() if k != "address"
+            }
 
             update_expression, expression_values, expression_names = (
-                safe_update_expression_builder(update_data_without_address, field_mappings)
+                safe_update_expression_builder(
+                    update_data_without_address, field_mappings
+                )
             )
 
             # Handle address field specially
