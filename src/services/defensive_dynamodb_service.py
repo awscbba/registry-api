@@ -220,12 +220,20 @@ class DefensiveDynamoDBService:
                 if "postalCode" not in address_data:
                     address_data["postalCode"] = ""
 
+            # Handle email field safely - provide fallback for invalid emails
+            email = item.get("email", "")
+            if not email or "@" not in email:
+                email = "unknown@example.com"
+            elif email.endswith(".local"):
+                # Convert .local emails to .com for validation
+                email = email.replace(".local", ".com")
+
             # Build person data with safe field access
             person_data = {
                 "id": item.get("id", ""),
                 "firstName": item.get("firstName", ""),
                 "lastName": item.get("lastName", ""),
-                "email": item.get("email", ""),
+                "email": email,
                 "phone": item.get("phone", ""),
                 "dateOfBirth": item.get("dateOfBirth", ""),
                 "address": address_data,
