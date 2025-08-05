@@ -17,7 +17,9 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../src"))
 
-from src.services.defensive_dynamodb_service import DefensiveDynamoDBService as DynamoDBService
+from src.services.defensive_dynamodb_service import (
+    DefensiveDynamoDBService as DynamoDBService,
+)
 
 
 def get_actual_method_signatures():
