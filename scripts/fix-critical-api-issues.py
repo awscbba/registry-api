@@ -13,41 +13,46 @@ Run this to quickly patch the most urgent problems.
 import os
 import sys
 
+
 def fix_people_handler():
     """Fix the people handler to ensure proper response models are used"""
-    
+
     handler_file = "src/handlers/people_handler.py"
-    
+
     if not os.path.exists(handler_file):
         print(f"❌ Handler file not found: {handler_file}")
         return False
-    
+
     print(f"🔧 Fixing {handler_file}...")
-    
+
     # Read the current file
-    with open(handler_file, 'r') as f:
+    with open(handler_file, "r") as f:
         content = f.read()
-    
+
     # Check if the file already has the correct response model
-    if 'response_model=list[PersonResponse]' in content or 'response_model=List[PersonResponse]' in content:
+    if (
+        "response_model=list[PersonResponse]" in content
+        or "response_model=List[PersonResponse]" in content
+    ):
         print("✅ List people endpoint already uses PersonResponse model")
     else:
         print("⚠️  List people endpoint might not be using PersonResponse model")
-    
+
     # Look for potential data leakage issues
-    if 'password_hash' in content.lower() or 'password_salt' in content.lower():
+    if "password_hash" in content.lower() or "password_salt" in content.lower():
         print("🚨 SECURITY WARNING: Handler might be exposing sensitive password data")
         print("   → Ensure all endpoints use PersonResponse.from_person() method")
-    
+
     return True
+
 
 def create_backward_compatibility_endpoint():
     """Create a backward compatibility endpoint for the frontend"""
-    
+
     compat_file = "src/handlers/compatibility_handler.py"
-    
+
     print(f"📝 Creating compatibility handler: {compat_file}")
-    
+
     compat_code = '''"""
 Backward Compatibility Handler
 
@@ -118,24 +123,25 @@ async def list_people_new_format(
             detail="Failed to retrieve people"
         )
 '''
-    
+
     # Create the directory if it doesn't exist
     os.makedirs(os.path.dirname(compat_file), exist_ok=True)
-    
-    with open(compat_file, 'w') as f:
+
+    with open(compat_file, "w") as f:
         f.write(compat_code)
-    
+
     print("✅ Compatibility handler created")
     return True
 
+
 def create_frontend_update_guide():
     """Create a guide for updating the frontend"""
-    
+
     guide_file = "FRONTEND_UPDATE_GUIDE.md"
-    
+
     print(f"📖 Creating frontend update guide: {guide_file}")
-    
-    guide_content = '''# Frontend Update Guide
+
+    guide_content = """# Frontend Update Guide
 
 ## Quick Fixes for Immediate Compatibility
 
@@ -246,32 +252,33 @@ node scripts/api-frontend-compatibility-test.js
 ```
 
 The test should show improved compatibility scores.
-'''
-    
-    with open(guide_file, 'w') as f:
+"""
+
+    with open(guide_file, "w") as f:
         f.write(guide_content)
-    
+
     print("✅ Frontend update guide created")
     return True
+
 
 def main():
     print("🚀 Starting Critical API Issues Fix")
     print("=" * 50)
-    
+
     success = True
-    
+
     # Fix 1: Check and fix people handler
     if not fix_people_handler():
         success = False
-    
+
     # Fix 2: Create backward compatibility endpoint
     if not create_backward_compatibility_endpoint():
         success = False
-    
+
     # Fix 3: Create frontend update guide
     if not create_frontend_update_guide():
         success = False
-    
+
     print("\n" + "=" * 50)
     if success:
         print("✅ All fixes applied successfully!")
@@ -283,6 +290,7 @@ def main():
     else:
         print("❌ Some fixes failed. Please review the errors above.")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
