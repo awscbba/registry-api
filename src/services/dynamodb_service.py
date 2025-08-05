@@ -726,7 +726,7 @@ class DynamoDBService:
                 # Ensure address uses the correct field names for storage
                 if value is not None:
                     # Check if value is already a dict (from model_dump) or an Address object
-                    if hasattr(value, 'model_dump'):
+                    if hasattr(value, "model_dump"):
                         address_dict = value.model_dump()
                     else:
                         # Value is already a dictionary from PersonUpdate.model_dump()
