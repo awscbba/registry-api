@@ -215,6 +215,10 @@ class DefensiveDynamoDBService:
                     address_data["postalCode"] = address_data.pop("zip_code")
                 elif "zipCode" in address_data:
                     address_data["postalCode"] = address_data.pop("zipCode")
+                
+                # Ensure postalCode exists - provide default if missing
+                if "postalCode" not in address_data:
+                    address_data["postalCode"] = ""
 
             # Build person data with safe field access
             person_data = {
@@ -293,9 +297,9 @@ class DefensiveDynamoDBService:
     ) -> Person:
         """Create a new person with defensive programming"""
         try:
-            # Validate required fields
+            # Validate required fields - use internal field names, not aliases
             person_dict = safe_model_dump(person_data)
-            required_fields = ["firstName", "lastName", "email"]
+            required_fields = ["first_name", "last_name", "email"]  # Use internal field names
             missing_fields = validate_required_fields(person_dict, required_fields)
 
             if missing_fields:
