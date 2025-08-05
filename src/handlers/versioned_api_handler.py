@@ -10,7 +10,13 @@ from typing import Dict, Any
 from fastapi import FastAPI, HTTPException, status, Request, Depends, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 
-from ..models.person import PersonCreate, PersonUpdate, PersonResponse, AdminUnlockRequest, AdminUnlockResponse
+from ..models.person import (
+    PersonCreate,
+    PersonUpdate,
+    PersonResponse,
+    AdminUnlockRequest,
+    AdminUnlockResponse,
+)
 from ..models.project import ProjectCreate, ProjectUpdate
 from ..models.subscription import SubscriptionCreate, SubscriptionUpdate
 from ..models.auth import LoginRequest, LoginResponse
@@ -553,15 +559,19 @@ async def unlock_account(
 ):
     """
     Unlock a locked user account (admin only).
-    
+
     This endpoint allows administrators to unlock user accounts that have been
     locked due to failed login attempts or other security measures.
     """
     try:
-        logger.log_api_request("POST", f"/auth/people/{person_id}/unlock", {
-            "person_id": person_id,
-            "admin_user": current_user.id if current_user else None
-        })
+        logger.log_api_request(
+            "POST",
+            f"/auth/people/{person_id}/unlock",
+            {
+                "person_id": person_id,
+                "admin_user": current_user.id if current_user else None,
+            },
+        )
 
         # Check if user exists
         person = await db_service.get_person(person_id)
@@ -578,7 +588,11 @@ async def unlock_account(
 
         # Check if account is actually locked
         lockout_info = await db_service.get_account_lockout(person_id)
-        if not lockout_info or not lockout_info.locked_until or lockout_info.locked_until <= datetime.utcnow():
+        if (
+            not lockout_info
+            or not lockout_info.locked_until
+            or lockout_info.locked_until <= datetime.utcnow()
+        ):
             return AdminUnlockResponse(
                 success=True,
                 message="Account is not locked",
@@ -592,12 +606,16 @@ async def unlock_account(
         update_data = PersonUpdate()
         update_data.failed_login_attempts = 0
         update_data.account_locked_until = None
-        
+
         await db_service.update_person(person_id, update_data)
 
         # Log security event
-        from ..models.auth import SecurityEvent, SecurityEventType, SecurityEventSeverity
-        
+        from ..models.auth import (
+            SecurityEvent,
+            SecurityEventType,
+            SecurityEventSeverity,
+        )
+
         security_event = SecurityEvent(
             id=str(uuid.uuid4()),
             event_type=SecurityEventType.ADMIN_ACCOUNT_UNLOCK,

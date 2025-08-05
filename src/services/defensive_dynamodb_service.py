@@ -58,7 +58,7 @@ class DefensiveDynamoDBService:
         self.subscriptions_table_name = os.environ.get(
             "SUBSCRIPTIONS_TABLE_NAME", "SubscriptionsTable"
         )
-        
+
         # Authentication tables
         self.audit_table_name = os.environ.get("AUDIT_TABLE_NAME", "AuditLogsTable")
         self.lockout_table_name = os.environ.get(
@@ -517,6 +517,7 @@ class DefensiveDynamoDBService:
         except Exception as e:
             self.logger.error(f"Error updating subscription {subscription_id}: {e}")
             raise
+
     # ==================== AUTHENTICATION METHODS ====================
 
     @database_operation("get_person_by_email")
@@ -589,7 +590,9 @@ class DefensiveDynamoDBService:
                     "personId": safe_field_access(security_event, "person_id"),
                     "action": safe_field_access(security_event, "action", "unknown"),
                     "timestamp": safe_isoformat(
-                        safe_field_access(security_event, "timestamp", datetime.utcnow())
+                        safe_field_access(
+                            security_event, "timestamp", datetime.utcnow()
+                        )
                     ),
                     "success": safe_field_access(security_event, "success", False),
                     "eventType": safe_enum_value(
@@ -692,7 +695,9 @@ class DefensiveDynamoDBService:
             self.lockout_table.put_item(Item=item)
 
         except Exception as e:
-            self.logger.error(f"Error saving account lockout for {lockout_info.person_id}: {e}")
+            self.logger.error(
+                f"Error saving account lockout for {lockout_info.person_id}: {e}"
+            )
             raise
 
     @database_operation("clear_account_lockout")
