@@ -10,9 +10,9 @@ from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 from botocore.exceptions import ClientError
 
-from models.email import EmailType, EmailRequest, EmailResponse
-from utils.defensive_utils import safe_isoformat
-from services.logging_service import LoggingService
+from ..models.email import EmailType, EmailRequest, EmailResponse
+from ..utils.defensive_utils import safe_isoformat
+from .logging_service import LoggingService
 
 
 class EmailService:
