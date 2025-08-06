@@ -2334,17 +2334,19 @@ async def update_project_subscription_v2(
                     if person:
                         project_name = project.get("name", "Proyecto")
                         project_description = project.get("description")
-                        
+
                         if new_status == "active":
                             # Send approval email
-                            email_response = await email_service.send_subscription_approved_email(
-                                email=person.email,
-                                first_name=person.first_name,
-                                last_name=person.last_name,
-                                project_name=project_name,
-                                project_description=project_description,
+                            email_response = (
+                                await email_service.send_subscription_approved_email(
+                                    email=person.email,
+                                    first_name=person.first_name,
+                                    last_name=person.last_name,
+                                    project_name=project_name,
+                                    project_description=project_description,
+                                )
                             )
-                            
+
                             if email_response.success:
                                 logger.info(
                                     f"Subscription approval email sent successfully to {person.email} for project {project_name}"
@@ -2353,18 +2355,22 @@ async def update_project_subscription_v2(
                                 logger.warning(
                                     f"Failed to send subscription approval email to {person.email}: {email_response.message}"
                                 )
-                        
+
                         elif new_status == "inactive":
                             # Send rejection email
-                            rejection_reason = update_data.get("notes", "No se proporcionó una razón específica")
-                            email_response = await email_service.send_subscription_rejected_email(
-                                email=person.email,
-                                first_name=person.first_name,
-                                last_name=person.last_name,
-                                project_name=project_name,
-                                rejection_reason=rejection_reason,
+                            rejection_reason = update_data.get(
+                                "notes", "No se proporcionó una razón específica"
                             )
-                            
+                            email_response = (
+                                await email_service.send_subscription_rejected_email(
+                                    email=person.email,
+                                    first_name=person.first_name,
+                                    last_name=person.last_name,
+                                    project_name=project_name,
+                                    rejection_reason=rejection_reason,
+                                )
+                            )
+
                             if email_response.success:
                                 logger.info(
                                     f"Subscription rejection email sent successfully to {person.email} for project {project_name}"
@@ -2373,7 +2379,7 @@ async def update_project_subscription_v2(
                                 logger.warning(
                                     f"Failed to send subscription rejection email to {person.email}: {email_response.message}"
                                 )
-                        
+
             except Exception as email_error:
                 # Log email error but don't fail the subscription update
                 logger.error(

@@ -384,7 +384,8 @@ AWS User Group Cochabamba - Sistema de Registro de Personas
             "last_name": last_name,
             "email": email,
             "project_name": project_name,
-            "project_description": project_description or "Proyecto del AWS User Group Cochabamba",
+            "project_description": project_description
+            or "Proyecto del AWS User Group Cochabamba",
             "login_url": f"{self.frontend_url}/login",
             "dashboard_url": f"{self.frontend_url}/dashboard",
             "current_year": datetime.now().year,
@@ -491,12 +492,15 @@ AWS User Group Cochabamba - Sistema de Registro de Personas
             "last_name": last_name,
             "email": email,
             "project_name": project_name,
-            "rejection_reason": rejection_reason or "No se proporcionó una razón específica",
+            "rejection_reason": rejection_reason
+            or "No se proporcionó una razón específica",
             "contact_url": f"{self.frontend_url}/contact",
             "current_year": datetime.now().year,
         }
 
-        subject = f"Actualización de Suscripción - {project_name} - AWS User Group Cochabamba"
+        subject = (
+            f"Actualización de Suscripción - {project_name} - AWS User Group Cochabamba"
+        )
 
         html_body = f"""
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
