@@ -1,6 +1,6 @@
 # Registry API Scripts
 
-This directory contains maintenance and analysis scripts for the registry-api.
+This directory contains essential maintenance and analysis scripts for the registry-api.
 
 ## Data Management Scripts
 
@@ -22,85 +22,26 @@ This directory contains maintenance and analysis scripts for the registry-api.
 - Provides the code fix for proper cascade deletion
 - Shows implementation steps
 
-## Production Analysis Scripts
+## System Administration Scripts
 
-### `fix-critical-api-issues.py`
-**Purpose**: Addresses critical compatibility issues between API and frontend
-**Usage**: `python scripts/fix-critical-api-issues.py`
+### `set_initial_admin.py`
+**Purpose**: Sets up initial admin user for the system
+**Usage**: `uv run python scripts/set_initial_admin.py <email>`
 **What it does**:
-- Checks for data leakage in API responses
-- Creates backward compatibility endpoints
-- Generates frontend update guides
+- Creates initial admin user by email
+- Sets up proper admin permissions
+- Required for system bootstrap
 
-### `api-frontend-compatibility-test.js`
-**Purpose**: Tests compatibility between updated API and existing frontend
-**Usage**: `node scripts/api-frontend-compatibility-test.js`
-**What it does**:
-- Tests all CRUD operations
-- Validates response formats
-- Checks field naming consistency
-- Identifies breaking changes
-
-### `debug-api-responses.js`
-**Purpose**: Debug actual API responses to understand compatibility issues
-**Usage**: `node scripts/debug-api-responses.js`
-**What it does**:
-- Makes test requests to API endpoints
-- Shows detailed response information
-- Helps identify response format issues
-
-## Frontend Compatibility Scripts
-
-### `frontend-compatibility-patch.js`
-**Purpose**: Applies immediate fixes to frontend for better API compatibility
-**Usage**: `node scripts/frontend-compatibility-patch.js`
-**What it does**:
-- Patches API service to handle new response formats
-- Adds authentication error handling
-- Creates authentication stub for development
-
-### `verify-frontend-patches.js`
-**Purpose**: Verifies that frontend patches were applied correctly
-**Usage**: `node scripts/verify-frontend-patches.js`
-**What it does**:
-- Checks if patches were applied successfully
-- Tests patched logic
-- Provides next steps for deployment
-
-### `debug-person-update-issue.py`
-**Purpose**: Debug specific person update issues causing 500 errors
-**Usage**: `python scripts/debug-person-update-issue.py`
-**What it does**:
-- Tests person GET and UPDATE operations
-- Tests various data scenarios (empty fields, nulls, etc.)
-- Identifies specific causes of 500 errors
-- Tests with different authentication headers
-
-### `test-project-subscription-api.py`
-**Purpose**: Test project and subscription API endpoints
-**Usage**: `python scripts/test-project-subscription-api.py`
-**What it does**:
-- Tests project CRUD operations
-- Tests subscription CRUD operations
-- Identifies enum handling issues
-- Validates API response formats
-
-## Development Scripts
+## Development & Deployment Scripts
 
 ### `pre-commit-check.sh`
-**Purpose**: Runs code quality checks before commits
+**Purpose**: Runs code quality checks before commits (used by git hooks)
 **Usage**: `./scripts/pre-commit-check.sh`
 **What it does**:
 - Runs black formatting
 - Runs flake8 linting
-- Optionally runs tests
-
-### `set_initial_admin.py`
-**Purpose**: Sets up initial admin user for the system
-**Usage**: `python scripts/set_initial_admin.py`
-**What it does**:
-- Creates initial admin user
-- Sets up proper permissions
+- Runs critical tests
+- Prevents commits that would fail CI/CD
 
 ### `validate-deployment.sh`
 **Purpose**: Validates deployment configuration
@@ -109,6 +50,7 @@ This directory contains maintenance and analysis scripts for the registry-api.
 - Checks deployment configuration
 - Validates environment variables
 - Tests basic connectivity
+- Ensures deployment readiness
 
 ### `validate-workflows.sh`
 **Purpose**: Validates CI/CD workflow configuration
@@ -117,6 +59,7 @@ This directory contains maintenance and analysis scripts for the registry-api.
 - Checks workflow syntax
 - Validates pipeline configuration
 - Tests workflow steps
+- Ensures CI/CD pipeline health
 
 ## Just Tasks (Recommended)
 
@@ -140,9 +83,8 @@ just format                     # Fix code formatting
 
 ## Environment Variables
 
-Some scripts may require environment variables:
+Scripts may require these environment variables:
 
-- `API_URL`: Base URL for API testing (defaults to production URL)
 - `AWS_PROFILE`: AWS profile for deployment scripts
 - `ENVIRONMENT`: Target environment (dev/staging/prod)
 - `PEOPLE_TABLE_NAME`: DynamoDB table name for people (default: PeopleTable)
@@ -157,54 +99,88 @@ just analyze-cascade-deletion
 # Fix cascade deletion issues
 just fix-cascade-deletion
 
-# Run compatibility test
-node scripts/api-frontend-compatibility-test.js
+# Set up initial admin user
+uv run python scripts/set_initial_admin.py admin@example.com
 
-# Apply frontend patches
-node scripts/frontend-compatibility-patch.js
-
-# Run pre-commit checks
+# Run pre-commit checks manually
 ./scripts/pre-commit-check.sh
+
+# Validate deployment configuration
+./scripts/validate-deployment.sh
 ```
+
+## Script Categories
+
+### **Data Management** 🗃️
+Scripts for maintaining data integrity and consistency:
+- Cascade deletion analysis and fixes
+- Data cleanup and validation
+
+### **System Administration** ⚙️
+Scripts for system setup and configuration:
+- Initial admin user setup
+- System bootstrap operations
+
+### **Development & Deployment** 🚀
+Scripts for development workflow and deployment:
+- Code quality checks (git hooks)
+- Deployment validation
+- CI/CD workflow validation
 
 ## Script Dependencies
 
 - **Python scripts**: Require Python 3.7+ and dependencies managed by uv
-- **Node.js scripts**: Require Node.js 16+ (no additional dependencies)
 - **Shell scripts**: Require bash and standard Unix tools
 - **AWS scripts**: Require AWS credentials configured (boto3)
 
+## Development Workflow Integration
+
+These scripts are integrated with the development workflow:
+
+1. **Git Hooks**: `pre-commit-check.sh` runs automatically on push
+2. **Just Tasks**: All scripts have corresponding just tasks for easy access
+3. **CI/CD**: Validation scripts ensure deployment readiness
+4. **Data Management**: Cascade deletion tools maintain data integrity
+
 ## Maintenance
 
-These scripts are maintained as part of the registry-api repository. When updating:
+Scripts are maintained following these principles:
 
-1. Test scripts in development environment first
-2. Update documentation if script behavior changes
-3. Ensure scripts work with current API version
-4. Update environment variable requirements if needed
-5. Follow the branch-first, PR-review, CodeCatalyst-deploy workflow
+1. **Simplicity**: Each script has a single, clear purpose
+2. **Integration**: Scripts work with existing development tools (uv, just, git)
+3. **Documentation**: Each script is well-documented with clear usage
+4. **Testing**: Scripts are tested and validated before deployment
+5. **Cleanup**: Outdated scripts are removed to avoid confusion
 
 ## Troubleshooting
 
 ### Common Issues
 
 1. **Permission denied**: Make shell scripts executable with `chmod +x scripts/*.sh`
-2. **Module not found**: Use `uv run` for Python scripts or ensure proper virtual environment
-3. **API connection errors**: Check API_URL environment variable and network connectivity
-4. **Authentication errors**: Some scripts may require valid AWS credentials
-5. **Import errors**: Run scripts from the registry-api root directory
+2. **Module not found**: Use `uv run` for Python scripts
+3. **AWS credentials**: Ensure AWS credentials are configured for AWS-dependent scripts
+4. **Environment variables**: Check required environment variables are set
 
 ### Data Management Issues
 
 1. **Orphaned subscriptions**: Use `just analyze-cascade-deletion` to identify
 2. **Subscription count discrepancies**: Check for cascade deletion issues
 3. **Database connectivity**: Ensure AWS credentials and region are configured
-4. **Table not found**: Verify table names in environment variables
 
 ### Getting Help
 
 - Check script output for specific error messages
-- Review the script source code for detailed comments
-- Test with debug/verbose flags where available
-- Ensure all dependencies are installed with `uv install`
-- Check the troubleshooting documentation in registry-documentation/troubleshooting/
+- Review script source code for detailed comments
+- Use `just --list` to see available tasks
+- Check troubleshooting documentation in `registry-documentation/troubleshooting/`
+
+## Removed Scripts
+
+The following scripts have been removed as they are no longer needed:
+
+- **Frontend compatibility scripts**: Moved to registry-frontend repo
+- **Debug scripts for specific issues**: Issues have been resolved
+- **API compatibility test scripts**: Replaced by comprehensive test suite
+- **Critical fix scripts**: Fixes have been applied and integrated
+
+This cleanup ensures the scripts directory contains only current, essential tools.
