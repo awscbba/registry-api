@@ -444,6 +444,60 @@ class LoggingService:
             additional_data=additional_data,
         )
 
+    async def log_email_sent(
+        self,
+        recipient: str,
+        email_type: str,
+        message_id: str,
+        subject: str,
+        context: Optional[ErrorContext] = None
+    ):
+        """Log successful email sending."""
+        message = f"Email sent successfully to {recipient}"
+        
+        additional_data = {
+            "recipient": recipient,
+            "email_type": email_type,
+            "message_id": message_id,
+            "subject": subject,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+        await self.log_structured(
+            level=LogLevel.INFO,
+            category=LogCategory.BUSINESS_LOGIC,
+            message=message,
+            context=context or ErrorContext(request_id=str(uuid.uuid4())),
+            additional_data=additional_data,
+        )
+
+    async def log_email_error(
+        self,
+        recipient: str,
+        email_type: str,
+        error_code: str,
+        error_message: str,
+        context: Optional[ErrorContext] = None
+    ):
+        """Log email sending errors."""
+        message = f"Failed to send email to {recipient}: {error_message}"
+        
+        additional_data = {
+            "recipient": recipient,
+            "email_type": email_type,
+            "error_code": error_code,
+            "error_message": error_message,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+        await self.log_structured(
+            level=LogLevel.ERROR,
+            category=LogCategory.SYSTEM_ERROR,
+            message=message,
+            context=context or ErrorContext(request_id=str(uuid.uuid4())),
+            additional_data=additional_data,
+        )
+
     async def _persist_log_entry(self, entry: StructuredLogEntry):
         """Persist log entry to database for audit trail."""
         try:
