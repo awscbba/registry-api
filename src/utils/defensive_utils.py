@@ -89,17 +89,20 @@ def safe_enum_value(enum_obj: Any, default: str = "") -> str:
     if enum_obj is None:
         return default
 
-    # If it's already a string, return as-is
+    # Check if it's an enum first (before checking if it's a string)
+    # This handles str-based enums like SubscriptionStatus(str, Enum)
+    if hasattr(enum_obj, "value") and hasattr(enum_obj, "__class__") and hasattr(enum_obj.__class__, "__bases__"):
+        # Check if it's actually an enum by looking for Enum in the class hierarchy
+        if any("Enum" in str(base) for base in enum_obj.__class__.__mro__):
+            try:
+                return str(enum_obj.value)
+            except Exception as e:
+                logger.warning(f"Failed to get value from {type(enum_obj)}: {e}")
+                return str(enum_obj) if enum_obj else default
+
+    # If it's already a string (and not an enum), return as-is
     if isinstance(enum_obj, str):
         return enum_obj
-
-    # If it has value attribute (enum), use it
-    if hasattr(enum_obj, "value"):
-        try:
-            return str(enum_obj.value)
-        except Exception as e:
-            logger.warning(f"Failed to get value from {type(enum_obj)}: {e}")
-            return str(enum_obj) if enum_obj else default
 
     # Fallback to string conversion
     return str(enum_obj) if enum_obj else default
@@ -328,8 +331,8 @@ def safe_update_expression_builder(
             # Regular field
             expression_attribute_values[param_name] = value
 
-        # Add to update expression
-        if db_field in ["name", "status", "location"]:  # Reserved words
+        # Add to update expression - handle reserved words
+        if db_field in ["name", "status", "location", "size", "type"]:  # Reserved words
             expression_attribute_names[f"#{field}"] = db_field
             update_expression += f", #{field} = {param_name}"
         else:
