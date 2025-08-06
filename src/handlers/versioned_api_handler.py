@@ -29,7 +29,10 @@ from ..middleware.auth_middleware import get_current_user
 from ..utils.error_handler import StandardErrorHandler, handle_database_error
 from ..utils.logging_config import get_handler_logger
 from ..utils.password_utils import hash_password, verify_password
-from ..utils.jwt_utils import create_access_token, get_current_user as jwt_get_current_user
+from ..utils.jwt_utils import (
+    create_access_token,
+    get_current_user as jwt_get_current_user,
+)
 from ..utils.response_models import (
     ResponseFactory,
     create_v1_response,
