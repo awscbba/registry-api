@@ -49,36 +49,36 @@ install:
 test-critical:
     @just print-info "Running critical integration tests..."
     @just print-warning "These tests would have caught the production bugs we experienced!"
-    @uv run pytest tests/test_critical_integration.py -v
+    @uv run python -m pytest tests/test_critical_integration.py -v
     @just print-success "Critical integration tests completed"
 
 # Run critical tests that are known to pass (for CI/CD)
 test-critical-passing:
     @just print-info "Running critical integration tests (passing subset)..."
-    @uv run pytest tests/test_critical_integration.py::TestCriticalIntegration::test_api_service_method_consistency tests/test_critical_integration.py::TestCriticalIntegration::test_async_sync_consistency tests/test_critical_integration.py::TestCriticalIntegration::test_v2_response_format_consistency tests/test_critical_integration.py::TestProductionHealthChecks::test_production_api_health tests/test_address_field_standardization.py tests/test_person_update_fix.py tests/test_person_update_address_fix.py tests/test_person_update_comprehensive.py -v
+    @uv run python -m pytest tests/test_critical_integration.py::TestCriticalIntegration::test_api_service_method_consistency tests/test_critical_integration.py::TestCriticalIntegration::test_async_sync_consistency tests/test_critical_integration.py::TestCriticalIntegration::test_v2_response_format_consistency tests/test_critical_integration.py::TestProductionHealthChecks::test_production_api_health tests/test_address_field_standardization.py tests/test_person_update_fix.py tests/test_person_update_address_fix.py tests/test_person_update_comprehensive.py -v
     @just print-success "Critical integration tests (passing) completed"
 
 # Run modernized async/sync validation tests
 test-async:
     @just print-info "Running modernized async/sync validation tests..."
-    @uv run pytest tests/test_modernized_async_validation.py -v
+    @uv run python -m pytest tests/test_modernized_async_validation.py -v
     @just print-success "Async/sync validation tests completed"
 
 # Run all tests
 test-all:
     @just print-info "Running all tests..."
-    @uv run pytest -v
+    @uv run python -m pytest -v
     @just print-success "All tests completed"
 
 # Run specific test file
 test file:
     @just print-info "Running tests in {{file}}..."
-    @uv run pytest {{file}} -v
+    @uv run python -m pytest {{file}} -v
 
 # Run tests with coverage
 test-coverage:
     @just print-info "Running tests with coverage..."
-    @uv run pytest --cov=src --cov-report=html --cov-report=term -v
+    @uv run python -m pytest --cov=src --cov-report=html --cov-report=term -v
     @just print-success "Coverage report generated in htmlcov/"
 
 # Code quality checks
