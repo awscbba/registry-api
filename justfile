@@ -263,6 +263,38 @@ clean:
     @find . -name "*.pyo" -delete
     @just print-success "Cleanup completed"
 
+# Analyze cascade deletion issues for subscriptions
+analyze-cascade-deletion:
+    @just print-info "Analyzing cascade deletion issues for user subscriptions..."
+    @echo ""
+    @echo "🔍 This will check for orphaned subscriptions (subscriptions for deleted users)"
+    @echo "📊 Smart card showing 14 subscriptions but users were deleted suggests this issue"
+    @echo ""
+    @uv run python scripts/analyze_cascade_deletion_simple.py
+    @just print-success "Cascade deletion analysis completed"
+
+# Fix cascade deletion issues (cleanup + provide solution)
+fix-cascade-deletion:
+    @just print-info "Fixing cascade deletion issues for user subscriptions..."
+    @echo ""
+    @echo "🧹 This will:"
+    @echo "   1. Clean up existing orphaned subscriptions"
+    @echo "   2. Provide the code fix for proper cascade deletion"
+    @echo "   3. Show implementation steps"
+    @echo ""
+    @uv run python scripts/fix_cascade_deletion_simple.py
+    @just print-success "Cascade deletion fix completed"
+
+# Check subscription data integrity (dry-run analysis)
+check-subscription-integrity:
+    @just print-info "Checking subscription data integrity (dry-run)..."
+    @echo ""
+    @echo "🔍 This performs a read-only analysis of subscription data"
+    @echo "📊 Useful for monitoring data consistency"
+    @echo ""
+    @uv run python scripts/analyze_cascade_deletion_simple.py
+    @just print-success "Subscription integrity check completed"
+
 # Show help
 help:
     @echo "People Register API - Available Commands:"
@@ -292,12 +324,18 @@ help:
     @echo "  build-containers       - Build Docker containers"
     @echo "  clean                  - Clean up build artifacts"
     @echo ""
+    @echo "🗃️ Data Management:"
+    @echo "  analyze-cascade-deletion    - Analyze cascade deletion issues for subscriptions"
+    @echo "  fix-cascade-deletion        - Fix cascade deletion issues (cleanup + solution)"
+    @echo "  check-subscription-integrity - Check subscription data integrity (read-only)"
+    @echo ""
     @echo "💡 Key Features:"
     @echo "  - Critical tests that would have caught production bugs"
     @echo "  - Method name mismatch detection"
     @echo "  - Async/sync consistency validation"
     @echo "  - Response format consistency checks"
     @echo "  - API contract validation and endpoint testing"
+    @echo "  - Cascade deletion analysis and fixes"
     @echo ""
     @echo "ℹ️ Frontend tests are handled in the registry-frontend repo"
 
