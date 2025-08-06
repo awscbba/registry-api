@@ -399,43 +399,43 @@ AWS User Group Cochabamba - Sistema de Registro de Personas
                 <h1 style="margin: 0; font-size: 28px;">¡Felicitaciones!</h1>
                 <p style="margin: 10px 0 0 0; font-size: 18px;">Tu suscripción ha sido aprobada</p>
             </div>
-            
+
             <div style="padding: 30px; background: #f9f9f9;">
                 <h2 style="color: #333; margin-top: 0;">Hola {first_name},</h2>
-                
+
                 <p style="color: #555; line-height: 1.6; font-size: 16px;">
-                    ¡Excelentes noticias! Tu suscripción al proyecto <strong>{project_name}</strong> 
+                    ¡Excelentes noticias! Tu suscripción al proyecto <strong>{project_name}</strong>
                     ha sido aprobada por nuestro equipo administrativo.
                 </p>
-                
+
                 <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #FF9500;">
                     <h3 style="color: #333; margin-top: 0;">Detalles del Proyecto:</h3>
                     <p style="margin: 5px 0;"><strong>Proyecto:</strong> {project_name}</p>
                     <p style="margin: 5px 0;"><strong>Descripción:</strong> {project_description}</p>
                     <p style="margin: 5px 0;"><strong>Estado:</strong> <span style="color: #28a745; font-weight: bold;">Activo</span></p>
                 </div>
-                
+
                 <h3 style="color: #333;">¿Qué sigue?</h3>
                 <ul style="color: #555; line-height: 1.6;">
                     <li>Puedes acceder a tu dashboard para ver los detalles del proyecto</li>
                     <li>Recibirás notificaciones sobre actualizaciones y eventos</li>
                     <li>Podrás participar en las actividades programadas</li>
                 </ul>
-                
+
                 <div style="text-align: center; margin: 30px 0;">
-                    <a href="{variables['dashboard_url']}" 
-                       style="background: #FF9500; color: white; padding: 15px 30px; text-decoration: none; 
+                    <a href="{variables['dashboard_url']}"
+                       style="background: #FF9500; color: white; padding: 15px 30px; text-decoration: none;
                               border-radius: 5px; font-weight: bold; display: inline-block;">
                         Acceder al Dashboard
                     </a>
                 </div>
-                
+
                 <p style="color: #777; font-size: 14px; margin-top: 30px;">
                     Si tienes alguna pregunta, no dudes en contactarnos.
                 </p>
-                
+
                 <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-                
+
                 <div style="text-align: center; color: #999; font-size: 12px;">
                     <p>AWS User Group Cochabamba</p>
                     <p>© {variables['current_year']} Todos los derechos reservados</p>
@@ -508,45 +508,45 @@ AWS User Group Cochabamba - Sistema de Registro de Personas
                 <h1 style="margin: 0; font-size: 28px;">Actualización de Suscripción</h1>
                 <p style="margin: 10px 0 0 0; font-size: 18px;">Información sobre tu solicitud</p>
             </div>
-            
+
             <div style="padding: 30px; background: #f9f9f9;">
                 <h2 style="color: #333; margin-top: 0;">Hola {first_name},</h2>
-                
+
                 <p style="color: #555; line-height: 1.6; font-size: 16px;">
-                    Gracias por tu interés en el proyecto <strong>{project_name}</strong>. 
-                    Después de revisar tu solicitud, lamentamos informarte que no pudimos aprobar 
+                    Gracias por tu interés en el proyecto <strong>{project_name}</strong>.
+                    Después de revisar tu solicitud, lamentamos informarte que no pudimos aprobar
                     tu suscripción en este momento.
                 </p>
-                
+
                 <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #6c757d;">
                     <h3 style="color: #333; margin-top: 0;">Detalles:</h3>
                     <p style="margin: 5px 0;"><strong>Proyecto:</strong> {project_name}</p>
                     <p style="margin: 5px 0;"><strong>Estado:</strong> <span style="color: #dc3545; font-weight: bold;">No Aprobado</span></p>
                     <p style="margin: 5px 0;"><strong>Motivo:</strong> {rejection_reason}</p>
                 </div>
-                
+
                 <h3 style="color: #333;">¿Qué puedes hacer?</h3>
                 <ul style="color: #555; line-height: 1.6;">
                     <li>Puedes aplicar a otros proyectos disponibles</li>
                     <li>Contacta con nuestro equipo si tienes preguntas</li>
                     <li>Mantente atento a futuros proyectos que puedan interesarte</li>
                 </ul>
-                
+
                 <div style="text-align: center; margin: 30px 0;">
-                    <a href="{variables['contact_url']}" 
-                       style="background: #6c757d; color: white; padding: 15px 30px; text-decoration: none; 
+                    <a href="{variables['contact_url']}"
+                       style="background: #6c757d; color: white; padding: 15px 30px; text-decoration: none;
                               border-radius: 5px; font-weight: bold; display: inline-block;">
                         Contactar Soporte
                     </a>
                 </div>
-                
+
                 <p style="color: #777; font-size: 14px; margin-top: 30px;">
-                    Agradecemos tu interés en participar en nuestras actividades y esperamos 
+                    Agradecemos tu interés en participar en nuestras actividades y esperamos
                     poder contar contigo en futuras oportunidades.
                 </p>
-                
+
                 <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-                
+
                 <div style="text-align: center; color: #999; font-size: 12px;">
                     <p>AWS User Group Cochabamba</p>
                     <p>© {variables['current_year']} Todos los derechos reservados</p>
@@ -560,7 +560,7 @@ AWS User Group Cochabamba - Sistema de Registro de Personas
 
         Hola {first_name},
 
-        Gracias por tu interés en el proyecto "{project_name}". Después de revisar tu solicitud, 
+        Gracias por tu interés en el proyecto "{project_name}". Después de revisar tu solicitud,
         lamentamos informarte que no pudimos aprobar tu suscripción en este momento.
 
         Detalles:
@@ -575,7 +575,7 @@ AWS User Group Cochabamba - Sistema de Registro de Personas
 
         Contactar soporte: {variables['contact_url']}
 
-        Agradecemos tu interés en participar en nuestras actividades y esperamos 
+        Agradecemos tu interés en participar en nuestras actividades y esperamos
         poder contar contigo en futuras oportunidades.
 
         AWS User Group Cochabamba
