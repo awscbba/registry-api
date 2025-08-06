@@ -1083,8 +1083,11 @@ async def get_admin_dashboard():
         # Count active projects
         active_projects = [p for p in projects if p.get("status") == "active"]
 
-        # Count active subscriptions
+        # Count subscriptions by status
         active_subscriptions = [s for s in subscriptions if s.get("status") == "active"]
+        pending_subscriptions = [s for s in subscriptions if s.get("status") == "pending"]
+        # Current subscriptions = active + pending (excludes inactive)
+        current_subscriptions = active_subscriptions + pending_subscriptions
 
         # Get recent activity (last 10 subscriptions)
         recent_subscriptions = sorted(
@@ -1095,11 +1098,12 @@ async def get_admin_dashboard():
         dashboard_data = {
             "totalProjects": len(projects),
             "activeProjects": len(active_projects),
-            "totalSubscriptions": len(subscriptions),
+            # Show current subscriptions (active + pending) instead of all including inactive
+            "totalSubscriptions": len(current_subscriptions),
             "activeSubscriptions": len(active_subscriptions),
-            "pendingSubscriptions": len(
-                [s for s in subscriptions if s.get("status") == "pending"]
-            ),
+            "pendingSubscriptions": len(pending_subscriptions),
+            # For transparency, also include total count including inactive
+            "totalSubscriptionsEverCreated": len(subscriptions),
             "recentActivity": recent_subscriptions,
             "statistics": {
                 "projectsCreatedThisMonth": len(
@@ -1109,14 +1113,16 @@ async def get_admin_dashboard():
                         if p.get("createdAt", "").startswith("2025-08")
                     ]
                 ),
+                # Count current subscriptions from this month (active + pending)
                 "subscriptionsThisMonth": len(
                     [
                         s
-                        for s in subscriptions
+                        for s in current_subscriptions
                         if s.get("createdAt", "").startswith("2025-08")
                     ]
                 ),
-                "averageSubscriptionsPerProject": len(subscriptions)
+                # Calculate average based on current subscriptions
+                "averageSubscriptionsPerProject": len(current_subscriptions)
                 / max(len(projects), 1),
             },
         }
@@ -1244,27 +1250,23 @@ async def get_admin_projects():
             project_subscriptions = [
                 s for s in subscriptions if s.get("projectId") == project.get("id")
             ]
-
+            
+            # Count subscriptions by status
+            active_subs = [s for s in project_subscriptions if s.get("status") == "active"]
+            pending_subs = [s for s in project_subscriptions if s.get("status") == "pending"]
+            
             enhanced_project = {
                 **project,
-                "subscriptionCount": len(project_subscriptions),
-                "activeSubscriptions": len(
-                    [s for s in project_subscriptions if s.get("status") == "active"]
-                ),
-                "pendingSubscriptions": len(
-                    [s for s in project_subscriptions if s.get("status") == "pending"]
-                ),
+                # subscriptionCount should reflect active + pending (not inactive)
+                "subscriptionCount": len(active_subs) + len(pending_subs),
+                "activeSubscriptions": len(active_subs),
+                "pendingSubscriptions": len(pending_subs),
+                # For transparency, also include total count including inactive
+                "totalSubscriptionsEverCreated": len(project_subscriptions),
                 "availableSlots": (
                     max(
                         0,
-                        project.get("maxParticipants", 0)
-                        - len(
-                            [
-                                s
-                                for s in project_subscriptions
-                                if s.get("status") == "active"
-                            ]
-                        ),
+                        project.get("maxParticipants", 0) - len(active_subs),
                     )
                     if project.get("maxParticipants")
                     else None
