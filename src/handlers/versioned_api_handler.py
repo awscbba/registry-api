@@ -28,7 +28,7 @@ from ..services.email_service import email_service
 from ..middleware.auth_middleware import get_current_user
 from ..utils.error_handler import StandardErrorHandler, handle_database_error
 from ..utils.logging_config import get_handler_logger
-from ..utils.password_utils import hash_password, verify_password
+from ..utils.password_utils import PasswordHasher
 from ..utils.jwt_utils import (
     create_access_token,
     get_current_user as jwt_get_current_user,
@@ -460,7 +460,7 @@ async def create_subscription_v2(subscription_data: dict):
             temporary_password = email_service.generate_temporary_password()
 
             # Hash the temporary password
-            hashed_password = hash_password(temporary_password)
+            hashed_password = PasswordHasher.hash_password(temporary_password)
 
             # Add password to person data
             person_data["password_hash"] = hashed_password
@@ -627,7 +627,7 @@ async def user_login(login_request: LoginRequest, request: Request):
             )
 
         # Verify password
-        if not verify_password(login_request.password, person.password_hash):
+        if not PasswordHasher.verify_password(login_request.password, person.password_hash):
             logger.log_api_response("POST", "/auth/user/login", 401)
             return {
                 "success": False,
