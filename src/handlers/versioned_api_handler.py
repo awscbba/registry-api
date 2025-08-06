@@ -328,7 +328,7 @@ async def create_subscription_v2(subscription_data: dict):
     try:
         # Import email service
         from ..services.email_service import email_service
-        
+
         # Extract person and subscription data
         person_data = subscription_data.get("person")
         project_id = subscription_data.get("projectId")
@@ -455,17 +455,18 @@ async def create_subscription_v2(subscription_data: dict):
         else:
             # Create new person with generated password
             temporary_password = email_service.generate_temporary_password()
-            
+
             # Hash the temporary password
             from ..utils.password_utils import hash_password
+
             hashed_password = hash_password(temporary_password)
-            
+
             # Add password to person data
             person_data["password_hash"] = hashed_password
-            
+
             # Validate person data
             person_create = PersonCreate(**person_data)
-            
+
             try:
                 created_person = await db_service.create_person(person_create)
                 person_id = created_person.id
@@ -492,7 +493,7 @@ async def create_subscription_v2(subscription_data: dict):
         # Send welcome email with temporary password if new user
         email_sent = False
         email_error = None
-        
+
         if person_created and temporary_password:
             try:
                 email_response = await email_service.send_welcome_email(
@@ -500,12 +501,14 @@ async def create_subscription_v2(subscription_data: dict):
                     first_name=person_data["firstName"],
                     last_name=person_data["lastName"],
                     project_name=project.get("name", "Proyecto"),
-                    temporary_password=temporary_password
+                    temporary_password=temporary_password,
                 )
                 email_sent = email_response.success
                 if not email_sent:
                     email_error = email_response.message
-                    logger.warning(f"Failed to send welcome email: {email_response.message}")
+                    logger.warning(
+                        f"Failed to send welcome email: {email_response.message}"
+                    )
             except Exception as e:
                 email_error = str(e)
                 logger.error(f"Error sending welcome email: {str(e)}")
@@ -588,7 +591,7 @@ async def login(login_request: LoginRequest, request: Request):
 async def user_login(login_request: LoginRequest, request: Request):
     """
     Authenticate regular user (non-admin) and return JWT tokens.
-    
+
     This endpoint is specifically for regular users who have accounts
     created through the subscription process.
     """
@@ -603,50 +606,51 @@ async def user_login(login_request: LoginRequest, request: Request):
                 return {
                     "success": False,
                     "message": "No se encontró una cuenta con este email. ¿Necesitas crear una cuenta?",
-                    "error_code": "USER_NOT_FOUND"
+                    "error_code": "USER_NOT_FOUND",
                 }
-            
+
             # Check if person has a password set
-            if not hasattr(person, 'password_hash') or not person.password_hash:
+            if not hasattr(person, "password_hash") or not person.password_hash:
                 logger.log_api_response("POST", "/auth/user/login", 400)
                 return {
                     "success": False,
                     "message": "Tu cuenta no tiene una contraseña configurada. Contacta al administrador.",
-                    "error_code": "NO_PASSWORD_SET"
+                    "error_code": "NO_PASSWORD_SET",
                 }
-            
+
         except Exception as e:
             logger.error(f"Error checking user existence: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Error verificando usuario"
+                detail="Error verificando usuario",
             )
 
         # Verify password
         from ..utils.password_utils import verify_password
+
         if not verify_password(login_request.password, person.password_hash):
             logger.log_api_response("POST", "/auth/user/login", 401)
             return {
                 "success": False,
                 "message": "Contraseña incorrecta. Por favor verifica tus credenciales.",
-                "error_code": "INVALID_PASSWORD"
+                "error_code": "INVALID_PASSWORD",
             }
 
         # Generate JWT token for user
         from ..utils.jwt_utils import create_access_token
-        
+
         token_data = {
             "sub": person.id,
             "email": person.email,
             "user_type": "user",
             "first_name": person.first_name,
-            "last_name": person.last_name
+            "last_name": person.last_name,
         }
-        
+
         access_token = create_access_token(data=token_data)
-        
+
         logger.log_api_response("POST", "/auth/user/login", 200)
-        
+
         return {
             "success": True,
             "token": access_token,
@@ -654,9 +658,9 @@ async def user_login(login_request: LoginRequest, request: Request):
                 "id": person.id,
                 "firstName": person.first_name,
                 "lastName": person.last_name,
-                "email": person.email
+                "email": person.email,
             },
-            "message": "Inicio de sesión exitoso"
+            "message": "Inicio de sesión exitoso",
         }
 
     except HTTPException:
@@ -681,51 +685,62 @@ async def get_user_subscriptions(request: Request):
     """
     try:
         logger.log_api_request("GET", "/auth/user/subscriptions")
-        
+
         # Extract user from JWT token
         from ..utils.jwt_utils import get_current_user
+
         current_user = await get_current_user(request)
-        
+
         if not current_user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token de autenticación requerido"
+                detail="Token de autenticación requerido",
             )
-        
+
         # Get user's subscriptions
-        user_subscriptions = await db_service.get_subscriptions_by_person(current_user["sub"])
-        
+        user_subscriptions = await db_service.get_subscriptions_by_person(
+            current_user["sub"]
+        )
+
         # Enhance subscriptions with project details
         enhanced_subscriptions = []
         for subscription in user_subscriptions:
             try:
-                project = await db_service.get_project_by_id(subscription.get("projectId"))
+                project = await db_service.get_project_by_id(
+                    subscription.get("projectId")
+                )
                 enhanced_subscription = {
                     "id": subscription.get("id"),
                     "projectId": subscription.get("projectId"),
-                    "projectName": project.get("name", "Proyecto Desconocido") if project else "Proyecto Desconocido",
+                    "projectName": (
+                        project.get("name", "Proyecto Desconocido")
+                        if project
+                        else "Proyecto Desconocido"
+                    ),
                     "status": subscription.get("status"),
                     "subscribedAt": subscription.get("createdAt"),
-                    "notes": subscription.get("notes", "")
+                    "notes": subscription.get("notes", ""),
                 }
                 enhanced_subscriptions.append(enhanced_subscription)
             except Exception as e:
-                logger.warning(f"Error enhancing subscription {subscription.get('id')}: {str(e)}")
+                logger.warning(
+                    f"Error enhancing subscription {subscription.get('id')}: {str(e)}"
+                )
                 # Add subscription without enhancement
-                enhanced_subscriptions.append({
-                    "id": subscription.get("id"),
-                    "projectId": subscription.get("projectId"),
-                    "projectName": "Proyecto Desconocido",
-                    "status": subscription.get("status"),
-                    "subscribedAt": subscription.get("createdAt"),
-                    "notes": subscription.get("notes", "")
-                })
-        
+                enhanced_subscriptions.append(
+                    {
+                        "id": subscription.get("id"),
+                        "projectId": subscription.get("projectId"),
+                        "projectName": "Proyecto Desconocido",
+                        "status": subscription.get("status"),
+                        "subscribedAt": subscription.get("createdAt"),
+                        "notes": subscription.get("notes", ""),
+                    }
+                )
+
         logger.log_api_response("GET", "/auth/user/subscriptions", 200)
-        
-        return {
-            "subscriptions": enhanced_subscriptions
-        }
+
+        return {"subscriptions": enhanced_subscriptions}
 
     except HTTPException:
         raise
@@ -748,45 +763,44 @@ async def user_subscribe_to_project(request: Request, subscription_data: dict):
     """
     try:
         logger.log_api_request("POST", "/auth/user/subscribe")
-        
+
         # Extract user from JWT token
         from ..utils.jwt_utils import get_current_user
+
         current_user = await get_current_user(request)
-        
+
         if not current_user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token de autenticación requerido"
+                detail="Token de autenticación requerido",
             )
-        
+
         project_id = subscription_data.get("projectId")
         notes = subscription_data.get("notes", "")
-        
+
         if not project_id:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="projectId es requerido"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="projectId es requerido"
             )
-        
+
         # Verify project exists
         project = await db_service.get_project_by_id(project_id)
         if not project:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Proyecto no encontrado"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Proyecto no encontrado"
             )
-        
+
         # Check if already subscribed
         existing_subscription = await db_service.get_existing_subscription(
             current_user["sub"], project_id
         )
-        
+
         if existing_subscription:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Ya estás suscrito a este proyecto"
+                detail="Ya estás suscrito a este proyecto",
             )
-        
+
         # Create subscription
         subscription_create = SubscriptionCreate(
             projectId=project_id,
@@ -794,15 +808,15 @@ async def user_subscribe_to_project(request: Request, subscription_data: dict):
             status="pending",
             notes=notes,
         )
-        
+
         created_subscription = await db_service.create_subscription(subscription_create)
-        
+
         logger.log_api_response("POST", "/auth/user/subscribe", 201)
-        
+
         return {
             "success": True,
             "subscription": created_subscription,
-            "message": "Suscripción creada exitosamente"
+            "message": "Suscripción creada exitosamente",
         }
 
     except HTTPException:

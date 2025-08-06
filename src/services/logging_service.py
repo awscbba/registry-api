@@ -450,17 +450,17 @@ class LoggingService:
         email_type: str,
         message_id: str,
         subject: str,
-        context: Optional[ErrorContext] = None
+        context: Optional[ErrorContext] = None,
     ):
         """Log successful email sending."""
         message = f"Email sent successfully to {recipient}"
-        
+
         additional_data = {
             "recipient": recipient,
             "email_type": email_type,
             "message_id": message_id,
             "subject": subject,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
 
         await self.log_structured(
@@ -477,17 +477,17 @@ class LoggingService:
         email_type: str,
         error_code: str,
         error_message: str,
-        context: Optional[ErrorContext] = None
+        context: Optional[ErrorContext] = None,
     ):
         """Log email sending errors."""
         message = f"Failed to send email to {recipient}: {error_message}"
-        
+
         additional_data = {
             "recipient": recipient,
             "email_type": email_type,
             "error_code": error_code,
             "error_message": error_message,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
 
         await self.log_structured(

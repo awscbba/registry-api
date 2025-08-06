@@ -19,9 +19,13 @@ class EmailService:
     """Service for sending emails via AWS SES with template support."""
 
     def __init__(self):
-        self.ses_client = boto3.client('ses', region_name=os.getenv('AWS_REGION', 'us-east-1'))
-        self.from_email = os.getenv('SES_FROM_EMAIL', 'noreply@people-register.local')
-        self.frontend_url = os.getenv('FRONTEND_URL', 'https://d28z2il3z2vmpc.cloudfront.net')
+        self.ses_client = boto3.client(
+            "ses", region_name=os.getenv("AWS_REGION", "us-east-1")
+        )
+        self.from_email = os.getenv("SES_FROM_EMAIL", "noreply@people-register.local")
+        self.frontend_url = os.getenv(
+            "FRONTEND_URL", "https://d28z2il3z2vmpc.cloudfront.net"
+        )
         self.logger = LoggingService()
 
     def generate_temporary_password(self, length: int = 12) -> str:
@@ -33,37 +37,47 @@ class EmailService:
             secrets.choice(string.ascii_lowercase),
             secrets.choice(string.ascii_uppercase),
             secrets.choice(string.digits),
-            secrets.choice("!@#$%^&*")
+            secrets.choice("!@#$%^&*"),
         ]
-        
+
         # Fill the rest randomly
         for _ in range(length - 4):
             password.append(secrets.choice(characters))
-        
+
         # Shuffle the password
         secrets.SystemRandom().shuffle(password)
-        return ''.join(password)
+        return "".join(password)
 
     def get_welcome_email_template(self, variables: Dict[str, Any]) -> Dict[str, str]:
         """Get the welcome email template with variables replaced."""
-        
+
         # Try to read the new enhanced template first
         template_path = os.path.join(
-            os.path.dirname(__file__), 
-            '..', '..', '..', 'registry-infrastructure', 'email_templates', 'new_user_welcome_email.html'
+            os.path.dirname(__file__),
+            "..",
+            "..",
+            "..",
+            "registry-infrastructure",
+            "email_templates",
+            "new_user_welcome_email.html",
         )
-        
+
         try:
-            with open(template_path, 'r', encoding='utf-8') as f:
+            with open(template_path, "r", encoding="utf-8") as f:
                 html_template = f.read()
         except FileNotFoundError:
             # Fallback to original template
             template_path = os.path.join(
-                os.path.dirname(__file__), 
-                '..', '..', '..', 'registry-infrastructure', 'email_templates', 'welcome_email.html'
+                os.path.dirname(__file__),
+                "..",
+                "..",
+                "..",
+                "registry-infrastructure",
+                "email_templates",
+                "welcome_email.html",
             )
             try:
-                with open(template_path, 'r', encoding='utf-8') as f:
+                with open(template_path, "r", encoding="utf-8") as f:
                     html_template = f.read()
             except FileNotFoundError:
                 # Final fallback template
@@ -78,9 +92,9 @@ class EmailService:
         text_body = self._html_to_text(html_template, variables)
 
         return {
-            'subject': f"¡Bienvenido! Tu cuenta ha sido creada - {variables.get('project_name', 'AWS User Group Cochabamba')}",
-            'html_body': html_template,
-            'text_body': text_body
+            "subject": f"¡Bienvenido! Tu cuenta ha sido creada - {variables.get('project_name', 'AWS User Group Cochabamba')}",
+            "html_body": html_template,
+            "text_body": text_body,
         }
 
     def _get_fallback_welcome_template(self) -> str:
@@ -201,39 +215,37 @@ AWS User Group Cochabamba - Sistema de Registro de Personas
         """.strip()
 
     async def send_welcome_email(
-        self, 
-        email: str, 
-        first_name: str, 
-        last_name: str, 
+        self,
+        email: str,
+        first_name: str,
+        last_name: str,
         project_name: str,
-        temporary_password: str
+        temporary_password: str,
     ) -> EmailResponse:
         """Send welcome email with temporary password to new user."""
-        
+
         variables = {
-            'first_name': first_name,
-            'last_name': last_name,
-            'email': email,
-            'project_name': project_name,
-            'temporary_password': temporary_password,
-            'login_url': f"{self.frontend_url}/login",
-            'current_year': datetime.now().year
+            "first_name": first_name,
+            "last_name": last_name,
+            "email": email,
+            "project_name": project_name,
+            "temporary_password": temporary_password,
+            "login_url": f"{self.frontend_url}/login",
+            "current_year": datetime.now().year,
         }
 
         template = self.get_welcome_email_template(variables)
-        
+
         email_request = EmailRequest(
-            to_email=email,
-            email_type=EmailType.WELCOME,
-            variables=variables
+            to_email=email, email_type=EmailType.WELCOME, variables=variables
         )
 
         return await self.send_email(
             to_email=email,
-            subject=template['subject'],
-            html_body=template['html_body'],
-            text_body=template['text_body'],
-            email_type=EmailType.WELCOME
+            subject=template["subject"],
+            html_body=template["html_body"],
+            text_body=template["text_body"],
+            email_type=EmailType.WELCOME,
         )
 
     async def send_email(
@@ -243,57 +255,55 @@ AWS User Group Cochabamba - Sistema de Registro de Personas
         html_body: str,
         text_body: str,
         email_type: EmailType,
-        from_name: str = "AWS User Group Cochabamba"
+        from_name: str = "AWS User Group Cochabamba",
     ) -> EmailResponse:
         """Send email via AWS SES."""
-        
+
         try:
             # Prepare the email
             source = f"{from_name} <{self.from_email}>"
-            
+
             response = self.ses_client.send_email(
                 Source=source,
-                Destination={'ToAddresses': [to_email]},
+                Destination={"ToAddresses": [to_email]},
                 Message={
-                    'Subject': {'Data': subject, 'Charset': 'UTF-8'},
-                    'Body': {
-                        'Html': {'Data': html_body, 'Charset': 'UTF-8'},
-                        'Text': {'Data': text_body, 'Charset': 'UTF-8'}
-                    }
-                }
+                    "Subject": {"Data": subject, "Charset": "UTF-8"},
+                    "Body": {
+                        "Html": {"Data": html_body, "Charset": "UTF-8"},
+                        "Text": {"Data": text_body, "Charset": "UTF-8"},
+                    },
+                },
             )
 
-            message_id = response['MessageId']
-            
+            message_id = response["MessageId"]
+
             # Log the email sending
             await self.logger.log_email_sent(
                 recipient=to_email,
                 email_type=email_type.value,
                 message_id=message_id,
-                subject=subject
+                subject=subject,
             )
 
             return EmailResponse(
-                success=True,
-                message_id=message_id,
-                message="Email sent successfully"
+                success=True, message_id=message_id, message="Email sent successfully"
             )
 
         except ClientError as e:
-            error_code = e.response['Error']['Code']
-            error_message = e.response['Error']['Message']
-            
+            error_code = e.response["Error"]["Code"]
+            error_message = e.response["Error"]["Message"]
+
             await self.logger.log_email_error(
                 recipient=to_email,
                 email_type=email_type.value,
                 error_code=error_code,
-                error_message=error_message
+                error_message=error_message,
             )
 
             return EmailResponse(
                 success=False,
                 error_code=error_code,
-                message=f"Failed to send email: {error_message}"
+                message=f"Failed to send email: {error_message}",
             )
 
         except Exception as e:
@@ -301,37 +311,33 @@ AWS User Group Cochabamba - Sistema de Registro de Personas
                 recipient=to_email,
                 email_type=email_type.value,
                 error_code="UNKNOWN_ERROR",
-                error_message=str(e)
+                error_message=str(e),
             )
 
             return EmailResponse(
                 success=False,
                 error_code="UNKNOWN_ERROR",
-                message=f"Unexpected error: {str(e)}"
+                message=f"Unexpected error: {str(e)}",
             )
 
     async def send_password_reset_email(
-        self,
-        email: str,
-        first_name: str,
-        reset_token: str,
-        expires_at: datetime
+        self, email: str, first_name: str, reset_token: str, expires_at: datetime
     ) -> EmailResponse:
         """Send password reset email."""
-        
+
         reset_url = f"{self.frontend_url}/reset-password?token={reset_token}"
         expires_formatted = expires_at.strftime("%d/%m/%Y a las %H:%M")
-        
+
         variables = {
-            'first_name': first_name,
-            'reset_url': reset_url,
-            'expires_at': expires_formatted,
-            'current_year': datetime.now().year
+            "first_name": first_name,
+            "reset_url": reset_url,
+            "expires_at": expires_formatted,
+            "current_year": datetime.now().year,
         }
 
         # For now, use a simple template - can be enhanced later
         subject = "Restablecimiento de Contraseña - AWS User Group Cochabamba"
-        
+
         html_body = f"""
         <h2>Restablecimiento de Contraseña</h2>
         <p>Hola {first_name},</p>
@@ -340,7 +346,7 @@ AWS User Group Cochabamba - Sistema de Registro de Personas
         <p>Este enlace expira el {expires_formatted}.</p>
         <p>Si no solicitaste este cambio, puedes ignorar este email.</p>
         """
-        
+
         text_body = f"""
         Restablecimiento de Contraseña
         
@@ -360,7 +366,7 @@ AWS User Group Cochabamba - Sistema de Registro de Personas
             subject=subject,
             html_body=html_body,
             text_body=text_body,
-            email_type=EmailType.PASSWORD_RESET
+            email_type=EmailType.PASSWORD_RESET,
         )
 
 
