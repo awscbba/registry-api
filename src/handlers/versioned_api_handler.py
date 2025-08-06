@@ -24,9 +24,12 @@ from ..services.defensive_dynamodb_service import (
     DefensiveDynamoDBService as DynamoDBService,
 )
 from ..services.auth_service import AuthService
+from ..services.email_service import email_service
 from ..middleware.auth_middleware import get_current_user
 from ..utils.error_handler import StandardErrorHandler, handle_database_error
 from ..utils.logging_config import get_handler_logger
+from ..utils.password_utils import hash_password, verify_password
+from ..utils.jwt_utils import create_access_token, get_current_user as jwt_get_current_user
 from ..utils.response_models import (
     ResponseFactory,
     create_v1_response,
@@ -326,9 +329,6 @@ async def check_subscription_exists_v2(check_data: dict):
 async def create_subscription_v2(subscription_data: dict):
     """Create subscription (v2 - enhanced with password generation and email)."""
     try:
-        # Import email service
-        from ..services.email_service import email_service
-
         # Extract person and subscription data
         person_data = subscription_data.get("person")
         project_id = subscription_data.get("projectId")
@@ -457,8 +457,6 @@ async def create_subscription_v2(subscription_data: dict):
             temporary_password = email_service.generate_temporary_password()
 
             # Hash the temporary password
-            from ..utils.password_utils import hash_password
-
             hashed_password = hash_password(temporary_password)
 
             # Add password to person data
@@ -626,8 +624,6 @@ async def user_login(login_request: LoginRequest, request: Request):
             )
 
         # Verify password
-        from ..utils.password_utils import verify_password
-
         if not verify_password(login_request.password, person.password_hash):
             logger.log_api_response("POST", "/auth/user/login", 401)
             return {
@@ -637,8 +633,6 @@ async def user_login(login_request: LoginRequest, request: Request):
             }
 
         # Generate JWT token for user
-        from ..utils.jwt_utils import create_access_token
-
         token_data = {
             "sub": person.id,
             "email": person.email,
@@ -687,9 +681,7 @@ async def get_user_subscriptions(request: Request):
         logger.log_api_request("GET", "/auth/user/subscriptions")
 
         # Extract user from JWT token
-        from ..utils.jwt_utils import get_current_user
-
-        current_user = await get_current_user(request)
+        current_user = await jwt_get_current_user(request)
 
         if not current_user:
             raise HTTPException(
@@ -765,9 +757,7 @@ async def user_subscribe_to_project(request: Request, subscription_data: dict):
         logger.log_api_request("POST", "/auth/user/subscribe")
 
         # Extract user from JWT token
-        from ..utils.jwt_utils import get_current_user
-
-        current_user = await get_current_user(request)
+        current_user = await jwt_get_current_user(request)
 
         if not current_user:
             raise HTTPException(
