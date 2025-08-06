@@ -1085,7 +1085,9 @@ async def get_admin_dashboard():
 
         # Count subscriptions by status
         active_subscriptions = [s for s in subscriptions if s.get("status") == "active"]
-        pending_subscriptions = [s for s in subscriptions if s.get("status") == "pending"]
+        pending_subscriptions = [
+            s for s in subscriptions if s.get("status") == "pending"
+        ]
         # Current subscriptions = active + pending (excludes inactive)
         current_subscriptions = active_subscriptions + pending_subscriptions
 
@@ -1250,11 +1252,15 @@ async def get_admin_projects():
             project_subscriptions = [
                 s for s in subscriptions if s.get("projectId") == project.get("id")
             ]
-            
+
             # Count subscriptions by status
-            active_subs = [s for s in project_subscriptions if s.get("status") == "active"]
-            pending_subs = [s for s in project_subscriptions if s.get("status") == "pending"]
-            
+            active_subs = [
+                s for s in project_subscriptions if s.get("status") == "active"
+            ]
+            pending_subs = [
+                s for s in project_subscriptions if s.get("status") == "pending"
+            ]
+
             enhanced_project = {
                 **project,
                 # subscriptionCount should reflect active + pending (not inactive)
