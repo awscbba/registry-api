@@ -682,13 +682,6 @@ class DefensiveDynamoDBService:
                 safe_update_expression_builder(update_data, field_mappings)
             )
 
-            # Handle status field specially
-            if "status" in update_data:
-                expression_values[":status"] = safe_enum_value(update_data["status"])
-                if "status" not in expression_names:
-                    expression_names["#status"] = "status"
-                    update_expression += ", #status = :status"
-
             # Build update parameters
             update_params = {
                 "Key": {"id": project_id},
