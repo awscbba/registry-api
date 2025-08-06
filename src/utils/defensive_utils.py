@@ -91,7 +91,11 @@ def safe_enum_value(enum_obj: Any, default: str = "") -> str:
 
     # Check if it's an enum first (before checking if it's a string)
     # This handles str-based enums like SubscriptionStatus(str, Enum)
-    if hasattr(enum_obj, "value") and hasattr(enum_obj, "__class__") and hasattr(enum_obj.__class__, "__bases__"):
+    if (
+        hasattr(enum_obj, "value")
+        and hasattr(enum_obj, "__class__")
+        and hasattr(enum_obj.__class__, "__bases__")
+    ):
         # Check if it's actually an enum by looking for Enum in the class hierarchy
         if any("Enum" in str(base) for base in enum_obj.__class__.__mro__):
             try:

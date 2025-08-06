@@ -836,7 +836,7 @@ class DefensiveDynamoDBService:
             field_mappings = {
                 "status": "status"  # status is a reserved word in DynamoDB
             }
-            
+
             update_expression, expression_values, expression_names = (
                 safe_update_expression_builder(update_data, field_mappings)
             )
