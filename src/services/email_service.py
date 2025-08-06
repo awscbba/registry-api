@@ -112,30 +112,30 @@ class EmailService:
             <h1 style="margin: 0; font-size: 24px;">AWS User Group Cochabamba</h1>
             <p style="margin: 5px 0 0 0; color: #FF9900;">Sistema de Registro de Personas</p>
         </div>
-        
+
         <div style="background: white; padding: 40px; border: 1px solid #ddd;">
             <div style="text-align: center; font-size: 48px; margin-bottom: 20px;">🎉</div>
-            
+
             <h2 style="color: #161d2b; text-align: center;">¡Bienvenido al Sistema!</h2>
-            
+
             <p>Hola <strong>{{first_name}} {{last_name}}</strong>,</p>
-            
+
             <p>¡Gracias por suscribirte a <strong>{{project_name}}</strong>! Tu cuenta ha sido creada exitosamente.</p>
-            
+
             <div style="background: #f8f9fa; border: 2px solid #e9ecef; border-radius: 8px; padding: 25px; margin: 25px 0;">
                 <h3 style="color: #161d2b; text-align: center; margin-top: 0;">Credenciales de Acceso</h3>
-                
+
                 <div style="margin: 10px 0; padding: 10px; background: white; border-radius: 4px; border-left: 4px solid #4A90E2;">
                     <div style="font-size: 14px; font-weight: 600; color: #666; margin-bottom: 5px;">Email:</div>
                     <div style="font-size: 16px; font-weight: 500; color: #161d2b; font-family: monospace;">{{email}}</div>
                 </div>
-                
+
                 <div style="margin: 10px 0; padding: 10px; background: white; border-radius: 4px; border-left: 4px solid #4A90E2;">
                     <div style="font-size: 14px; font-weight: 600; color: #666; margin-bottom: 5px;">Contraseña Temporal:</div>
                     <div style="font-size: 16px; font-weight: 500; color: #161d2b; font-family: monospace;">{{temporary_password}}</div>
                 </div>
             </div>
-            
+
             <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; padding: 20px; margin: 20px 0;">
                 <h4 style="color: #856404; margin-top: 0;">⚠️ Importante - Seguridad</h4>
                 <p style="color: #856404; margin-bottom: 0;">
@@ -143,13 +143,13 @@ class EmailService:
                     No compartas estas credenciales con nadie.
                 </p>
             </div>
-            
+
             <div style="text-align: center; margin: 30px 0;">
                 <a href="{{login_url}}" style="display: inline-block; padding: 15px 30px; background: #4A90E2; color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">
                     Iniciar Sesión Ahora
                 </a>
             </div>
-            
+
             <h3>Próximos Pasos:</h3>
             <ol>
                 <li><strong>Inicia sesión</strong> usando las credenciales proporcionadas</li>
@@ -157,17 +157,17 @@ class EmailService:
                 <li><strong>Completa tu perfil</strong> si es necesario</li>
                 <li><strong>Explora los proyectos</strong> disponibles</li>
             </ol>
-            
+
             <p>Si tienes alguna pregunta o necesitas ayuda, no dudes en contactarnos.</p>
-            
+
             <p>¡Esperamos verte pronto en nuestros eventos!</p>
-            
+
             <p style="margin-top: 30px;">
                 Saludos,<br>
                 <strong>El equipo de AWS User Group Cochabamba</strong>
             </p>
         </div>
-        
+
         <div style="background: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #e9ecef; font-size: 14px; color: #6c757d;">
             <p>Este email fue enviado automáticamente. Por favor no respondas a este mensaje.</p>
             <p>AWS User Group Cochabamba - Sistema de Registro de Personas</p>
@@ -349,15 +349,15 @@ AWS User Group Cochabamba - Sistema de Registro de Personas
 
         text_body = f"""
         Restablecimiento de Contraseña
-        
+
         Hola {first_name},
-        
+
         Recibimos una solicitud para restablecer tu contraseña.
-        
+
         Para restablecer tu contraseña, visita: {reset_url}
-        
+
         Este enlace expira el {expires_formatted}.
-        
+
         Si no solicitaste este cambio, puedes ignorar este email.
         """
 
