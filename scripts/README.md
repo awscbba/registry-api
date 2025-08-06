@@ -22,6 +22,23 @@ This directory contains essential maintenance and analysis scripts for the regis
 - Provides the code fix for proper cascade deletion
 - Shows implementation steps
 
+### `cleanup_duplicate_subscriptions.py`
+**Purpose**: Cleans up duplicate subscription records
+**Usage**: `uv run python scripts/cleanup_duplicate_subscriptions.py`
+**What it does**:
+- Identifies duplicate subscription records
+- Provides cleanup options for data integrity
+- Maintains referential integrity during cleanup
+
+### `database_health_check.py`
+**Purpose**: Performs comprehensive database health checks
+**Usage**: `uv run python scripts/database_health_check.py`
+**What it does**:
+- Checks database connectivity and performance
+- Validates data integrity across tables
+- Identifies potential issues before they become problems
+- Provides health metrics and recommendations
+
 ## System Administration Scripts
 
 ### `set_initial_admin.py`
