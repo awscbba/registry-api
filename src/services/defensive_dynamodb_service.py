@@ -495,13 +495,33 @@ class DefensiveDynamoDBService:
     async def delete_person(
         self, person_id: str, context: Optional[ErrorContext] = None
     ) -> bool:
-        """Delete a person with defensive programming"""
+        """Delete a person with automatic cascade deletion of subscriptions"""
         try:
             # Check if person exists first
             existing_person = await self.get_person(person_id, context)
             if not existing_person:
                 return False
 
+            # Get all subscriptions for this person
+            person_subscriptions = await self.get_subscriptions_by_person(person_id)
+            
+            # Delete all subscriptions first (automatic cascade deletion)
+            deleted_subscriptions = 0
+            for subscription in person_subscriptions:
+                subscription_id = subscription.get('id')
+                if subscription_id:
+                    try:
+                        success = await self.delete_subscription(subscription_id)
+                        if success:
+                            deleted_subscriptions += 1
+                            self.logger.info(f"Auto-deleted subscription {subscription_id} for person {person_id}")
+                    except Exception as e:
+                        self.logger.error(f"Error auto-deleting subscription {subscription_id}: {e}")
+            
+            if deleted_subscriptions > 0:
+                self.logger.info(f"Auto-deleted {deleted_subscriptions} subscriptions for person {person_id}")
+            
+            # Now delete the person
             self.table.delete_item(Key={"id": person_id})
             return True
 
