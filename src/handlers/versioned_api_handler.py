@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from typing import Dict, Any
 from fastapi import FastAPI, HTTPException, status, Request, Depends, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPAuthorizationCredentials
 
 from ..models.person import (
     PersonCreate,
@@ -25,14 +26,11 @@ from ..services.defensive_dynamodb_service import (
 )
 from ..services.auth_service import AuthService
 from ..services.email_service import email_service
-from ..middleware.auth_middleware import get_current_user
+from ..middleware.auth_middleware import get_current_user, auth_middleware
 from ..utils.error_handler import StandardErrorHandler, handle_database_error
 from ..utils.logging_config import get_handler_logger
 from ..utils.password_utils import PasswordHasher
-from ..utils.jwt_utils import (
-    create_access_token,
-    get_current_user as jwt_get_current_user,
-)
+from ..utils.jwt_utils import JWTManager
 from ..utils.response_models import (
     ResponseFactory,
     create_v1_response,
@@ -646,7 +644,7 @@ async def user_login(login_request: LoginRequest, request: Request):
             "last_name": person.last_name,
         }
 
-        access_token = create_access_token(data=token_data)
+        access_token = JWTManager.create_access_token(person.id, token_data)
 
         logger.log_api_response("POST", "/auth/user/login", 200)
 
@@ -686,13 +684,17 @@ async def get_user_subscriptions(request: Request):
         logger.log_api_request("GET", "/auth/user/subscriptions")
 
         # Extract user from JWT token
-        current_user = await jwt_get_current_user(request)
-
-        if not current_user:
+        # Extract token from Authorization header
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token de autenticación requerido",
             )
+
+        token = auth_header.split(" ")[1]
+        credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
+        current_user = await auth_middleware.get_current_user(credentials)
 
         # Get user's subscriptions
         user_subscriptions = await db_service.get_subscriptions_by_person(
@@ -762,13 +764,17 @@ async def user_subscribe_to_project(request: Request, subscription_data: dict):
         logger.log_api_request("POST", "/auth/user/subscribe")
 
         # Extract user from JWT token
-        current_user = await jwt_get_current_user(request)
-
-        if not current_user:
+        # Extract token from Authorization header
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token de autenticación requerido",
             )
+
+        token = auth_header.split(" ")[1]
+        credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
+        current_user = await auth_middleware.get_current_user(credentials)
 
         project_id = subscription_data.get("projectId")
         notes = subscription_data.get("notes", "")
@@ -836,9 +842,6 @@ async def get_current_user_info(request: Request):
     Requires valid JWT token in Authorization header.
     """
     try:
-        from ..middleware.auth_middleware import get_current_user
-        from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-
         # Extract token from Authorization header
         auth_header = request.headers.get("Authorization")
         if not auth_header or not auth_header.startswith("Bearer "):
@@ -852,8 +855,6 @@ async def get_current_user_info(request: Request):
         credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
 
         # Get current user using auth middleware
-        from ..middleware.auth_middleware import auth_middleware
-
         current_user = await auth_middleware.get_current_user(credentials)
 
         return {
