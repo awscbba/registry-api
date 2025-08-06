@@ -465,7 +465,7 @@ class LoggingService:
 
         await self.log_structured(
             level=LogLevel.INFO,
-            category=LogCategory.BUSINESS_LOGIC,
+            category=LogCategory.EMAIL_VERIFICATION,
             message=message,
             context=context or ErrorContext(request_id=str(uuid.uuid4())),
             additional_data=additional_data,
@@ -492,7 +492,7 @@ class LoggingService:
 
         await self.log_structured(
             level=LogLevel.ERROR,
-            category=LogCategory.SYSTEM_ERROR,
+            category=LogCategory.ERROR_HANDLING,
             message=message,
             context=context or ErrorContext(request_id=str(uuid.uuid4())),
             additional_data=additional_data,

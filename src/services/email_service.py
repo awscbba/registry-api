@@ -369,6 +369,223 @@ AWS User Group Cochabamba - Sistema de Registro de Personas
             email_type=EmailType.PASSWORD_RESET,
         )
 
+    async def send_subscription_approved_email(
+        self,
+        email: str,
+        first_name: str,
+        last_name: str,
+        project_name: str,
+        project_description: Optional[str] = None,
+    ) -> EmailResponse:
+        """Send subscription approval notification email."""
+
+        variables = {
+            "first_name": first_name,
+            "last_name": last_name,
+            "email": email,
+            "project_name": project_name,
+            "project_description": project_description or "Proyecto del AWS User Group Cochabamba",
+            "login_url": f"{self.frontend_url}/login",
+            "dashboard_url": f"{self.frontend_url}/dashboard",
+            "current_year": datetime.now().year,
+        }
+
+        subject = f"¡Suscripción Aprobada! - {project_name} - AWS User Group Cochabamba"
+
+        html_body = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #FF9500, #FF6B35); padding: 30px; text-align: center; color: white;">
+                <h1 style="margin: 0; font-size: 28px;">¡Felicitaciones!</h1>
+                <p style="margin: 10px 0 0 0; font-size: 18px;">Tu suscripción ha sido aprobada</p>
+            </div>
+            
+            <div style="padding: 30px; background: #f9f9f9;">
+                <h2 style="color: #333; margin-top: 0;">Hola {first_name},</h2>
+                
+                <p style="color: #555; line-height: 1.6; font-size: 16px;">
+                    ¡Excelentes noticias! Tu suscripción al proyecto <strong>{project_name}</strong> 
+                    ha sido aprobada por nuestro equipo administrativo.
+                </p>
+                
+                <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #FF9500;">
+                    <h3 style="color: #333; margin-top: 0;">Detalles del Proyecto:</h3>
+                    <p style="margin: 5px 0;"><strong>Proyecto:</strong> {project_name}</p>
+                    <p style="margin: 5px 0;"><strong>Descripción:</strong> {project_description}</p>
+                    <p style="margin: 5px 0;"><strong>Estado:</strong> <span style="color: #28a745; font-weight: bold;">Activo</span></p>
+                </div>
+                
+                <h3 style="color: #333;">¿Qué sigue?</h3>
+                <ul style="color: #555; line-height: 1.6;">
+                    <li>Puedes acceder a tu dashboard para ver los detalles del proyecto</li>
+                    <li>Recibirás notificaciones sobre actualizaciones y eventos</li>
+                    <li>Podrás participar en las actividades programadas</li>
+                </ul>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{variables['dashboard_url']}" 
+                       style="background: #FF9500; color: white; padding: 15px 30px; text-decoration: none; 
+                              border-radius: 5px; font-weight: bold; display: inline-block;">
+                        Acceder al Dashboard
+                    </a>
+                </div>
+                
+                <p style="color: #777; font-size: 14px; margin-top: 30px;">
+                    Si tienes alguna pregunta, no dudes en contactarnos.
+                </p>
+                
+                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                
+                <div style="text-align: center; color: #999; font-size: 12px;">
+                    <p>AWS User Group Cochabamba</p>
+                    <p>© {variables['current_year']} Todos los derechos reservados</p>
+                </div>
+            </div>
+        </div>
+        """
+
+        text_body = f"""
+        ¡Felicitaciones! Tu suscripción ha sido aprobada
+
+        Hola {first_name},
+
+        ¡Excelentes noticias! Tu suscripción al proyecto "{project_name}" ha sido aprobada por nuestro equipo administrativo.
+
+        Detalles del Proyecto:
+        - Proyecto: {project_name}
+        - Descripción: {project_description}
+        - Estado: Activo
+
+        ¿Qué sigue?
+        - Puedes acceder a tu dashboard para ver los detalles del proyecto
+        - Recibirás notificaciones sobre actualizaciones y eventos
+        - Podrás participar en las actividades programadas
+
+        Accede a tu dashboard: {variables['dashboard_url']}
+
+        Si tienes alguna pregunta, no dudes en contactarnos.
+
+        AWS User Group Cochabamba
+        © {variables['current_year']} Todos los derechos reservados
+        """
+
+        return await self.send_email(
+            to_email=email,
+            subject=subject,
+            html_body=html_body,
+            text_body=text_body,
+            email_type=EmailType.SUBSCRIPTION_APPROVED,
+        )
+
+    async def send_subscription_rejected_email(
+        self,
+        email: str,
+        first_name: str,
+        last_name: str,
+        project_name: str,
+        rejection_reason: Optional[str] = None,
+    ) -> EmailResponse:
+        """Send subscription rejection notification email."""
+
+        variables = {
+            "first_name": first_name,
+            "last_name": last_name,
+            "email": email,
+            "project_name": project_name,
+            "rejection_reason": rejection_reason or "No se proporcionó una razón específica",
+            "contact_url": f"{self.frontend_url}/contact",
+            "current_year": datetime.now().year,
+        }
+
+        subject = f"Actualización de Suscripción - {project_name} - AWS User Group Cochabamba"
+
+        html_body = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #6c757d, #495057); padding: 30px; text-align: center; color: white;">
+                <h1 style="margin: 0; font-size: 28px;">Actualización de Suscripción</h1>
+                <p style="margin: 10px 0 0 0; font-size: 18px;">Información sobre tu solicitud</p>
+            </div>
+            
+            <div style="padding: 30px; background: #f9f9f9;">
+                <h2 style="color: #333; margin-top: 0;">Hola {first_name},</h2>
+                
+                <p style="color: #555; line-height: 1.6; font-size: 16px;">
+                    Gracias por tu interés en el proyecto <strong>{project_name}</strong>. 
+                    Después de revisar tu solicitud, lamentamos informarte que no pudimos aprobar 
+                    tu suscripción en este momento.
+                </p>
+                
+                <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #6c757d;">
+                    <h3 style="color: #333; margin-top: 0;">Detalles:</h3>
+                    <p style="margin: 5px 0;"><strong>Proyecto:</strong> {project_name}</p>
+                    <p style="margin: 5px 0;"><strong>Estado:</strong> <span style="color: #dc3545; font-weight: bold;">No Aprobado</span></p>
+                    <p style="margin: 5px 0;"><strong>Motivo:</strong> {rejection_reason}</p>
+                </div>
+                
+                <h3 style="color: #333;">¿Qué puedes hacer?</h3>
+                <ul style="color: #555; line-height: 1.6;">
+                    <li>Puedes aplicar a otros proyectos disponibles</li>
+                    <li>Contacta con nuestro equipo si tienes preguntas</li>
+                    <li>Mantente atento a futuros proyectos que puedan interesarte</li>
+                </ul>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{variables['contact_url']}" 
+                       style="background: #6c757d; color: white; padding: 15px 30px; text-decoration: none; 
+                              border-radius: 5px; font-weight: bold; display: inline-block;">
+                        Contactar Soporte
+                    </a>
+                </div>
+                
+                <p style="color: #777; font-size: 14px; margin-top: 30px;">
+                    Agradecemos tu interés en participar en nuestras actividades y esperamos 
+                    poder contar contigo en futuras oportunidades.
+                </p>
+                
+                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                
+                <div style="text-align: center; color: #999; font-size: 12px;">
+                    <p>AWS User Group Cochabamba</p>
+                    <p>© {variables['current_year']} Todos los derechos reservados</p>
+                </div>
+            </div>
+        </div>
+        """
+
+        text_body = f"""
+        Actualización de Suscripción
+
+        Hola {first_name},
+
+        Gracias por tu interés en el proyecto "{project_name}". Después de revisar tu solicitud, 
+        lamentamos informarte que no pudimos aprobar tu suscripción en este momento.
+
+        Detalles:
+        - Proyecto: {project_name}
+        - Estado: No Aprobado
+        - Motivo: {rejection_reason}
+
+        ¿Qué puedes hacer?
+        - Puedes aplicar a otros proyectos disponibles
+        - Contacta con nuestro equipo si tienes preguntas
+        - Mantente atento a futuros proyectos que puedan interesarte
+
+        Contactar soporte: {variables['contact_url']}
+
+        Agradecemos tu interés en participar en nuestras actividades y esperamos 
+        poder contar contigo en futuras oportunidades.
+
+        AWS User Group Cochabamba
+        © {variables['current_year']} Todos los derechos reservados
+        """
+
+        return await self.send_email(
+            to_email=email,
+            subject=subject,
+            html_body=html_body,
+            text_body=text_body,
+            email_type=EmailType.SUBSCRIPTION_REJECTED,
+        )
+
 
 # Singleton instance
 email_service = EmailService()

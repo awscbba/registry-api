@@ -2302,8 +2302,11 @@ async def update_project_subscription_v2(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Subscription not found"
             )
 
-        # Create update object
+        # Store original status for email notification logic
+        original_status = subscription.get("status")
+        new_status = update_data.get("status")
 
+        # Create update object
         update_fields = {}
         if "status" in update_data:
             update_fields["status"] = update_data["status"]
@@ -2320,6 +2323,67 @@ async def update_project_subscription_v2(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to update subscription",
             )
+
+        # Send email notification if status changed to approved or rejected
+        if new_status and new_status != original_status:
+            try:
+                # Get person details for email notification
+                person_id = subscription.get("personId")
+                if person_id:
+                    person = await db_service.get_person(person_id)
+                    if person:
+                        project_name = project.get("name", "Proyecto")
+                        project_description = project.get("description")
+                        
+                        if new_status == "active":
+                            # Send approval email
+                            email_response = await email_service.send_subscription_approved_email(
+                                email=person.email,
+                                first_name=person.first_name,
+                                last_name=person.last_name,
+                                project_name=project_name,
+                                project_description=project_description,
+                            )
+                            
+                            if email_response.success:
+                                logger.info(
+                                    f"Subscription approval email sent successfully to {person.email} for project {project_name}"
+                                )
+                            else:
+                                logger.warning(
+                                    f"Failed to send subscription approval email to {person.email}: {email_response.message}"
+                                )
+                        
+                        elif new_status == "inactive":
+                            # Send rejection email
+                            rejection_reason = update_data.get("notes", "No se proporcionó una razón específica")
+                            email_response = await email_service.send_subscription_rejected_email(
+                                email=person.email,
+                                first_name=person.first_name,
+                                last_name=person.last_name,
+                                project_name=project_name,
+                                rejection_reason=rejection_reason,
+                            )
+                            
+                            if email_response.success:
+                                logger.info(
+                                    f"Subscription rejection email sent successfully to {person.email} for project {project_name}"
+                                )
+                            else:
+                                logger.warning(
+                                    f"Failed to send subscription rejection email to {person.email}: {email_response.message}"
+                                )
+                        
+            except Exception as email_error:
+                # Log email error but don't fail the subscription update
+                logger.error(
+                    f"Error sending subscription status email notification: {str(email_error)}",
+                    operation="update_project_subscription_v2_email",
+                    subscription_id=subscription_id,
+                    person_id=person_id,
+                    new_status=new_status,
+                    error_type=type(email_error).__name__,
+                )
 
         response = create_v2_response(updated_subscription)
         logger.log_api_response(

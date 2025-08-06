@@ -20,6 +20,8 @@ class EmailType(str, Enum):
     ACCOUNT_LOCKED = "account_locked"
     EMAIL_VERIFICATION = "email_verification"
     EMAIL_CHANGE_NOTIFICATION = "email_change_notification"
+    SUBSCRIPTION_APPROVED = "subscription_approved"
+    SUBSCRIPTION_REJECTED = "subscription_rejected"
 
 
 class EmailTemplate(BaseModel):
