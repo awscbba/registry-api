@@ -627,7 +627,9 @@ async def user_login(login_request: LoginRequest, request: Request):
             )
 
         # Verify password
-        if not PasswordHasher.verify_password(login_request.password, person.password_hash):
+        if not PasswordHasher.verify_password(
+            login_request.password, person.password_hash
+        ):
             logger.log_api_response("POST", "/auth/user/login", 401)
             return {
                 "success": False,
