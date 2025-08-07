@@ -30,7 +30,7 @@ I am requesting to move my Amazon SES account out of sandbox mode for the follow
 
 **Email Types**:
 1. Welcome emails with temporary passwords for new user registrations
-2. Event subscription approval/rejection notifications  
+2. Event subscription approval/rejection notifications
 3. Password reset emails for existing users
 
 **Expected Volume**: 50-100 transactional emails per month
