@@ -8,16 +8,17 @@ import boto3
 import json
 from datetime import datetime
 
+
 def request_ses_production_access():
     """Request SES production access via AWS Support."""
-    
+
     try:
         # Create support client
-        support_client = boto3.client('support', region_name='us-east-1')
-        
+        support_client = boto3.client("support", region_name="us-east-1")
+
         # Create case for SES production access
         case_subject = "Request to move Amazon SES out of sandbox mode"
-        
+
         case_body = """
 Dear AWS Support Team,
 
@@ -54,24 +55,24 @@ Thank you for your consideration.
 Best regards,
 AWS User Group Cochabamba Team
         """.strip()
-        
+
         response = support_client.create_case(
             subject=case_subject,
-            serviceCode='amazon-ses',
-            severityCode='low',
-            categoryCode='other',
+            serviceCode="amazon-ses",
+            severityCode="low",
+            categoryCode="other",
             communicationBody=case_body,
-            language='en'
+            language="en",
         )
-        
-        case_id = response['caseId']
+
+        case_id = response["caseId"]
         print(f"✅ SES production access request submitted!")
         print(f"📋 Case ID: {case_id}")
         print(f"⏱️  Expected response time: 24-48 hours")
         print(f"📧 You'll receive updates via email")
-        
+
         return case_id
-        
+
     except Exception as e:
         if "SubscriptionRequiredException" in str(e):
             print("❌ AWS Support API requires Business or Enterprise support plan")
@@ -81,15 +82,16 @@ AWS User Group Cochabamba Team
             print("   3. Fill out the form with the details above")
         else:
             print(f"❌ Error creating support case: {e}")
-        
+
         return None
+
 
 if __name__ == "__main__":
     print("🚀 Requesting SES Production Access...")
     print("=" * 50)
-    
+
     case_id = request_ses_production_access()
-    
+
     if case_id:
         print("\n📋 What happens next:")
         print("1. AWS will review your request (usually 24-48 hours)")
