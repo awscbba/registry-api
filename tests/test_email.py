@@ -9,10 +9,10 @@ import sys
 from datetime import datetime
 
 # Add the src directory to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from services.email_service import EmailService
-from models.email import EmailType
+from src.services.email_service import EmailService
+from src.models.email import EmailType
 
 
 async def test_email_service():

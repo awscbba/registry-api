@@ -13,9 +13,9 @@ os.environ["AWS_REGION"] = "us-east-1"
 os.environ["FRONTEND_URL"] = "https://d28z2il3z2vmpc.cloudfront.net"
 
 # Add the src directory to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from services.email_service import EmailService
+from src.services.email_service import EmailService
 
 
 async def test_subscription_workflow():
