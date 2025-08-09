@@ -196,6 +196,15 @@ class DefensiveDynamoDBService:
             )
             item["emailVerified"] = safe_field_access(person, "email_verified", False)
 
+            # Handle password fields for authentication
+            password_hash = safe_field_access(person, "password_hash")
+            if password_hash:
+                item["passwordHash"] = password_hash
+                
+            password_salt = safe_field_access(person, "password_salt")
+            if password_salt:
+                item["passwordSalt"] = password_salt
+
             return item
 
         except Exception as e:
@@ -243,8 +252,8 @@ class DefensiveDynamoDBService:
                 "updatedAt": safe_datetime_parse(item.get("updatedAt"))
                 or datetime.utcnow(),
                 # Include password fields for authentication
-                "password_hash": item.get("password_hash"),
-                "password_salt": item.get("password_salt"),
+                "password_hash": item.get("passwordHash"),
+                "password_salt": item.get("passwordSalt"),
             }
 
             person = Person(**person_data)
