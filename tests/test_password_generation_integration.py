@@ -29,10 +29,10 @@ class TestPasswordGenerationIntegration:
                 "city": "Test City",
                 "state": "Test State",
                 "postalCode": "12345",
-                "country": "Test Country"
+                "country": "Test Country",
             },
             "isAdmin": False,
-            "password_hash": "hashed_password_123"
+            "password_hash": "hashed_password_123",
         }
 
         # Act
@@ -47,7 +47,7 @@ class TestPasswordGenerationIntegration:
         # Arrange
         update_data = {
             "firstName": "Updated",
-            "password_hash": "new_hashed_password_456"
+            "password_hash": "new_hashed_password_456",
         }
 
         # Act
@@ -62,7 +62,7 @@ class TestPasswordGenerationIntegration:
         # Arrange
         person_data = {
             "firstName": "Test",
-            "lastName": "User", 
+            "lastName": "User",
             "email": "test@example.com",
             "phone": "1234567890",
             "dateOfBirth": "1990-01-01",
@@ -71,9 +71,9 @@ class TestPasswordGenerationIntegration:
                 "city": "Test City",
                 "state": "Test State",
                 "postalCode": "12345",
-                "country": "Test Country"
+                "country": "Test Country",
             },
-            "password_hash": "secret_password"
+            "password_hash": "secret_password",
         }
 
         # Act
@@ -82,17 +82,19 @@ class TestPasswordGenerationIntegration:
 
         # Assert
         assert "password_hash" not in person_dict
-        assert person_create.password_hash == "secret_password"  # Still accessible directly
+        assert (
+            person_create.password_hash == "secret_password"
+        )  # Still accessible directly
 
     def test_password_hashing_consistency(self):
         """Test that password hashing is consistent between generation and verification."""
         # Arrange
         original_password = "TestPassword123!"
-        
+
         # Act
         hashed_password = PasswordHasher.hash_password(original_password)
         is_valid = PasswordHasher.verify_password(original_password, hashed_password)
-        
+
         # Assert
         assert hashed_password != original_password  # Password should be hashed
         assert is_valid is True  # Verification should work
@@ -102,16 +104,18 @@ class TestPasswordGenerationIntegration:
         """Test that generated passwords meet security requirements."""
         # Arrange
         email_service = EmailService()
-        
+
         # Act
         password = email_service.generate_temporary_password()
-        
+
         # Assert
         assert len(password) >= 8  # Minimum length
         assert any(c.isupper() for c in password)  # Has uppercase
-        assert any(c.islower() for c in password)  # Has lowercase  
+        assert any(c.islower() for c in password)  # Has lowercase
         assert any(c.isdigit() for c in password)  # Has digits
-        assert any(c in "!@#$%^&*()_+-=[]{}|;:,.<>?" for c in password)  # Has special chars
+        assert any(
+            c in "!@#$%^&*()_+-=[]{}|;:,.<>?" for c in password
+        )  # Has special chars
 
 
 class TestPasswordModelValidation:
@@ -123,7 +127,7 @@ class TestPasswordModelValidation:
         person_data = {
             "firstName": "Test",
             "lastName": "User",
-            "email": "test@example.com", 
+            "email": "test@example.com",
             "phone": "1234567890",
             "dateOfBirth": "1990-01-01",
             "address": {
@@ -131,8 +135,8 @@ class TestPasswordModelValidation:
                 "city": "Test City",
                 "state": "Test State",
                 "postalCode": "12345",
-                "country": "Test Country"
-            }
+                "country": "Test Country",
+            },
         }
 
         # Act & Assert - Should not raise exception
@@ -142,9 +146,7 @@ class TestPasswordModelValidation:
     def test_person_update_password_optional(self):
         """Test that password_hash is optional in PersonUpdate."""
         # Arrange
-        update_data = {
-            "firstName": "Updated Name"
-        }
+        update_data = {"firstName": "Updated Name"}
 
         # Act & Assert - Should not raise exception
         person_update = PersonUpdate(**update_data)
@@ -157,17 +159,17 @@ class TestPasswordModelValidation:
             "firstName": "Test",
             "lastName": "User",
             "email": "test@example.com",
-            "phone": "1234567890", 
+            "phone": "1234567890",
             "dateOfBirth": "1990-01-01",
             "address": {
                 "street": "123 Test St",
                 "city": "Test City",
                 "state": "Test State",
                 "postalCode": "12345",
-                "country": "Test Country"
+                "country": "Test Country",
             },
             "password_hash": "hashed_password",
-            "password_salt": "random_salt_123"
+            "password_salt": "random_salt_123",
         }
 
         # Act
@@ -179,23 +181,23 @@ class TestPasswordModelValidation:
 
     def test_critical_bug_prevention(self):
         """Critical test: Ensure password fields can be used in person creation workflow.
-        
+
         This test simulates the exact workflow that was broken:
         1. Generate password
-        2. Hash password  
+        2. Hash password
         3. Add to person_data dict
         4. Create PersonCreate model
         5. Verify password is accessible for database storage
         """
         # Arrange - Simulate subscription workflow
         email_service = EmailService()
-        
+
         # Step 1: Generate password (this was working)
         temporary_password = email_service.generate_temporary_password()
-        
+
         # Step 2: Hash password (this was working)
         hashed_password = PasswordHasher.hash_password(temporary_password)
-        
+
         # Step 3: Add to person data (this was working)
         person_data = {
             "firstName": "Critical",
@@ -208,24 +210,34 @@ class TestPasswordModelValidation:
                 "city": "Critical City",
                 "state": "Critical State",
                 "postalCode": "12345",
-                "country": "Critical Country"
+                "country": "Critical Country",
             },
-            "password_hash": hashed_password  # This was being ignored!
+            "password_hash": hashed_password,  # This was being ignored!
         }
-        
+
         # Step 4: Create PersonCreate model (this was the bug - password_hash was excluded)
         person_create = PersonCreate(**person_data)
-        
+
         # Step 5: Verify password is accessible (this was failing before the fix)
-        assert hasattr(person_create, "password_hash"), "PersonCreate must have password_hash field"
-        assert person_create.password_hash == hashed_password, "Password hash must be preserved"
+        assert hasattr(
+            person_create, "password_hash"
+        ), "PersonCreate must have password_hash field"
+        assert (
+            person_create.password_hash == hashed_password
+        ), "Password hash must be preserved"
         assert person_create.password_hash is not None, "Password hash must not be None"
-        assert len(person_create.password_hash) > 20, "Password hash must be properly hashed"
-        
+        assert (
+            len(person_create.password_hash) > 20
+        ), "Password hash must be properly hashed"
+
         # Additional verification: password should be excluded from dict but accessible directly
         person_dict = person_create.model_dump()
-        assert "password_hash" not in person_dict, "Password must be excluded from API responses (security)"
-        assert person_create.password_hash == hashed_password, "But password must still be accessible for database storage"
+        assert (
+            "password_hash" not in person_dict
+        ), "Password must be excluded from API responses (security)"
+        assert (
+            person_create.password_hash == hashed_password
+        ), "But password must still be accessible for database storage"
 
 
 if __name__ == "__main__":
