@@ -228,7 +228,11 @@ def camel_to_snake(camel_str: str) -> str:
 
 
 def safe_model_dump(
-    model: Any, exclude_unset: bool = True, by_alias: bool = False, exclude: Any = None, include: Any = None
+    model: Any,
+    exclude_unset: bool = True,
+    by_alias: bool = False,
+    exclude: Any = None,
+    include: Any = None,
 ) -> Dict[str, Any]:
     """
     Safely dump a Pydantic model to dictionary.
@@ -248,7 +252,12 @@ def safe_model_dump(
 
     if hasattr(model, "model_dump"):
         try:
-            return model.model_dump(exclude_unset=exclude_unset, by_alias=by_alias, exclude=exclude, include=include)
+            return model.model_dump(
+                exclude_unset=exclude_unset,
+                by_alias=by_alias,
+                exclude=exclude,
+                include=include,
+            )
         except Exception as e:
             logger.warning(f"Failed to dump model {type(model)}: {e}")
             return {}
