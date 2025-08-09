@@ -415,11 +415,36 @@ async def create_subscription_v2(subscription_data: dict):
 
         person_created = False
         temporary_password = None
+        password_generated_for_existing_user = False
 
         if existing_person:
             # Use existing person
             person_id = existing_person.id
             logger.info(f"Using existing person: {person_id}")
+
+            # Check if existing person has a password set
+            if not hasattr(existing_person, "password_hash") or not existing_person.password_hash:
+                logger.info(f"Existing person {person_id} has no password, generating temporary password")
+                
+                # Generate temporary password for existing user without password
+                temporary_password = email_service.generate_temporary_password()
+                hashed_password = PasswordHasher.hash_password(temporary_password)
+                
+                # Update existing person with password
+                try:
+                    from src.models.person import PersonUpdate
+                    person_update = PersonUpdate(password_hash=hashed_password)
+                    await db_service.update_person(person_id, person_update)
+                    password_generated_for_existing_user = True
+                    logger.info(f"Updated existing person {person_id} with temporary password")
+                except Exception as e:
+                    logger.error(f"Failed to update existing person with password: {str(e)}")
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail="Failed to set up user authentication"
+                    )
+            else:
+                logger.info(f"Existing person {person_id} already has password set")
 
             # Check for existing subscription before creating
             existing_subscription = await db_service.get_existing_subscription(
@@ -489,11 +514,11 @@ async def create_subscription_v2(subscription_data: dict):
         # Create the subscription
         created_subscription = await db_service.create_subscription(subscription_create)
 
-        # Send welcome email with temporary password if new user
+        # Send welcome email with temporary password if new user OR existing user got a new password
         email_sent = False
         email_error = None
 
-        if person_created and temporary_password:
+        if (person_created or password_generated_for_existing_user) and temporary_password:
             try:
                 email_response = await email_service.send_welcome_email(
                     email=person_data["email"],
@@ -508,6 +533,11 @@ async def create_subscription_v2(subscription_data: dict):
                     logger.warning(
                         f"Failed to send welcome email: {email_response.message}"
                     )
+                else:
+                    if password_generated_for_existing_user:
+                        logger.info(f"Sent welcome email with new password to existing user: {person_data['email']}")
+                    else:
+                        logger.info(f"Sent welcome email to new user: {person_data['email']}")
             except Exception as e:
                 email_error = str(e)
                 logger.error(f"Error sending welcome email: {str(e)}")
@@ -518,6 +548,11 @@ async def create_subscription_v2(subscription_data: dict):
                 message = "¡Suscripción creada exitosamente! Se ha enviado un email de bienvenida con tus credenciales de acceso."
             else:
                 message = f"Suscripción creada exitosamente. Sin embargo, no se pudo enviar el email de bienvenida: {email_error}"
+        elif password_generated_for_existing_user:
+            if email_sent:
+                message = "¡Suscripción creada exitosamente! Se ha enviado un email con tus nuevas credenciales de acceso."
+            else:
+                message = f"Suscripción creada exitosamente. Sin embargo, no se pudo enviar el email con las credenciales: {email_error}"
         else:
             message = "Suscripción creada exitosamente para usuario existente."
 
@@ -527,6 +562,7 @@ async def create_subscription_v2(subscription_data: dict):
             "person_created": person_created,
             "email_sent": email_sent,
             "temporary_password_generated": temporary_password is not None,
+            "password_generated_for_existing_user": password_generated_for_existing_user,
             "version": "v2",
         }
 
