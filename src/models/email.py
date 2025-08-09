@@ -191,4 +191,4 @@ class EmailConfig:
         """Get from email from environment or default."""
         import os
 
-        return os.environ.get("SES_FROM_EMAIL", "courier@cbba.cloud.org.bo")
+        return os.environ.get("SES_FROM_EMAIL", "noreply@cbba.cloud.org.bo")
