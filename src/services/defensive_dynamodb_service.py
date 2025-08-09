@@ -242,6 +242,9 @@ class DefensiveDynamoDBService:
                 or datetime.utcnow(),
                 "updatedAt": safe_datetime_parse(item.get("updatedAt"))
                 or datetime.utcnow(),
+                # Include password fields for authentication
+                "password_hash": item.get("password_hash"),
+                "password_salt": item.get("password_salt"),
             }
 
             person = Person(**person_data)
