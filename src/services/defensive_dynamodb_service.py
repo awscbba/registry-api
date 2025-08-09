@@ -200,7 +200,7 @@ class DefensiveDynamoDBService:
             password_hash = safe_field_access(person, "password_hash")
             if password_hash:
                 item["passwordHash"] = password_hash
-                
+
             password_salt = safe_field_access(person, "password_salt")
             if password_salt:
                 item["passwordSalt"] = password_salt
