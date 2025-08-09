@@ -184,9 +184,7 @@ class TestRoutingFix:
         assert result["deprecated"] is True  # Deprecation flag
         assert result["version"] == "v1-redirected-to-v2"  # Special version indicator
         assert "DEPRECATED" in result["message"]  # Deprecation notice in message
-        assert "/v2/public/subscribe" in result[
-            "message"
-        ]  # Recommendation to use v2
+        assert "/v2/public/subscribe" in result["message"]  # Recommendation to use v2
 
         # Verify password generation was called
         mock_email_service.generate_temporary_password.assert_called_once()

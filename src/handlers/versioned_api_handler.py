@@ -135,21 +135,22 @@ async def get_projects_v1():
 @v1_router.post("/public/subscribe")
 async def create_subscription_v1(subscription_data: dict):
     """Create subscription (v1 - now redirects to v2 with password generation).
-    
+
     DEPRECATED: This endpoint is deprecated. Use /v2/public/subscribe instead.
     For backward compatibility, this now uses the v2 implementation with password generation.
     """
     # Redirect to v2 implementation for password generation and bug fixes
     result = await create_subscription_v2(subscription_data)
-    
+
     # Add deprecation notice to response
     if isinstance(result, dict):
         result["deprecated"] = True
-        result["message"] = f"{result.get('message', '')} [DEPRECATED: Use /v2/public/subscribe]"
+        result["message"] = (
+            f"{result.get('message', '')} [DEPRECATED: Use /v2/public/subscribe]"
+        )
         result["version"] = "v1-redirected-to-v2"
-    
-    return result
 
+    return result
 
 
 # ==================== V2 ENDPOINTS (Fixed) ====================
