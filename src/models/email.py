@@ -79,7 +79,7 @@ class PasswordResetEmailData(BaseModel):
     reset_link: str = Field(..., description="Password reset link")
     expiry_hours: int = Field(default=1, description="Link expiry in hours")
     support_email: str = Field(
-        default="support@people-register.local", description="Support email"
+        default="support@cbba.cloud.org.bo", description="Support email"
     )
 
 
@@ -90,7 +90,7 @@ class PasswordChangedEmailData(BaseModel):
     change_time: datetime = Field(..., description="When password was changed")
     ip_address: Optional[str] = Field(None, description="IP address of change")
     support_email: str = Field(
-        default="support@people-register.local", description="Support email"
+        default="support@cbba.cloud.org.bo", description="Support email"
     )
 
 
@@ -103,7 +103,7 @@ class SecurityAlertEmailData(BaseModel):
     ip_address: Optional[str] = Field(None, description="IP address involved")
     location: Optional[str] = Field(None, description="Approximate location")
     support_email: str = Field(
-        default="support@people-register.local", description="Support email"
+        default="support@cbba.cloud.org.bo", description="Support email"
     )
 
 
@@ -116,7 +116,7 @@ class WelcomeEmailData(BaseModel):
         None, description="Temporary password if applicable"
     )
     support_email: str = Field(
-        default="support@people-register.local", description="Support email"
+        default="support@cbba.cloud.org.bo", description="Support email"
     )
 
 
@@ -165,8 +165,8 @@ class EmailConfig:
     """Email service configuration."""
 
     # Default sender information
-    DEFAULT_FROM_NAME = "People Register"
-    DEFAULT_SUPPORT_EMAIL = "support@people-register.local"
+    DEFAULT_FROM_NAME = "AWS User Group Cochabamba"
+    DEFAULT_SUPPORT_EMAIL = "support@cbba.cloud.org.bo"
 
     # Email template settings
     TEMPLATE_CACHE_TTL = 3600  # 1 hour
@@ -191,4 +191,4 @@ class EmailConfig:
         """Get from email from environment or default."""
         import os
 
-        return os.environ.get("SES_FROM_EMAIL", "noreply@people-register.local")
+        return os.environ.get("SES_FROM_EMAIL", "courier@cbba.cloud.org.bo")
