@@ -25,7 +25,9 @@ class PersonBase(BaseModel):
 
 
 class PersonCreate(PersonBase):
-    pass
+    # Password fields for user creation
+    password_hash: Optional[str] = Field(None, exclude=True)
+    password_salt: Optional[str] = Field(None, exclude=True)
 
 
 class PersonUpdate(BaseModel):
@@ -42,6 +44,10 @@ class PersonUpdate(BaseModel):
     account_locked_until: Optional[datetime] = Field(None, alias="accountLockedUntil")
     is_active: Optional[bool] = Field(None, alias="isActive")
     require_password_change: Optional[bool] = Field(None, alias="requirePasswordChange")
+    
+    # Password fields for updates
+    password_hash: Optional[str] = Field(None, exclude=True)
+    password_salt: Optional[str] = Field(None, exclude=True)
 
 
 class Person(PersonBase):
