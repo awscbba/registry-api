@@ -423,25 +423,35 @@ async def create_subscription_v2(subscription_data: dict):
             logger.info(f"Using existing person: {person_id}")
 
             # Check if existing person has a password set
-            if not hasattr(existing_person, "password_hash") or not existing_person.password_hash:
-                logger.info(f"Existing person {person_id} has no password, generating temporary password")
-                
+            if (
+                not hasattr(existing_person, "password_hash")
+                or not existing_person.password_hash
+            ):
+                logger.info(
+                    f"Existing person {person_id} has no password, generating temporary password"
+                )
+
                 # Generate temporary password for existing user without password
                 temporary_password = email_service.generate_temporary_password()
                 hashed_password = PasswordHasher.hash_password(temporary_password)
-                
+
                 # Update existing person with password
                 try:
                     from src.models.person import PersonUpdate
+
                     person_update = PersonUpdate(password_hash=hashed_password)
                     await db_service.update_person(person_id, person_update)
                     password_generated_for_existing_user = True
-                    logger.info(f"Updated existing person {person_id} with temporary password")
+                    logger.info(
+                        f"Updated existing person {person_id} with temporary password"
+                    )
                 except Exception as e:
-                    logger.error(f"Failed to update existing person with password: {str(e)}")
+                    logger.error(
+                        f"Failed to update existing person with password: {str(e)}"
+                    )
                     raise HTTPException(
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        detail="Failed to set up user authentication"
+                        detail="Failed to set up user authentication",
                     )
             else:
                 logger.info(f"Existing person {person_id} already has password set")
@@ -518,7 +528,9 @@ async def create_subscription_v2(subscription_data: dict):
         email_sent = False
         email_error = None
 
-        if (person_created or password_generated_for_existing_user) and temporary_password:
+        if (
+            person_created or password_generated_for_existing_user
+        ) and temporary_password:
             try:
                 email_response = await email_service.send_welcome_email(
                     email=person_data["email"],
@@ -535,9 +547,13 @@ async def create_subscription_v2(subscription_data: dict):
                     )
                 else:
                     if password_generated_for_existing_user:
-                        logger.info(f"Sent welcome email with new password to existing user: {person_data['email']}")
+                        logger.info(
+                            f"Sent welcome email with new password to existing user: {person_data['email']}"
+                        )
                     else:
-                        logger.info(f"Sent welcome email to new user: {person_data['email']}")
+                        logger.info(
+                            f"Sent welcome email to new user: {person_data['email']}"
+                        )
             except Exception as e:
                 email_error = str(e)
                 logger.error(f"Error sending welcome email: {str(e)}")
