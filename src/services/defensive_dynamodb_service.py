@@ -307,6 +307,12 @@ class DefensiveDynamoDBService:
         try:
             # Validate required fields - use internal field names, not aliases
             person_dict = safe_model_dump(person_data)
+            
+            # Manually add password fields (they are excluded from model_dump due to exclude=True)
+            if hasattr(person_data, 'password_hash') and person_data.password_hash is not None:
+                person_dict['password_hash'] = person_data.password_hash
+            if hasattr(person_data, 'password_salt') and person_data.password_salt is not None:
+                person_dict['password_salt'] = person_data.password_salt
             required_fields = [
                 "first_name",
                 "last_name",
@@ -357,6 +363,12 @@ class DefensiveDynamoDBService:
 
             # Get update data safely
             update_data = safe_model_dump(person_update, exclude_unset=True)
+            
+            # Manually add password fields (they are excluded from model_dump due to exclude=True)
+            if hasattr(person_update, 'password_hash') and person_update.password_hash is not None:
+                update_data['password_hash'] = person_update.password_hash
+            if hasattr(person_update, 'password_salt') and person_update.password_salt is not None:
+                update_data['password_salt'] = person_update.password_salt
 
             if not update_data:
                 self.logger.info(f"No fields to update for person {person_id}")
