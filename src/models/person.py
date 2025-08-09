@@ -88,9 +88,19 @@ class Person(PersonBase):
     @classmethod
     def create_new(cls, person_data: PersonCreate) -> "Person":
         now = datetime.utcnow()
+        
+        # Get all fields including excluded ones (password fields)
+        person_dict = person_data.model_dump(by_alias=True)
+        
+        # Manually add password fields (they are excluded from model_dump)
+        if hasattr(person_data, 'password_hash') and person_data.password_hash is not None:
+            person_dict['password_hash'] = person_data.password_hash
+        if hasattr(person_data, 'password_salt') and person_data.password_salt is not None:
+            person_dict['password_salt'] = person_data.password_salt
+            
         return cls(
             id=str(uuid.uuid4()),
-            **person_data.model_dump(by_alias=True),
+            **person_dict,
             created_at=now,
             updated_at=now,
         )
