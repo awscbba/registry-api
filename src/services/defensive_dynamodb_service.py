@@ -10,6 +10,7 @@ Key improvements:
 3. Comprehensive error handling
 4. Consistent field mapping
 5. Defensive model conversion
+6. X-Ray tracing for observability
 """
 
 import os
@@ -38,6 +39,7 @@ from ..utils.defensive_utils import (
     validate_required_fields,
     sanitize_for_logging,
 )
+from ..utils.xray_config import create_subsegment, add_annotation, add_metadata
 
 
 class DefensiveDynamoDBService:
@@ -316,54 +318,72 @@ class DefensiveDynamoDBService:
         self, person_data: PersonCreate, context: Optional[ErrorContext] = None
     ) -> Person:
         """Create a new person with defensive programming"""
-        try:
-            # Validate required fields - use internal field names, not aliases
-            person_dict = safe_model_dump(person_data)
+        with create_subsegment('create_person') as subsegment:
+            try:
+                # Add X-Ray annotations for filtering
+                add_annotation('operation', 'create_person')
+                add_annotation('table', self.table_name)
+                
+                # Validate required fields - use internal field names, not aliases
+                person_dict = safe_model_dump(person_data)
 
-            # Manually add password fields (they are excluded from model_dump due to exclude=True)
-            if (
-                hasattr(person_data, "password_hash")
-                and person_data.password_hash is not None
-            ):
-                person_dict["password_hash"] = person_data.password_hash
-            if (
-                hasattr(person_data, "password_salt")
-                and person_data.password_salt is not None
-            ):
-                person_dict["password_salt"] = person_data.password_salt
-            required_fields = [
-                "first_name",
-                "last_name",
-                "email",
-            ]  # Use internal field names
-            missing_fields = validate_required_fields(person_dict, required_fields)
+                # Manually add password fields (they are excluded from model_dump due to exclude=True)
+                if (
+                    hasattr(person_data, "password_hash")
+                    and person_data.password_hash is not None
+                ):
+                    person_dict["password_hash"] = person_data.password_hash
+                if (
+                    hasattr(person_data, "password_salt")
+                    and person_data.password_salt is not None
+                ):
+                    person_dict["password_salt"] = person_data.password_salt
+                required_fields = [
+                    "first_name",
+                    "last_name",
+                    "email",
+                ]  # Use internal field names
+                missing_fields = validate_required_fields(person_dict, required_fields)
 
-            if missing_fields:
-                raise ValueError(
-                    f"Missing required fields: {', '.join(missing_fields)}"
+                if missing_fields:
+                    add_annotation('error', 'validation_failed')
+                    add_metadata('dynamodb', 'missing_fields', missing_fields)
+                    raise ValueError(
+                        f"Missing required fields: {', '.join(missing_fields)}"
+                    )
+
+                person = Person.create_new(person_data)
+                item = self._safe_person_to_item(person)
+
+                # Log sanitized data
+                sanitized_item = sanitize_for_logging(item)
+                self.logger.info(f"Creating person with data: {sanitized_item}")
+                
+                # Add metadata for the operation
+                add_metadata('dynamodb', 'person_id', person.id)
+                add_metadata('dynamodb', 'email', person.email)
+
+                with create_subsegment('dynamodb_put_item'):
+                    self.table.put_item(
+                        Item=item, ConditionExpression="attribute_not_exists(id)"
+                    )
+
+                add_annotation('success', 'true')
+                return person
+
+            except ClientError as e:
+                add_annotation('error', 'dynamodb_error')
+                add_metadata('dynamodb', 'error_code', e.response['Error']['Code'])
+                add_metadata('dynamodb', 'error_message', e.response['Error']['Message'])
+                self.logger.error(f"DynamoDB error creating person: {e}")
+                raise Exception(
+                    f"Failed to create person: {e.response['Error']['Message']}"
                 )
-
-            person = Person.create_new(person_data)
-            item = self._safe_person_to_item(person)
-
-            # Log sanitized data
-            sanitized_item = sanitize_for_logging(item)
-            self.logger.info(f"Creating person with data: {sanitized_item}")
-
-            self.table.put_item(
-                Item=item, ConditionExpression="attribute_not_exists(id)"
-            )
-
-            return person
-
-        except ClientError as e:
-            self.logger.error(f"DynamoDB error creating person: {e}")
-            raise Exception(
-                f"Failed to create person: {e.response['Error']['Message']}"
-            )
-        except Exception as e:
-            self.logger.error(f"Error creating person: {e}")
-            raise
+            except Exception as e:
+                add_annotation('error', 'general_error')
+                add_metadata('dynamodb', 'error', str(e))
+                self.logger.error(f"Error creating person: {e}")
+                raise
 
     @database_operation("update_person")
     async def update_person(
@@ -495,20 +515,36 @@ class DefensiveDynamoDBService:
         self, person_id: str, context: Optional[ErrorContext] = None
     ) -> Optional[Person]:
         """Get a person by ID with defensive programming"""
-        try:
-            response = self.table.get_item(Key={"id": person_id})
+        with create_subsegment('get_person') as subsegment:
+            try:
+                # Add X-Ray annotations for filtering
+                add_annotation('operation', 'get_person')
+                add_annotation('table', self.table_name)
+                add_metadata('dynamodb', 'person_id', person_id)
+                
+                with create_subsegment('dynamodb_get_item'):
+                    response = self.table.get_item(Key={"id": person_id})
 
-            if "Item" in response:
-                return self._safe_item_to_person(response["Item"])
+                if "Item" in response:
+                    add_annotation('found', 'true')
+                    person = self._safe_item_to_person(response["Item"])
+                    add_metadata('dynamodb', 'email', person.email if person else 'unknown')
+                    return person
+                else:
+                    add_annotation('found', 'false')
+                    return None
 
-            return None
-
-        except ClientError as e:
-            self.logger.error(f"DynamoDB error getting person {person_id}: {e}")
-            raise Exception(f"Failed to get person: {e.response['Error']['Message']}")
-        except Exception as e:
-            self.logger.error(f"Error getting person {person_id}: {e}")
-            raise
+            except ClientError as e:
+                add_annotation('error', 'dynamodb_error')
+                add_metadata('dynamodb', 'error_code', e.response['Error']['Code'])
+                add_metadata('dynamodb', 'error_message', e.response['Error']['Message'])
+                self.logger.error(f"DynamoDB error getting person {person_id}: {e}")
+                raise Exception(f"Failed to get person: {e.response['Error']['Message']}")
+            except Exception as e:
+                add_annotation('error', 'general_error')
+                add_metadata('dynamodb', 'error', str(e))
+                self.logger.error(f"Error getting person {person_id}: {e}")
+                raise
 
     @database_operation("list_people")
     async def list_people(
