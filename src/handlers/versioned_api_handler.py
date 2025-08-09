@@ -134,78 +134,22 @@ async def get_projects_v1():
 
 @v1_router.post("/public/subscribe")
 async def create_subscription_v1(subscription_data: dict):
-    """Create subscription (v1 - legacy version with known issues)."""
-    # This is the original implementation with the bugs
-    # Kept for backward compatibility
-    try:
-        person_data = subscription_data.get("person")
-        project_id = subscription_data.get("projectId")
-        notes = subscription_data.get("notes")
+    """Create subscription (v1 - now redirects to v2 with password generation).
+    
+    DEPRECATED: This endpoint is deprecated. Use /v2/public/subscribe instead.
+    For backward compatibility, this now uses the v2 implementation with password generation.
+    """
+    # Redirect to v2 implementation for password generation and bug fixes
+    result = await create_subscription_v2(subscription_data)
+    
+    # Add deprecation notice to response
+    if isinstance(result, dict):
+        result["deprecated"] = True
+        result["message"] = f"{result.get('message', '')} [DEPRECATED: Use /v2/public/subscribe]"
+        result["version"] = "v1-redirected-to-v2"
+    
+    return result
 
-        if not person_data or not project_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Both person data and projectId are required",
-            )
-
-        # Handle person data for public subscriptions (v1 - legacy behavior)
-        # Convert 'name' field to firstName/lastName if provided
-        if "name" in person_data and "firstName" not in person_data:
-            name_parts = person_data["name"].strip().split(" ", 1)
-            person_data["firstName"] = name_parts[0]
-            person_data["lastName"] = name_parts[1] if len(name_parts) > 1 else ""
-            # Remove the 'name' field as it's not part of PersonCreate
-            person_data = {k: v for k, v in person_data.items() if k != "name"}
-
-        # Set default values for required fields if not provided
-        person_data.setdefault("phone", "")
-        person_data.setdefault("dateOfBirth", "1990-01-01")  # Default date
-        person_data.setdefault(
-            "address",
-            {"street": "", "city": "", "state": "", "postalCode": "", "country": ""},
-        )
-
-        # Validate person data
-        person_create = PersonCreate(**person_data)
-
-        # Verify project exists
-        project = await db_service.get_project_by_id(project_id)
-        if not project:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Project not found"
-            )
-
-        # FIXED: Added proper await keywords for v1 compatibility
-        existing_person = await db_service.get_person_by_email(person_create.email)
-
-        if existing_person:
-            # Use existing person - existing_person is a Person object
-            person_id = existing_person.id
-        else:
-            # FIXED: Added proper await keyword
-            created_person = await db_service.create_person(person_create)
-            person_id = created_person.id
-
-        subscription_create = SubscriptionCreate(
-            projectId=project_id,
-            personId=person_id,
-            status="pending",  # Original status
-            notes=notes,
-        )
-
-        # FIXED: Pass SubscriptionCreate object directly instead of dict
-        created_subscription = await db_service.create_subscription(subscription_create)
-
-        return {
-            "message": "Subscription created successfully",
-            "subscription": created_subscription,
-            "person_created": existing_person is None,
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise handle_database_error("creating subscription (v1)", e)
 
 
 # ==================== V2 ENDPOINTS (Fixed) ====================
@@ -1730,8 +1674,8 @@ async def get_admin_dashboard_legacy():
 
 @app.post("/public/subscribe")
 async def create_subscription_legacy(subscription_data: dict):
-    """Legacy endpoint - redirects to v1."""
-    return await create_subscription_v1(subscription_data)
+    """Legacy endpoint - now redirects to v2 with password generation."""
+    return await create_subscription_v2(subscription_data)
 
 
 # ==================== AUTH ENDPOINTS ====================
