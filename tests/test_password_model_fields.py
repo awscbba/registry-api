@@ -27,13 +27,13 @@ class TestPasswordModelFields:
                 "city": "Test City",
                 "state": "Test State",
                 "postalCode": "12345",
-                "country": "Test Country"
+                "country": "Test Country",
             },
             "isAdmin": False,
             "createdAt": "2025-01-01T00:00:00",
             "updatedAt": "2025-01-01T00:00:00",
             "password_hash": "hashed_password_123",
-            "password_salt": "salt_456"
+            "password_salt": "salt_456",
         }
 
         # Act
@@ -59,11 +59,11 @@ class TestPasswordModelFields:
                 "city": "Test City",
                 "state": "Test State",
                 "postalCode": "12345",
-                "country": "Test Country"
+                "country": "Test Country",
             },
             "isAdmin": False,
             "password_hash": "hashed_password_create",
-            "password_salt": "salt_create"
+            "password_salt": "salt_create",
         }
 
         # Act
@@ -81,7 +81,7 @@ class TestPasswordModelFields:
         update_data = {
             "firstName": "Updated",
             "password_hash": "hashed_password_update",
-            "password_salt": "salt_update"
+            "password_salt": "salt_update",
         }
 
         # Act
@@ -107,8 +107,8 @@ class TestPasswordModelFields:
                 "city": "Test City",
                 "state": "Test State",
                 "postalCode": "12345",
-                "country": "Test Country"
-            }
+                "country": "Test Country",
+            },
         }
 
         # Act
@@ -123,9 +123,7 @@ class TestPasswordModelFields:
     def test_person_update_password_fields_optional(self):
         """Test that password fields are optional in PersonUpdate."""
         # Arrange
-        update_data = {
-            "firstName": "Updated Name"
-        }
+        update_data = {"firstName": "Updated Name"}
 
         # Act
         person_update = PersonUpdate(**update_data)
@@ -150,10 +148,10 @@ class TestPasswordModelFields:
                 "city": "Test City",
                 "state": "Test State",
                 "postalCode": "12345",
-                "country": "Test Country"
+                "country": "Test Country",
             },
             "password_hash": "secret_password",
-            "password_salt": "secret_salt"
+            "password_salt": "secret_salt",
         }
 
         # Act
@@ -163,15 +161,15 @@ class TestPasswordModelFields:
         # Assert
         assert "password_hash" not in person_dict
         assert "password_salt" not in person_dict
-        assert person_create.password_hash == "secret_password"  # Still accessible directly
+        assert (
+            person_create.password_hash == "secret_password"
+        )  # Still accessible directly
         assert person_create.password_salt == "secret_salt"  # Still accessible directly
 
     def test_person_update_only_password_change(self):
         """Test that PersonUpdate can be used to change only password."""
         # Arrange
-        update_data = {
-            "password_hash": "new_hashed_password"
-        }
+        update_data = {"password_hash": "new_hashed_password"}
 
         # Act
         person_update = PersonUpdate(**update_data)
@@ -184,20 +182,28 @@ class TestPasswordModelFields:
 
     def test_regression_password_fields_exist(self):
         """Regression test: Ensure password fields exist in all models.
-        
+
         This test specifically prevents the bug where password_hash fields
         were missing from PersonCreate and PersonUpdate models, causing
         passwords to be generated but not saved to the database.
         """
         # Test PersonCreate
         person_create_fields = PersonCreate.model_fields.keys()
-        assert "password_hash" in person_create_fields, "PersonCreate missing password_hash field"
-        assert "password_salt" in person_create_fields, "PersonCreate missing password_salt field"
+        assert (
+            "password_hash" in person_create_fields
+        ), "PersonCreate missing password_hash field"
+        assert (
+            "password_salt" in person_create_fields
+        ), "PersonCreate missing password_salt field"
 
-        # Test PersonUpdate  
+        # Test PersonUpdate
         person_update_fields = PersonUpdate.model_fields.keys()
-        assert "password_hash" in person_update_fields, "PersonUpdate missing password_hash field"
-        assert "password_salt" in person_update_fields, "PersonUpdate missing password_salt field"
+        assert (
+            "password_hash" in person_update_fields
+        ), "PersonUpdate missing password_hash field"
+        assert (
+            "password_salt" in person_update_fields
+        ), "PersonUpdate missing password_salt field"
 
         # Test Person
         person_fields = Person.model_fields.keys()
