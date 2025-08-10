@@ -26,7 +26,7 @@ from ..services.defensive_dynamodb_service import (
 )
 from ..services.auth_service import AuthService
 from ..services.email_service import email_service
-from ..middleware.admin_middleware import (
+from ..middleware.admin_middleware_v2 import (
     require_admin_access,
     require_super_admin_access,
     AdminActionLogger,

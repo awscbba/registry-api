@@ -6,6 +6,7 @@ import logging
 from typing import List, Optional, Set
 from datetime import datetime
 import boto3
+from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
 
 from ..models.roles import (
@@ -29,9 +30,10 @@ class RolesService:
 
     def __init__(self, table_name: str = "people-registry-roles"):
         self.table_name = table_name
-        self.dynamodb_service = DefensiveDynamoDBService()
+        self.dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
+        self.table = self.dynamodb.Table(table_name)
 
-    async def get_user_roles(self, user_id: str) -> List[RoleType]:
+    def get_user_roles(self, user_id: str) -> List[RoleType]:
         """
         Get all active roles for a user.
 
@@ -43,10 +45,8 @@ class RolesService:
         """
         try:
             # Query for user roles
-            response = await self.dynamodb_service.query_items(
-                table_name=self.table_name,
-                key_condition_expression="user_id = :user_id",
-                expression_attribute_values={":user_id": user_id},
+            response = self.table.query(
+                KeyConditionExpression=Key("user_id").eq(user_id)
             )
 
             roles = []
@@ -62,7 +62,7 @@ class RolesService:
 
             # If no roles found, assign default USER role
             if not roles:
-                await self.assign_default_user_role(user_id)
+                self.assign_default_user_role(user_id)
                 roles = [RoleType.USER]
 
             return roles
@@ -72,7 +72,7 @@ class RolesService:
             # Return default role on error
             return [RoleType.USER]
 
-    async def get_user_roles_by_email(self, email: str) -> List[RoleType]:
+    def get_user_roles_by_email(self, email: str) -> List[RoleType]:
         """
         Get all active roles for a user by email.
 
@@ -84,11 +84,8 @@ class RolesService:
         """
         try:
             # Query by email using GSI
-            response = await self.dynamodb_service.query_items(
-                table_name=self.table_name,
-                index_name="email-index",
-                key_condition_expression="email = :email",
-                expression_attribute_values={":email": email},
+            response = self.table.query(
+                IndexName="email-index", KeyConditionExpression=Key("email").eq(email)
             )
 
             roles = []
