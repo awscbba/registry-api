@@ -161,7 +161,9 @@ class AuthService:
                     "email": person.email,
                     "firstName": person.first_name,
                     "lastName": person.last_name,
-                    "isAdmin": getattr(person, "is_admin", False),  # Include admin status
+                    "isAdmin": getattr(
+                        person, "is_admin", False
+                    ),  # Include admin status
                 },
                 require_password_change=getattr(
                     person, "require_password_change", False

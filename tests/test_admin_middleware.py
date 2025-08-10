@@ -12,7 +12,7 @@ from src.middleware.admin_middleware import (
     require_super_admin_access,
     AdminAuthorizationError,
     AdminActionLogger,
-    verify_admin_or_self_access
+    verify_admin_or_self_access,
 )
 from src.models.auth import AuthenticatedUser
 
@@ -29,7 +29,7 @@ class TestAdminMiddleware:
             first_name="Regular",
             last_name="User",
             is_admin=False,
-            is_active=True
+            is_active=True,
         )
 
     @pytest.fixture
@@ -41,7 +41,7 @@ class TestAdminMiddleware:
             first_name="Admin",
             last_name="User",
             is_admin=True,
-            is_active=True
+            is_active=True,
         )
 
     @pytest.fixture
@@ -53,7 +53,7 @@ class TestAdminMiddleware:
             first_name="Super",
             last_name="Admin",
             is_admin=True,
-            is_active=True
+            is_active=True,
         )
 
     @pytest.mark.asyncio
@@ -67,7 +67,7 @@ class TestAdminMiddleware:
         """Test require_admin_access with no user."""
         with pytest.raises(AdminAuthorizationError) as exc_info:
             await require_admin_access(None)
-        
+
         assert exc_info.value.status_code == 403
         assert "Authentication required" in str(exc_info.value.detail)
 
@@ -76,7 +76,7 @@ class TestAdminMiddleware:
         """Test require_admin_access with regular user."""
         with pytest.raises(AdminAuthorizationError) as exc_info:
             await require_admin_access(regular_user)
-        
+
         assert exc_info.value.status_code == 403
         assert "Admin access required" in str(exc_info.value.detail)
 
@@ -91,7 +91,7 @@ class TestAdminMiddleware:
         """Test require_super_admin_access with regular admin user."""
         with pytest.raises(AdminAuthorizationError) as exc_info:
             await require_super_admin_access(admin_user)
-        
+
         assert exc_info.value.status_code == 403
         assert "Super admin access required" in str(exc_info.value.detail)
 
@@ -112,48 +112,46 @@ class TestAdminMiddleware:
         """Test verify_admin_or_self_access with user accessing other user's data."""
         with pytest.raises(AdminAuthorizationError) as exc_info:
             await verify_admin_or_self_access("other-user-id", regular_user)
-        
+
         assert exc_info.value.status_code == 403
         assert "You can only access your own data" in str(exc_info.value.detail)
 
     @pytest.mark.asyncio
     async def test_admin_action_logger(self, admin_user):
         """Test AdminActionLogger functionality."""
-        with patch('src.middleware.admin_middleware.logger') as mock_logger:
+        with patch("src.middleware.admin_middleware.logger") as mock_logger:
             await AdminActionLogger.log_admin_action(
                 action="TEST_ACTION",
                 admin_user=admin_user,
                 target_resource="test_resource",
                 target_id="test-id",
                 details={"test": "data"},
-                success=True
+                success=True,
             )
-            
+
             # Verify logger was called
             mock_logger.info.assert_called_once()
             call_args = mock_logger.info.call_args
             assert "Admin action: TEST_ACTION" in call_args[0][0]
-            
+
             # Check extra data
-            extra_data = call_args[1]['extra']
-            assert extra_data['action'] == "TEST_ACTION"
-            assert extra_data['admin_user_id'] == admin_user.id
-            assert extra_data['admin_user_email'] == admin_user.email
-            assert extra_data['target_resource'] == "test_resource"
-            assert extra_data['target_id'] == "test-id"
-            assert extra_data['success'] is True
-            assert extra_data['test'] == "data"
+            extra_data = call_args[1]["extra"]
+            assert extra_data["action"] == "TEST_ACTION"
+            assert extra_data["admin_user_id"] == admin_user.id
+            assert extra_data["admin_user_email"] == admin_user.email
+            assert extra_data["target_resource"] == "test_resource"
+            assert extra_data["target_id"] == "test-id"
+            assert extra_data["success"] is True
+            assert extra_data["test"] == "data"
 
     @pytest.mark.asyncio
     async def test_admin_action_logger_failure(self, admin_user):
         """Test AdminActionLogger with failed action."""
-        with patch('src.middleware.admin_middleware.logger') as mock_logger:
+        with patch("src.middleware.admin_middleware.logger") as mock_logger:
             await AdminActionLogger.log_admin_action(
-                action="FAILED_ACTION",
-                admin_user=admin_user,
-                success=False
+                action="FAILED_ACTION", admin_user=admin_user, success=False
             )
-            
+
             # Verify error logger was called
             mock_logger.error.assert_called_once()
             call_args = mock_logger.error.call_args

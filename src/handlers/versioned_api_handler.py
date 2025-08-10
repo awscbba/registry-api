@@ -26,7 +26,11 @@ from ..services.defensive_dynamodb_service import (
 )
 from ..services.auth_service import AuthService
 from ..services.email_service import email_service
-from ..middleware.admin_middleware import require_admin_access, require_super_admin_access, AdminActionLogger
+from ..middleware.admin_middleware import (
+    require_admin_access,
+    require_super_admin_access,
+    AdminActionLogger,
+)
 from ..middleware.auth_middleware import get_current_user
 from ..utils.error_handler import StandardErrorHandler, handle_database_error
 from ..utils.logging_config import get_handler_logger
@@ -692,7 +696,7 @@ async def get_user_subscriptions(request: Request):
 
         token = auth_header.split(" ")[1]
         credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
-        current_user = await auth_middleware.get_current_user(credentials)
+        current_user = await get_current_user(credentials)
 
         # Get user's subscriptions
         user_subscriptions = await db_service.get_subscriptions_by_person(
@@ -772,7 +776,7 @@ async def user_subscribe_to_project(request: Request, subscription_data: dict):
 
         token = auth_header.split(" ")[1]
         credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
-        current_user = await auth_middleware.get_current_user(credentials)
+        current_user = await get_current_user(credentials)
 
         project_id = subscription_data.get("projectId")
         notes = subscription_data.get("notes", "")
@@ -853,7 +857,7 @@ async def get_current_user_info(request: Request):
         credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
 
         # Get current user using auth middleware
-        current_user = await auth_middleware.get_current_user(credentials)
+        current_user = await get_current_user(credentials)
 
         return {
             "user": {
@@ -942,14 +946,14 @@ async def unlock_account(
                 "admin_user": admin_user.id,
             },
         )
-        
+
         # Log admin action
         await AdminActionLogger.log_admin_action(
             action="UNLOCK_USER_ACCOUNT",
             admin_user=admin_user,
             target_resource="user",
             target_id=person_id,
-            details={"reason": unlock_request.reason}
+            details={"reason": unlock_request.reason},
         )
 
         # Check if user exists
@@ -1082,12 +1086,12 @@ async def get_admin_dashboard(admin_user=Depends(require_admin_access)):
     """Get admin dashboard data with statistics and recent activity."""
     try:
         logger.log_api_request("GET", "/v2/admin/dashboard")
-        
+
         # Log admin action
         await AdminActionLogger.log_admin_action(
             action="VIEW_ADMIN_DASHBOARD",
             admin_user=admin_user,
-            target_resource="dashboard"
+            target_resource="dashboard",
         )
 
         # Get statistics from database
@@ -1161,12 +1165,10 @@ async def get_admin_people(admin_user=Depends(require_admin_access)):
     """Get all people for admin management (v2)."""
     try:
         logger.log_api_request("GET", "/v2/admin/people")
-        
+
         # Log admin action
         await AdminActionLogger.log_admin_action(
-            action="VIEW_ALL_USERS",
-            admin_user=admin_user,
-            target_resource="users"
+            action="VIEW_ALL_USERS", admin_user=admin_user, target_resource="users"
         )
 
         # Get all people from database with error handling
@@ -1260,12 +1262,12 @@ async def get_admin_projects(admin_user=Depends(require_admin_access)):
     """Get all projects for admin management with enhanced details (v2)."""
     try:
         logger.log_api_request("GET", "/v2/admin/projects")
-        
+
         # Log admin action
         await AdminActionLogger.log_admin_action(
             action="VIEW_ALL_PROJECTS",
             admin_user=admin_user,
-            target_resource="projects"
+            target_resource="projects",
         )
 
         # Get all projects
@@ -1490,12 +1492,12 @@ async def get_admin_subscriptions(admin_user=Depends(require_admin_access)):
     """Get all subscriptions for admin management with enhanced details (v2)."""
     try:
         logger.log_api_request("GET", "/v2/admin/subscriptions")
-        
+
         # Log admin action
         await AdminActionLogger.log_admin_action(
             action="VIEW_ALL_SUBSCRIPTIONS",
             admin_user=admin_user,
-            target_resource="subscriptions"
+            target_resource="subscriptions",
         )
 
         # Get all subscriptions
@@ -1862,21 +1864,21 @@ async def create_person_v2(person_data: PersonCreate):
 
 @v2_router.put("/people/{person_id}/admin")
 async def update_admin_status(
-    person_id: str, 
+    person_id: str,
     admin_data: dict,
-    super_admin_user=Depends(require_super_admin_access)
+    super_admin_user=Depends(require_super_admin_access),
 ):
     """Update admin status for a person (super admin only)."""
     try:
         is_admin = admin_data.get("isAdmin", False)
-        
+
         # Log admin action
         await AdminActionLogger.log_admin_action(
             action="UPDATE_ADMIN_STATUS",
             admin_user=super_admin_user,
             target_resource="user",
             target_id=person_id,
-            details={"new_admin_status": is_admin}
+            details={"new_admin_status": is_admin},
         )
 
         # Get the person to update
