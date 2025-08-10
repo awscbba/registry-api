@@ -301,7 +301,7 @@ class TestAdminMiddleware:
         """Test successful admin access."""
         # Mock user and roles service
         mock_user = {"id": "user123", "email": "admin@example.com"}
-        mock_roles_service.user_is_admin.return_value = True
+        mock_roles_service.user_is_admin = AsyncMock(return_value=True)
 
         # Test the middleware
         result = await require_admin_access(mock_user)
@@ -315,7 +315,7 @@ class TestAdminMiddleware:
         """Test admin access denied for non-admin user."""
         # Mock user and roles service
         mock_user = {"id": "user123", "email": "user@example.com"}
-        mock_roles_service.user_is_admin.return_value = False
+        mock_roles_service.user_is_admin = AsyncMock(return_value=False)
 
         # Test the middleware - should raise exception
         with pytest.raises(Exception) as exc_info:
@@ -329,8 +329,8 @@ class TestAdminMiddleware:
         """Test successful super admin access."""
         # Mock user and roles service
         mock_user = {"id": "user123", "email": "superadmin@example.com"}
-        mock_roles_service.user_is_admin.return_value = True
-        mock_roles_service.user_is_super_admin.return_value = True
+        mock_roles_service.user_is_admin = AsyncMock(return_value=True)
+        mock_roles_service.user_is_super_admin = AsyncMock(return_value=True)
 
         # Test the middleware
         result = await require_super_admin_access(mock_user)
@@ -344,8 +344,8 @@ class TestAdminMiddleware:
         """Test super admin access denied for regular admin."""
         # Mock user and roles service
         mock_user = {"id": "user123", "email": "admin@example.com"}
-        mock_roles_service.user_is_admin.return_value = True
-        mock_roles_service.user_is_super_admin.return_value = False
+        mock_roles_service.user_is_admin = AsyncMock(return_value=True)
+        mock_roles_service.user_is_super_admin = AsyncMock(return_value=False)
 
         # Test the middleware - should raise exception
         with pytest.raises(Exception) as exc_info:
