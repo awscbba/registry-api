@@ -107,6 +107,7 @@ async def require_super_admin_access(
     # In the future, this could be a separate role field
     super_admin_emails = [
         "admin@cbba.cloud.org.bo",
+        "admin@awsugcbba.org",  # AWS User Group Cochabamba admin
         "sergio.rodriguez.inclan@gmail.com",  # System administrator
     ]
 
@@ -175,7 +176,11 @@ async def get_admin_user_info(
         "admin_user_email": user_email,
         "admin_user_name": f"{first_name} {last_name}".strip(),
         "is_super_admin": user_email
-        in ["admin@cbba.cloud.org.bo", "sergio.rodriguez.inclan@gmail.com"],
+        in [
+            "admin@cbba.cloud.org.bo",
+            "admin@awsugcbba.org",
+            "sergio.rodriguez.inclan@gmail.com",
+        ],
     }
 
 
