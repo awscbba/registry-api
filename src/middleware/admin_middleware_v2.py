@@ -62,7 +62,7 @@ async def require_admin_access(
         user_email = getattr(current_user, "email", "unknown")
 
     # Check if user has admin privileges using roles service
-    is_admin = roles_service.user_is_admin(user_id)
+    is_admin = await roles_service.user_is_admin(user_id)
 
     if not is_admin:
         logger.warning(
@@ -119,7 +119,7 @@ async def require_super_admin_access(
         user_email = getattr(current_user, "email", "unknown")
 
     # Check if user has super admin privileges using roles service
-    is_super_admin = roles_service.user_is_super_admin(user_id)
+    is_super_admin = await roles_service.user_is_super_admin(user_id)
 
     if not is_super_admin:
         logger.warning(
@@ -230,8 +230,8 @@ async def get_admin_user_info(
         last_name = getattr(current_user, "last_name", "")
 
     # Get user roles from database
-    user_roles = roles_service.get_user_roles(user_id)
-    is_super_admin = roles_service.user_is_super_admin(user_id)
+    user_roles = await roles_service.get_user_roles(user_id)
+    is_super_admin = await roles_service.user_is_super_admin(user_id)
 
     return {
         "admin_user_id": user_id,
@@ -330,7 +330,7 @@ async def verify_admin_or_self_access(
         user_email = getattr(current_user, "email", "unknown")
 
     # Check if user is admin or accessing their own data
-    is_admin = roles_service.user_is_admin(user_id)
+    is_admin = await roles_service.user_is_admin(user_id)
 
     if is_admin or user_id == target_user_id:
         return current_user
@@ -352,9 +352,9 @@ async def verify_admin_or_self_access(
 # Backward compatibility functions
 async def is_user_admin(user_id: str) -> bool:
     """Check if a user is an admin (backward compatibility)."""
-    return roles_service.user_is_admin(user_id)
+    return await roles_service.user_is_admin(user_id)
 
 
 async def is_user_super_admin(user_id: str) -> bool:
     """Check if a user is a super admin (backward compatibility)."""
-    return roles_service.user_is_super_admin(user_id)
+    return await roles_service.user_is_super_admin(user_id)
