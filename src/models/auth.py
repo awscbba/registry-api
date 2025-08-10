@@ -68,6 +68,7 @@ class AuthenticatedUser(BaseModel):
     email: str
     first_name: str
     last_name: str
+    is_admin: bool = False  # Admin role flag
     require_password_change: bool = False
     is_active: bool = True
     last_login_at: Optional[datetime] = None

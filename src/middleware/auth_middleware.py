@@ -103,6 +103,7 @@ class AuthMiddleware:
                 email=person.email,
                 first_name=person.first_name,
                 last_name=person.last_name,
+                is_admin=getattr(person, "is_admin", False),  # Include admin role
                 require_password_change=getattr(
                     person, "require_password_change", False
                 ),

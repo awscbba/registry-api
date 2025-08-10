@@ -32,7 +32,7 @@ class TestTypeMismatchComprehensive:
         return {
             "id": "test-user-id",
             "sub": "test-user-sub",
-            "email": "admin@example.com",
+            "email": "admin@cbba.cloud.org.bo",  # Use super admin email
             "is_admin": True,
         }
 
