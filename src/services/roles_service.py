@@ -33,7 +33,7 @@ class RolesService:
         self.dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
         self.table = self.dynamodb.Table(table_name)
 
-    def get_user_roles(self, user_id: str) -> List[RoleType]:
+    async def get_user_roles(self, user_id: str) -> List[RoleType]:
         """
         Get all active roles for a user.
 
@@ -62,7 +62,7 @@ class RolesService:
 
             # If no roles found, assign default USER role
             if not roles:
-                self.assign_default_user_role(user_id)
+                await self.assign_default_user_role(user_id)
                 roles = [RoleType.USER]
 
             return roles
@@ -178,9 +178,8 @@ class RolesService:
             )
 
             # Store in database
-            await self.dynamodb_service.put_item(
-                table_name=self.table_name,
-                item={
+            self.table.put_item(
+                Item={
                     "user_id": user_role.user_id,
                     "role_type": user_role.role_type.value,
                     "email": user_role.email,
@@ -193,7 +192,7 @@ class RolesService:
                     ),
                     "is_active": user_role.is_active,
                     "notes": user_role.notes,
-                },
+                }
             )
 
             logger.info(
@@ -212,7 +211,7 @@ class RolesService:
                 success=False, message=f"Failed to assign role: {str(e)}"
             )
 
-    async def revoke_role(
+    def revoke_role(
         self, user_email: str, role_type: RoleType, revoked_by_user_id: str
     ) -> RoleAssignmentResponse:
         """
@@ -227,18 +226,17 @@ class RolesService:
             Role assignment response
         """
         try:
-            user_id = await self._get_user_id_by_email(user_email)
+            user_id = self._get_user_id_by_email(user_email)
             if not user_id:
                 return RoleAssignmentResponse(
                     success=False, message=f"User with email {user_email} not found"
                 )
 
             # Update the role to inactive
-            await self.dynamodb_service.update_item(
-                table_name=self.table_name,
-                key={"user_id": user_id, "role_type": role_type.value},
-                update_expression="SET is_active = :inactive, revoked_by = :revoked_by, revoked_at = :revoked_at",
-                expression_attribute_values={
+            self.table.update_item(
+                Key={"user_id": user_id, "role_type": role_type.value},
+                UpdateExpression="SET is_active = :inactive, revoked_by = :revoked_by, revoked_at = :revoked_at",
+                ExpressionAttributeValues={
                     ":inactive": False,
                     ":revoked_by": revoked_by_user_id,
                     ":revoked_at": datetime.utcnow().isoformat(),
@@ -349,11 +347,10 @@ class RolesService:
         """
         try:
             # This is a placeholder - you'll need to implement based on your user table structure
-            response = await self.dynamodb_service.query_items(
-                table_name="people-registry-users",  # Adjust table name
-                index_name="email-index",
-                key_condition_expression="email = :email",
-                expression_attribute_values={":email": email},
+            # For now, using a simple table query (adjust table name and structure as needed)
+            users_table = self.dynamodb.Table("people-registry-users")
+            response = users_table.query(
+                IndexName="email-index", KeyConditionExpression=Key("email").eq(email)
             )
 
             items = response.get("Items", [])

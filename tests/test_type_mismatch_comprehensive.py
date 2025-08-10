@@ -126,8 +126,11 @@ class TestTypeMismatchComprehensive:
                 "⚠️  ISSUE FOUND: update_project called with dict instead of ProjectUpdate object"
             )
 
+    @patch("src.middleware.admin_middleware_v2.roles_service")
     @patch("src.handlers.versioned_api_handler.db_service")
-    def test_admin_status_update_type_mismatch(self, mock_db_service, client):
+    def test_admin_status_update_type_mismatch(
+        self, mock_db_service, mock_roles_service, client
+    ):
         """Test that admin status update converts dict to PersonUpdate object"""
         from datetime import datetime
 
@@ -149,6 +152,9 @@ class TestTypeMismatchComprehensive:
 
         mock_db_service.get_person = AsyncMock(return_value=mock_person)
         mock_db_service.update_person = AsyncMock(return_value=mock_person)
+
+        # Configure roles service to allow admin access
+        mock_roles_service.user_is_admin.return_value = True
 
         admin_data = {"isAdmin": True}
 

@@ -256,7 +256,7 @@ async def check_permission(
         else:
             user_id = getattr(current_user, "id", "unknown")
 
-        has_permission = await roles_service.user_has_permission(user_id, permission)
+        has_permission = roles_service.user_has_permission(user_id, permission)
 
         return {"permission": permission.value, "has_permission": has_permission}
 

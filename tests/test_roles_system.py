@@ -5,7 +5,7 @@ Comprehensive tests for the database-driven roles system.
 import pytest
 import asyncio
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, patch, MagicMock, Mock
 
 from src.models.roles import (
     RoleType,
@@ -90,7 +90,8 @@ class TestRolesService:
     def roles_service(self):
         """Create a roles service instance with mocked DynamoDB."""
         service = RolesService()
-        service.dynamodb_service = AsyncMock()
+        # Mock the table.query method instead of dynamodb_service
+        service.table = Mock()
         return service
 
     @pytest.mark.asyncio
@@ -113,7 +114,7 @@ class TestRolesService:
                 },
             ]
         }
-        roles_service.dynamodb_service.query_items.return_value = mock_response
+        roles_service.table.query.return_value = mock_response
 
         # Test the method
         roles = await roles_service.get_user_roles("user123")
@@ -124,7 +125,7 @@ class TestRolesService:
         assert RoleType.USER in roles
 
         # Verify DynamoDB was called correctly
-        roles_service.dynamodb_service.query_items.assert_called_once()
+        roles_service.table.query.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_get_user_roles_expired(self, roles_service):
@@ -147,7 +148,7 @@ class TestRolesService:
                 },
             ]
         }
-        roles_service.dynamodb_service.query_items.return_value = mock_response
+        roles_service.table.query.return_value = mock_response
 
         # Test the method
         roles = await roles_service.get_user_roles("user123")
@@ -161,7 +162,7 @@ class TestRolesService:
     async def test_get_user_roles_no_roles_assigns_default(self, roles_service):
         """Test that default USER role is assigned when no roles exist."""
         # Mock empty DynamoDB response
-        roles_service.dynamodb_service.query_items.return_value = {"Items": []}
+        roles_service.table.query.return_value = {"Items": []}
         roles_service.assign_default_user_role = AsyncMock()
 
         # Test the method
@@ -223,7 +224,7 @@ class TestRolesService:
         """Test successful role assignment."""
         # Mock helper methods
         roles_service._get_user_id_by_email = AsyncMock(return_value="user123")
-        roles_service.dynamodb_service.put_item = AsyncMock()
+        roles_service.table.put_item = Mock()
 
         # Create assignment request
         request = RoleAssignmentRequest(
@@ -242,7 +243,7 @@ class TestRolesService:
         assert response.user_role.role_type == RoleType.ADMIN
 
         # Verify DynamoDB was called
-        roles_service.dynamodb_service.put_item.assert_called_once()
+        roles_service.table.put_item.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_assign_role_user_not_found(self, roles_service):
@@ -267,10 +268,10 @@ class TestRolesService:
         """Test successful role revocation."""
         # Mock helper methods
         roles_service._get_user_id_by_email = AsyncMock(return_value="user123")
-        roles_service.dynamodb_service.update_item = AsyncMock()
+        roles_service.table.update_item = Mock()
 
         # Test revocation
-        response = await roles_service.revoke_role(
+        response = roles_service.revoke_role(
             "test@example.com", RoleType.ADMIN, "admin123"
         )
 
@@ -279,7 +280,7 @@ class TestRolesService:
         assert "successfully revoked" in response.message
 
         # Verify DynamoDB was called
-        roles_service.dynamodb_service.update_item.assert_called_once()
+        roles_service.table.update_item.assert_called_once()
 
 
 class TestAdminMiddleware:
@@ -289,10 +290,10 @@ class TestAdminMiddleware:
     def mock_roles_service(self):
         """Mock the roles service."""
         with patch("src.middleware.admin_middleware_v2.roles_service") as mock:
-            # Configure async methods to return coroutines
-            mock.user_is_admin = AsyncMock()
-            mock.user_is_super_admin = AsyncMock()
-            mock.user_has_permission = AsyncMock()
+            # Configure methods to return values directly (not coroutines)
+            mock.user_is_admin = Mock()
+            mock.user_is_super_admin = Mock()
+            mock.user_has_permission = Mock()
             yield mock
 
     @pytest.mark.asyncio
