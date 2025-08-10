@@ -26,7 +26,8 @@ from ..services.defensive_dynamodb_service import (
 )
 from ..services.auth_service import AuthService
 from ..services.email_service import email_service
-from ..middleware.auth_middleware import get_current_user, auth_middleware
+from ..middleware.admin_middleware import require_admin_access, require_super_admin_access, AdminActionLogger
+from ..middleware.auth_middleware import get_current_user
 from ..utils.error_handler import StandardErrorHandler, handle_database_error
 from ..utils.logging_config import get_handler_logger
 from ..utils.password_utils import PasswordHasher
@@ -924,7 +925,7 @@ async def unlock_account(
     person_id: str,
     unlock_request: AdminUnlockRequest,
     request: Request,
-    current_user=Depends(get_current_user),
+    admin_user=Depends(require_admin_access),
 ):
     """
     Unlock a locked user account (admin only).
@@ -938,8 +939,17 @@ async def unlock_account(
             f"/auth/people/{person_id}/unlock",
             {
                 "person_id": person_id,
-                "admin_user": current_user.id if current_user else None,
+                "admin_user": admin_user.id,
             },
+        )
+        
+        # Log admin action
+        await AdminActionLogger.log_admin_action(
+            action="UNLOCK_USER_ACCOUNT",
+            admin_user=admin_user,
+            target_resource="user",
+            target_id=person_id,
+            details={"reason": unlock_request.reason}
         )
 
         # Check if user exists
@@ -996,7 +1006,7 @@ async def unlock_account(
             details={
                 "target_user_id": person_id,
                 "reason": unlock_request.reason,
-                "admin_user_id": current_user.id if current_user else None,
+                "admin_user_id": admin_user.id,
                 "previous_failed_attempts": getattr(person, "failed_login_attempts", 0),
             },
         )
@@ -1029,13 +1039,13 @@ async def unlock_account_v2(
     person_id: str,
     unlock_request: AdminUnlockRequest,
     request: Request,
-    current_user=Depends(get_current_user),
+    admin_user=Depends(require_admin_access),
 ):
     """
     Unlock a locked user account (admin only) - V2 endpoint.
     """
     # Reuse the same logic as the auth endpoint
-    return await unlock_account(person_id, unlock_request, request, current_user)
+    return await unlock_account(person_id, unlock_request, request, admin_user)
 
 
 @v2_router.get("/admin/test")
@@ -1068,10 +1078,17 @@ async def test_admin_system():
 
 
 @v2_router.get("/admin/dashboard")
-async def get_admin_dashboard():
+async def get_admin_dashboard(admin_user=Depends(require_admin_access)):
     """Get admin dashboard data with statistics and recent activity."""
     try:
         logger.log_api_request("GET", "/v2/admin/dashboard")
+        
+        # Log admin action
+        await AdminActionLogger.log_admin_action(
+            action="VIEW_ADMIN_DASHBOARD",
+            admin_user=admin_user,
+            target_resource="dashboard"
+        )
 
         # Get statistics from database
         projects = await db_service.get_all_projects()
@@ -1140,10 +1157,17 @@ async def get_admin_dashboard():
 
 
 @v2_router.get("/admin/people")
-async def get_admin_people():
+async def get_admin_people(admin_user=Depends(require_admin_access)):
     """Get all people for admin management (v2)."""
     try:
         logger.log_api_request("GET", "/v2/admin/people")
+        
+        # Log admin action
+        await AdminActionLogger.log_admin_action(
+            action="VIEW_ALL_USERS",
+            admin_user=admin_user,
+            target_resource="users"
+        )
 
         # Get all people from database with error handling
         try:
@@ -1232,10 +1256,17 @@ async def get_admin_people():
 
 
 @v2_router.get("/admin/projects")
-async def get_admin_projects():
+async def get_admin_projects(admin_user=Depends(require_admin_access)):
     """Get all projects for admin management with enhanced details (v2)."""
     try:
         logger.log_api_request("GET", "/v2/admin/projects")
+        
+        # Log admin action
+        await AdminActionLogger.log_admin_action(
+            action="VIEW_ALL_PROJECTS",
+            admin_user=admin_user,
+            target_resource="projects"
+        )
 
         # Get all projects
         projects = await db_service.get_all_projects()
@@ -1455,10 +1486,17 @@ async def delete_project_v2(
 
 
 @v2_router.get("/admin/subscriptions")
-async def get_admin_subscriptions():
+async def get_admin_subscriptions(admin_user=Depends(require_admin_access)):
     """Get all subscriptions for admin management with enhanced details (v2)."""
     try:
         logger.log_api_request("GET", "/v2/admin/subscriptions")
+        
+        # Log admin action
+        await AdminActionLogger.log_admin_action(
+            action="VIEW_ALL_SUBSCRIPTIONS",
+            admin_user=admin_user,
+            target_resource="subscriptions"
+        )
 
         # Get all subscriptions
         subscriptions = await db_service.get_all_subscriptions()
@@ -1823,13 +1861,23 @@ async def create_person_v2(person_data: PersonCreate):
 
 
 @v2_router.put("/people/{person_id}/admin")
-async def update_admin_status(person_id: str, admin_data: dict):
-    """Update admin status for a person (admin only)."""
+async def update_admin_status(
+    person_id: str, 
+    admin_data: dict,
+    super_admin_user=Depends(require_super_admin_access)
+):
+    """Update admin status for a person (super admin only)."""
     try:
-        # TODO: Add proper authentication middleware to verify admin user
-        # For now, we'll implement basic validation
-
         is_admin = admin_data.get("isAdmin", False)
+        
+        # Log admin action
+        await AdminActionLogger.log_admin_action(
+            action="UPDATE_ADMIN_STATUS",
+            admin_user=super_admin_user,
+            target_resource="user",
+            target_id=person_id,
+            details={"new_admin_status": is_admin}
+        )
 
         # Get the person to update
         person = await db_service.get_person(person_id)

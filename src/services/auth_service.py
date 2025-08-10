@@ -137,11 +137,12 @@ class AuthService:
             # Update last login time
             await self._update_last_login(person.id)
 
-            # Create JWT tokens
+            # Create JWT tokens with admin role information
             user_data = {
                 "email": person.email,
                 "first_name": person.first_name,
                 "last_name": person.last_name,
+                "is_admin": getattr(person, "is_admin", False),  # Include admin role
                 "require_password_change": getattr(
                     person, "require_password_change", False
                 ),
@@ -160,6 +161,7 @@ class AuthService:
                     "email": person.email,
                     "firstName": person.first_name,
                     "lastName": person.last_name,
+                    "isAdmin": getattr(person, "is_admin", False),  # Include admin status
                 },
                 require_password_change=getattr(
                     person, "require_password_change", False
