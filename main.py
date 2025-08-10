@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 from src.handlers.versioned_api_handler import app
 
 # Create Lambda handler using Mangum
-lambda_handler = Mangum(app)
+_original_lambda_handler = Mangum(app)
 
 
 # Wrap the lambda handler with X-Ray tracing
@@ -46,8 +46,8 @@ def traced_lambda_handler(event, context):
             f"Processing request: {event.get('httpMethod', 'unknown')} {event.get('path', 'unknown')}"
         )
 
-        # Call the original handler
-        response = lambda_handler(event, context)
+        # Call the original handler (not the traced one!)
+        response = _original_lambda_handler(event, context)
 
         # Add response metadata
         if XRAY_ENABLED and isinstance(response, dict):
