@@ -18,6 +18,7 @@ from ..models.person import Person
 from ..services.defensive_dynamodb_service import (
     DefensiveDynamoDBService as DynamoDBService,
 )
+from ..services.roles_service import RolesService
 from ..utils.password_utils import PasswordHasher
 from ..utils.jwt_utils import create_tokens_for_user
 
@@ -33,6 +34,7 @@ class AuthService:
 
     def __init__(self):
         self.db_service = DynamoDBService()
+        self.roles_service = RolesService()
 
     async def authenticate_user(
         self,
@@ -137,12 +139,15 @@ class AuthService:
             # Update last login time
             await self._update_last_login(person.id)
 
+            # Check admin status using the new RBAC system
+            is_admin = await self.roles_service.user_is_admin(person.id)
+
             # Create JWT tokens with admin role information
             user_data = {
                 "email": person.email,
                 "first_name": person.first_name,
                 "last_name": person.last_name,
-                "is_admin": getattr(person, "is_admin", False),  # Include admin role
+                "is_admin": is_admin,  # Use RBAC system result
                 "require_password_change": getattr(
                     person, "require_password_change", False
                 ),
@@ -161,9 +166,7 @@ class AuthService:
                     "email": person.email,
                     "firstName": person.first_name,
                     "lastName": person.last_name,
-                    "isAdmin": getattr(
-                        person, "is_admin", False
-                    ),  # Include admin status
+                    "isAdmin": is_admin,  # Use RBAC system result
                 },
                 require_password_change=getattr(
                     person, "require_password_change", False
