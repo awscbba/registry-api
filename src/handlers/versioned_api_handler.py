@@ -859,12 +859,19 @@ async def get_current_user_info(request: Request):
         # Get current user using auth middleware
         current_user = await get_current_user(credentials)
 
+        # Check admin status using RBAC system
+        from ..services.roles_service import RolesService
+
+        roles_service = RolesService()
+        is_admin = await roles_service.user_is_admin(current_user.id)
+
         return {
             "user": {
                 "id": current_user.id,
                 "email": current_user.email,
                 "firstName": current_user.first_name,
                 "lastName": current_user.last_name,
+                "isAdmin": is_admin,  # Include admin status from RBAC system
                 "requirePasswordChange": current_user.require_password_change,
                 "isActive": current_user.is_active,
                 "lastLoginAt": (
