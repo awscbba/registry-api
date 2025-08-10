@@ -289,6 +289,10 @@ class TestAdminMiddleware:
     def mock_roles_service(self):
         """Mock the roles service."""
         with patch("src.middleware.admin_middleware_v2.roles_service") as mock:
+            # Configure async methods to return coroutines
+            mock.user_is_admin = AsyncMock()
+            mock.user_is_super_admin = AsyncMock()
+            mock.user_has_permission = AsyncMock()
             yield mock
 
     @pytest.mark.asyncio
