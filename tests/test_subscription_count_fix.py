@@ -6,7 +6,7 @@ counts in smart cards and dashboards are updated correctly.
 """
 
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, patch, Mock
 from src.handlers.versioned_api_handler import get_admin_projects, get_admin_dashboard
 
 
@@ -30,6 +30,19 @@ class TestSubscriptionCountFix:
                 "maxParticipants": 5,
             },
         ]
+
+    @pytest.fixture
+    def mock_admin_user(self):
+        """Mock admin user for testing."""
+        from src.models.auth import AuthenticatedUser
+        return AuthenticatedUser(
+            id="admin-user-id",
+            email="admin@example.com",
+            first_name="Admin",
+            last_name="User",
+            is_admin=True,
+            is_active=True
+        )
 
     @pytest.fixture
     def mock_subscriptions(self):
@@ -89,24 +102,29 @@ class TestSubscriptionCountFix:
 
     @pytest.mark.asyncio
     async def test_admin_projects_subscription_count_excludes_inactive(
-        self, mock_projects, mock_subscriptions
+        self, mock_projects, mock_subscriptions, mock_admin_user
     ):
         """Test that admin projects endpoint excludes inactive subscriptions from count."""
 
-        with patch("src.handlers.versioned_api_handler.db_service") as mock_db:
-            # Mock async methods properly
-            mock_db.get_all_projects = AsyncMock(return_value=mock_projects)
-            mock_db.get_all_subscriptions = AsyncMock(return_value=mock_subscriptions)
+        # Mock the admin middleware to return our mock admin user
+        with patch("src.handlers.versioned_api_handler.require_admin_access") as mock_admin_access:
+            mock_admin_access.return_value = mock_admin_user
+            
+            with patch("src.handlers.versioned_api_handler.db_service") as mock_db:
+                # Mock async methods properly
+                mock_db.get_all_projects = AsyncMock(return_value=mock_projects)
+                mock_db.get_all_subscriptions = AsyncMock(return_value=mock_subscriptions)
 
-            # Mock the response creation
-            with patch(
-                "src.handlers.versioned_api_handler.create_v2_response"
-            ) as mock_response:
-                with patch("src.handlers.versioned_api_handler.logger"):
-                    mock_response.return_value = {"data": "mocked"}
+                # Mock the response creation
+                with patch(
+                    "src.handlers.versioned_api_handler.create_v2_response"
+                ) as mock_response:
+                    with patch("src.handlers.versioned_api_handler.logger"):
+                        with patch("src.handlers.versioned_api_handler.AdminActionLogger.log_admin_action") as mock_log:
+                            mock_response.return_value = {"data": "mocked"}
 
-                    # Call the endpoint
-                    await get_admin_projects()
+                            # Call the endpoint with admin user
+                            await get_admin_projects(mock_admin_user)
 
                     # Get the data passed to create_v2_response
                     call_args = mock_response.call_args[0][
@@ -139,24 +157,29 @@ class TestSubscriptionCountFix:
 
     @pytest.mark.asyncio
     async def test_admin_dashboard_subscription_count_excludes_inactive(
-        self, mock_projects, mock_subscriptions
+        self, mock_projects, mock_subscriptions, mock_admin_user
     ):
         """Test that admin dashboard excludes inactive subscriptions from counts."""
 
-        with patch("src.handlers.versioned_api_handler.db_service") as mock_db:
-            # Mock async methods properly
-            mock_db.get_all_projects = AsyncMock(return_value=mock_projects)
-            mock_db.get_all_subscriptions = AsyncMock(return_value=mock_subscriptions)
+        # Mock the admin middleware to return our mock admin user
+        with patch("src.handlers.versioned_api_handler.require_admin_access") as mock_admin_access:
+            mock_admin_access.return_value = mock_admin_user
+            
+            with patch("src.handlers.versioned_api_handler.db_service") as mock_db:
+                # Mock async methods properly
+                mock_db.get_all_projects = AsyncMock(return_value=mock_projects)
+                mock_db.get_all_subscriptions = AsyncMock(return_value=mock_subscriptions)
 
-            # Mock the response creation
-            with patch(
-                "src.handlers.versioned_api_handler.create_v2_response"
-            ) as mock_response:
-                with patch("src.handlers.versioned_api_handler.logger"):
-                    mock_response.return_value = {"data": "mocked"}
+                # Mock the response creation
+                with patch(
+                    "src.handlers.versioned_api_handler.create_v2_response"
+                ) as mock_response:
+                    with patch("src.handlers.versioned_api_handler.logger"):
+                        with patch("src.handlers.versioned_api_handler.AdminActionLogger.log_admin_action") as mock_log:
+                            mock_response.return_value = {"data": "mocked"}
 
-                    # Call the endpoint
-                    await get_admin_dashboard()
+                            # Call the endpoint with admin user
+                            await get_admin_dashboard(mock_admin_user)
 
                     # Get the data passed to create_v2_response
                     dashboard_data = mock_response.call_args[0][
@@ -241,13 +264,21 @@ class TestSubscriptionCountFix:
                 return_value=initial_subscriptions
             )
 
-            with patch(
-                "src.handlers.versioned_api_handler.create_v2_response"
-            ) as mock_response:
-                with patch("src.handlers.versioned_api_handler.logger"):
-                    mock_response.return_value = {"data": "mocked"}
+            # Mock the admin middleware
+            with patch("src.handlers.versioned_api_handler.require_admin_access") as mock_admin_access:
+                mock_admin_user = Mock()
+                mock_admin_user.id = "admin-id"
+                mock_admin_user.email = "admin@test.com"
+                mock_admin_access.return_value = mock_admin_user
 
-                    await get_admin_projects()
+                with patch(
+                    "src.handlers.versioned_api_handler.create_v2_response"
+                ) as mock_response:
+                    with patch("src.handlers.versioned_api_handler.logger"):
+                        with patch("src.handlers.versioned_api_handler.AdminActionLogger.log_admin_action") as mock_log:
+                            mock_response.return_value = {"data": "mocked"}
+
+                            await get_admin_projects(mock_admin_user)
                     initial_data = mock_response.call_args[0][0][0]  # First project
 
                     assert initial_data["subscriptionCount"] == 3
@@ -262,9 +293,10 @@ class TestSubscriptionCountFix:
                 "src.handlers.versioned_api_handler.create_v2_response"
             ) as mock_response:
                 with patch("src.handlers.versioned_api_handler.logger"):
-                    mock_response.return_value = {"data": "mocked"}
+                    with patch("src.handlers.versioned_api_handler.AdminActionLogger.log_admin_action") as mock_log:
+                        mock_response.return_value = {"data": "mocked"}
 
-                    await get_admin_projects()
+                        await get_admin_projects(mock_admin_user)
                     after_data = mock_response.call_args[0][0][0]  # First project
 
                     # Verify count decreased after deactivation

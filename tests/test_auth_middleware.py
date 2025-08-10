@@ -39,6 +39,7 @@ class TestAuthMiddleware:
         person.first_name = "Test"
         person.last_name = "User"
         person.is_active = True
+        person.is_admin = False  # Add missing is_admin attribute
         # Ensure account_locked_until is None or not present
         person.account_locked_until = None
         person.require_password_change = False
@@ -68,6 +69,7 @@ class TestAuthMiddleware:
             assert user.first_name == "Test"
             assert user.last_name == "User"
             assert user.is_active is True
+            assert user.is_admin is False  # Check admin status
 
     @pytest.mark.asyncio
     async def test_get_current_user_invalid_token(self, auth_middleware):
@@ -230,6 +232,7 @@ class TestAuthDependencies:
         person.first_name = "Test"
         person.last_name = "User"
         person.is_active = True
+        person.is_admin = False  # Add missing is_admin attribute
         # Ensure account_locked_until is None or not present
         person.account_locked_until = None
         person.require_password_change = False
