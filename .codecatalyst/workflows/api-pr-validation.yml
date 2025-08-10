@@ -115,11 +115,23 @@ Actions:
 
             # Run black formatter check
             echo "📝 Checking code formatting..."
-            if uv run black --check --diff src/; then
+            if uv run black --check --diff src/ tests/; then
                 echo "✅ Code formatting is correct"
             else
                 echo "❌ Code formatting issues found"
-                echo "💡 Run 'uv run black src/' to fix formatting"
+                echo "💡 Run 'uv run black src/ tests/' to fix formatting"
+                exit 1
+            fi
+
+            # Run flake8 linting with project configuration
+            echo "🔍 Running Flake8 linting (using .flake8 config)..."
+            if uv run flake8 src/ tests/; then
+                echo "✅ Flake8 linting passed"
+            else
+                echo "❌ Linting issues found"
+                echo "💡 Check .flake8 configuration and fix linting errors"
+                echo "💡 Current .flake8 rules:"
+                cat .flake8
                 exit 1
             fi
 

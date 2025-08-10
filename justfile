@@ -84,14 +84,14 @@ test-coverage:
 # Code quality checks
 lint:
     @just print-info "Running code quality checks..."
-    @uv run black --check --diff src/
-    @uv run flake8 src/
+    @uv run black --check --diff src/ tests/
+    @uv run flake8 src/ tests/
     @just print-success "Code quality checks completed"
 
 # Fix code formatting
 format:
     @just print-info "Formatting code with black..."
-    @uv run black src/
+    @uv run black src/ tests/
     @just print-success "Code formatting completed"
 
 # Run syntax validation
