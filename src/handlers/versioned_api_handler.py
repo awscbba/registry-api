@@ -25,6 +25,7 @@ from ..services.defensive_dynamodb_service import (
     DefensiveDynamoDBService as DynamoDBService,
 )
 from ..services.auth_service import AuthService
+from ..services.roles_service import RolesService
 from ..services.email_service import email_service
 from ..middleware.admin_middleware_v2 import (
     require_admin_access,
@@ -860,8 +861,6 @@ async def get_current_user_info(request: Request):
         current_user = await get_current_user(credentials)
 
         # Check admin status using RBAC system
-        from ..services.roles_service import RolesService
-
         roles_service = RolesService()
         is_admin = await roles_service.user_is_admin(current_user.id)
 
