@@ -337,6 +337,19 @@ help:
     @echo "  - API contract validation and endpoint testing"
     @echo "  - Cascade deletion analysis and fixes"
     @echo ""
+    @echo "🔐 RBAC & Database Scripts:"
+    @echo "  rbac-full-implementation   - Complete RBAC implementation workflow"
+    @echo "  db-full-setup              - Complete database setup & maintenance"
+    @echo "  admin-create <email>       - Create admin user"
+    @echo "  production-ready-check     - Complete production readiness check"
+    @echo "  help-all-scripts           - Show all script tasks (detailed)"
+    @echo ""
+    @echo "💡 Quick Start Examples:"
+    @echo "  just rbac-full-implementation          # Complete RBAC setup"
+    @echo "  just admin-create admin@example.com    # Create admin user"
+    @echo "  just db-full-setup                     # Database maintenance"
+    @echo "  just production-ready-check            # Check production readiness"
+    @echo ""
     @echo "ℹ️ Frontend tests are handled in the registry-frontend repo"
 
 # Setup git hooks for development
@@ -376,3 +389,246 @@ setup-hooks:
     @echo ""
     @echo "💡 To run the critical tests manually: just test-critical-passing"
     @echo "🔍 To run all tests: just test-all"
+
+# ============================================================================
+# RBAC (Role-Based Access Control) Management Scripts
+# ============================================================================
+
+# Create DynamoDB roles tables for RBAC system
+rbac-create-tables:
+    @just print-info "Creating DynamoDB roles tables..."
+    @uv run python scripts/create_roles_tables.py
+    @just print-success "RBAC tables created successfully"
+
+# Run simple admin migration to RBAC system
+rbac-migrate-admins:
+    @just print-info "Migrating admin users to RBAC system..."
+    @uv run python scripts/simple_admin_migration.py
+    @just print-success "Admin migration completed"
+
+# Migrate admin roles (comprehensive migration)
+rbac-migrate-roles:
+    @just print-info "Running comprehensive admin role migration..."
+    @uv run python scripts/migrate_admin_roles.py
+    @just print-success "Role migration completed"
+
+# Verify RBAC system (simple verification)
+rbac-verify-simple:
+    @just print-info "Running simple RBAC verification..."
+    @uv run python scripts/verify_rbac_simple.py
+    @just print-success "RBAC verification completed"
+
+# Verify RBAC migration (comprehensive verification)
+rbac-verify-migration:
+    @just print-info "Running comprehensive RBAC migration verification..."
+    @uv run python scripts/verify_rbac_migration.py
+    @just print-success "RBAC migration verification completed"
+
+# Update middleware imports for RBAC v2
+rbac-update-imports:
+    @just print-info "Updating middleware imports to RBAC v2..."
+    @uv run python scripts/update_middleware_imports.py
+    @just print-success "Middleware imports updated"
+
+# Complete RBAC setup (tables + migration + verification)
+rbac-setup-complete:
+    @just print-info "🚀 Starting complete RBAC setup..."
+    @just rbac-create-tables
+    @just rbac-migrate-admins
+    @just rbac-verify-simple
+    @just rbac-update-imports
+    @just print-success "🎉 Complete RBAC setup finished!"
+
+# ============================================================================
+# Database Management & Health Scripts
+# ============================================================================
+
+# Run database health check
+db-health-check:
+    @just print-info "Running database health check..."
+    @uv run python scripts/database_health_check.py
+    @just print-success "Database health check completed"
+
+# Analyze cascade deletion issues
+db-analyze-cascade:
+    @just print-info "Analyzing cascade deletion issues..."
+    @uv run python scripts/analyze_cascade_deletion_simple.py
+    @just print-success "Cascade deletion analysis completed"
+
+# Fix cascade deletion issues
+db-fix-cascade:
+    @just print-info "Fixing cascade deletion issues..."
+    @uv run python scripts/fix_cascade_deletion_simple.py
+    @just print-success "Cascade deletion issues fixed"
+
+# Cleanup duplicate subscriptions
+db-cleanup-duplicates:
+    @just print-info "Cleaning up duplicate subscriptions..."
+    @uv run python scripts/cleanup_duplicate_subscriptions.py
+    @just print-success "Duplicate subscriptions cleaned up"
+
+# Complete database maintenance
+db-maintenance:
+    @just print-info "🔧 Running complete database maintenance..."
+    @just db-health-check
+    @just db-analyze-cascade
+    @just db-fix-cascade
+    @just db-cleanup-duplicates
+    @just print-success "🎉 Database maintenance completed!"
+
+# ============================================================================
+# Admin User Management Scripts
+# ============================================================================
+
+# Create admin user
+admin-create email:
+    @just print-info "Creating admin user: {{email}}"
+    @uv run python scripts/create_admin_user.py --email "{{email}}"
+    @just print-success "Admin user created successfully"
+
+# Set initial admin user
+admin-set-initial email:
+    @just print-info "Setting initial admin user: {{email}}"
+    @uv run python scripts/set_initial_admin.py --email "{{email}}"
+    @just print-success "Initial admin user set"
+
+# ============================================================================
+# Email & SES Configuration Scripts
+# ============================================================================
+
+# Request SES production access
+ses-request-production:
+    @just print-info "Requesting SES production access..."
+    @uv run python scripts/request_ses_production.py
+    @just print-success "SES production access request submitted"
+
+# ============================================================================
+# Validation & Deployment Scripts
+# ============================================================================
+
+# Run pre-commit checks
+validate-pre-commit:
+    @just print-info "Running pre-commit checks..."
+    @chmod +x scripts/pre-commit-check.sh
+    @./scripts/pre-commit-check.sh
+    @just print-success "Pre-commit checks completed"
+
+# Validate workflows
+validate-workflows:
+    @just print-info "Validating workflows..."
+    @chmod +x scripts/validate-workflows.sh
+    @./scripts/validate-workflows.sh
+    @just print-success "Workflow validation completed"
+
+# Validate deployment
+validate-deployment:
+    @just print-info "Validating deployment..."
+    @chmod +x scripts/validate-deployment.sh
+    @./scripts/validate-deployment.sh
+    @just print-success "Deployment validation completed"
+
+# Run all validations
+validate-all:
+    @just print-info "🔍 Running all validations..."
+    @just validate-pre-commit
+    @just validate-workflows
+    @just validate-deployment
+    @just print-success "🎉 All validations completed!"
+
+# ============================================================================
+# Comprehensive Task Groups
+# ============================================================================
+
+# Complete RBAC implementation workflow
+rbac-full-implementation:
+    @just print-info "🚀 Starting complete RBAC implementation..."
+    @just rbac-setup-complete
+    @just test-critical-passing
+    @just rbac-verify-migration
+    @just print-success "🎉 Complete RBAC implementation finished!"
+
+# Complete database setup and maintenance
+db-full-setup:
+    @just print-info "🗄️ Starting complete database setup..."
+    @just db-maintenance
+    @just rbac-create-tables
+    @just db-health-check
+    @just print-success "🎉 Complete database setup finished!"
+
+# Production readiness check
+production-ready-check:
+    @just print-info "🏭 Running production readiness check..."
+    @just test-comprehensive
+    @just validate-all
+    @just db-health-check
+    @just rbac-verify-migration
+    @just print-success "🎉 Production readiness check completed!"
+
+# ============================================================================
+# Help for New Script Tasks
+# ============================================================================
+
+# Show help for RBAC script tasks
+help-rbac-scripts:
+    @echo ""
+    @echo "🔐 RBAC Script Tasks:"
+    @echo "  rbac-create-tables         - Create DynamoDB roles tables"
+    @echo "  rbac-migrate-admins        - Migrate admin users to RBAC"
+    @echo "  rbac-migrate-roles         - Comprehensive role migration"
+    @echo "  rbac-verify-simple         - Simple RBAC verification"
+    @echo "  rbac-verify-migration      - Comprehensive RBAC verification"
+    @echo "  rbac-update-imports        - Update middleware imports"
+    @echo "  rbac-setup-complete        - Complete RBAC setup"
+    @echo "  rbac-full-implementation   - Full RBAC implementation workflow"
+    @echo ""
+
+# Show help for database script tasks
+help-db-scripts:
+    @echo ""
+    @echo "🗄️ Database Script Tasks:"
+    @echo "  db-health-check            - Run database health check"
+    @echo "  db-analyze-cascade         - Analyze cascade deletion issues"
+    @echo "  db-fix-cascade             - Fix cascade deletion issues"
+    @echo "  db-cleanup-duplicates      - Cleanup duplicate subscriptions"
+    @echo "  db-maintenance             - Complete database maintenance"
+    @echo "  db-full-setup              - Complete database setup"
+    @echo ""
+
+# Show help for admin management tasks
+help-admin-scripts:
+    @echo ""
+    @echo "👤 Admin Management Tasks:"
+    @echo "  admin-create <email>       - Create admin user"
+    @echo "  admin-set-initial <email>  - Set initial admin user"
+    @echo ""
+
+# Show help for validation tasks
+help-validation-scripts:
+    @echo ""
+    @echo "✅ Validation Script Tasks:"
+    @echo "  validate-pre-commit        - Run pre-commit checks"
+    @echo "  validate-workflows         - Validate workflows"
+    @echo "  validate-deployment        - Validate deployment"
+    @echo "  validate-all               - Run all validations"
+    @echo "  production-ready-check     - Complete production readiness check"
+    @echo ""
+
+# Show comprehensive help for all script tasks
+help-all-scripts:
+    @just help-rbac-scripts
+    @just help-db-scripts
+    @just help-admin-scripts
+    @just help-validation-scripts
+    @echo "📧 Email & SES Tasks:"
+    @echo "  ses-request-production     - Request SES production access"
+    @echo ""
+    @echo "🚀 Comprehensive Workflows:"
+    @echo "  rbac-full-implementation   - Complete RBAC implementation"
+    @echo "  db-full-setup              - Complete database setup"
+    @echo "  production-ready-check     - Production readiness check"
+    @echo ""
+    @echo "💡 Quick Start Examples:"
+    @echo "  just rbac-full-implementation          # Complete RBAC setup"
+    @echo "  just admin-create admin@example.com    # Create admin user"
+    @echo "  just db-full-setup                     # Database setup & maintenance"
+    @echo "  just production-ready-check            # Check production readiness"
