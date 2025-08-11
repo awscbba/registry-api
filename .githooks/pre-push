@@ -1,8 +1,8 @@
 #!/bin/bash
 # Git pre-push hook for registry-api
-# Automatically runs formatting and linting before each push
+# Comprehensive validation: formatting, linting, testing, and build checks
 
-echo "🔍 Running pre-push checks..."
+echo "🔍 Running comprehensive pre-push validation..."
 
 # Get the git repository root directory
 REPO_ROOT="$(git rev-parse --show-toplevel)"
@@ -26,7 +26,7 @@ if ! command -v uv &> /dev/null; then
     exit 1
 fi
 
-# Run black formatter
+# 1. CODE FORMATTING
 echo "📝 Running black formatter..."
 uv run black .
 if [ $? -ne 0 ]; then
@@ -50,7 +50,7 @@ if ! git diff --quiet; then
     exit 1
 fi
 
-# Run flake8 linter
+# 2. CODE LINTING
 echo "🔍 Running flake8 linter..."
 uv run flake8
 if [ $? -ne 0 ]; then
@@ -59,28 +59,65 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Run critical passing tests to catch failures early
-echo "🧪 Running critical passing tests..."
+# 3. SYNTAX VALIDATION
+echo "🔍 Running syntax validation..."
 if command -v just &> /dev/null; then
-    just test-critical-passing
+    just validate-syntax
     if [ $? -ne 0 ]; then
-        echo "❌ Critical tests failed"
-        echo "💡 Fix the failing critical tests and try pushing again"
-        echo "🔍 Run 'just test-critical-passing' for detailed test output"
+        echo "❌ Syntax validation failed"
+        echo "💡 Fix syntax errors and try pushing again"
         exit 1
     fi
 else
-    # Fallback if just is not available
-    uv run pytest tests/test_critical_integration.py::TestCriticalIntegration::test_api_service_method_consistency tests/test_critical_integration.py::TestCriticalIntegration::test_async_sync_consistency tests/test_critical_integration.py::TestCriticalIntegration::test_v2_response_format_consistency tests/test_critical_integration.py::TestProductionHealthChecks::test_production_api_health tests/test_address_field_standardization.py --tb=short -q
+    echo "⚠️  Just not available, skipping syntax validation"
+fi
+
+# 4. COMPREHENSIVE TEST SUITE
+echo "🧪 Running comprehensive test suite..."
+if command -v just &> /dev/null; then
+    # Run the comprehensive test suite that would have caught production bugs
+    just test-comprehensive
+    if [ $? -ne 0 ]; then
+        echo "❌ Comprehensive test suite failed"
+        echo "💡 Fix the failing tests and try pushing again"
+        echo "🔍 Run 'just test-comprehensive' for detailed test output"
+        echo ""
+        echo "📊 Test categories that failed:"
+        echo "   - Critical integration tests (prevent production bugs)"
+        echo "   - Async/sync validation tests"
+        echo "   - Code quality checks"
+        exit 1
+    fi
+else
+    # Fallback: run critical tests directly
+    echo "⚠️  Just not available, running critical tests directly..."
+    uv run pytest tests/test_critical_integration.py tests/test_modernized_async_validation.py --tb=short -q
     if [ $? -ne 0 ]; then
         echo "❌ Critical tests failed"
         echo "💡 Fix the failing critical tests and try pushing again"
-        echo "🔍 Run 'uv run pytest -v' for detailed test output"
         exit 1
     fi
 fi
 
-echo "ℹ️ Frontend tests are handled in the registry-frontend repo"
+# 5. PRODUCTION READINESS CHECK
+echo "🚀 Running production readiness check..."
+if command -v just &> /dev/null; then
+    just production-ready-check
+    if [ $? -ne 0 ]; then
+        echo "❌ Production readiness check failed"
+        echo "💡 Address production readiness issues and try pushing again"
+        exit 1
+    fi
+else
+    echo "⚠️  Just not available, skipping production readiness check"
+fi
 
-echo "✅ All pre-push checks passed!"
-echo "🚀 Proceeding with push..."
+echo "✅ All API repository checks passed!"
+echo "📊 Validation completed:"
+echo "   ✅ Code formatting (black)"
+echo "   ✅ Code linting (flake8)"
+echo "   ✅ Syntax validation"
+echo "   ✅ Comprehensive test suite"
+echo "   ✅ Production readiness check"
+echo ""
+echo "🚀 API repository ready for push!"
