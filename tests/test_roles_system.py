@@ -359,7 +359,7 @@ class TestAdminMiddleware:
         """Test successful permission check."""
         # Mock user and roles service
         mock_user = {"id": "user123", "email": "user@example.com"}
-        mock_roles_service.user_has_permission.return_value = True
+        mock_roles_service.user_has_permission = AsyncMock(return_value=True)
 
         # Create permission checker
         permission_checker = await require_permission(Permission.READ_ALL_USERS)
@@ -378,7 +378,7 @@ class TestAdminMiddleware:
         """Test permission denied."""
         # Mock user and roles service
         mock_user = {"id": "user123", "email": "user@example.com"}
-        mock_roles_service.user_has_permission.return_value = False
+        mock_roles_service.user_has_permission = AsyncMock(return_value=False)
 
         # Create permission checker
         permission_checker = await require_permission(Permission.READ_ALL_USERS)
