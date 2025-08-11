@@ -31,28 +31,30 @@ class EmailService(BaseService):
         """Initialize the email service."""
         try:
             self.logger.info("Initializing EmailService...")
-            
+
             # Initialize SES client
             self.ses_client = boto3.client(
                 "ses", region_name=os.getenv("AWS_REGION", "us-east-1")
             )
-            
+
             # Set configuration
-            self.from_email = os.getenv("SES_FROM_EMAIL", "noreply@people-register.local")
+            self.from_email = os.getenv(
+                "SES_FROM_EMAIL", "noreply@people-register.local"
+            )
             self.frontend_url = os.getenv(
                 "FRONTEND_URL", "https://d28z2il3z2vmpc.cloudfront.net"
             )
-            
+
             # Initialize logging service
             self.logging_service = LoggingService()
-            
+
             # Test SES connectivity
             await self._test_ses_connection()
-            
+
             self._initialized = True
             self.logger.info("EmailService initialized successfully")
             return True
-            
+
         except Exception as e:
             self.logger.error(f"Failed to initialize EmailService: {str(e)}")
             return False
@@ -60,21 +62,21 @@ class EmailService(BaseService):
     async def health_check(self) -> HealthCheck:
         """Perform health check for the email service."""
         start_time = time.time()
-        
+
         try:
             if not self._initialized:
                 return HealthCheck(
                     service_name=self.service_name,
                     status=ServiceStatus.UNHEALTHY,
                     message="Service not initialized",
-                    response_time_ms=(time.time() - start_time) * 1000
+                    response_time_ms=(time.time() - start_time) * 1000,
                 )
-            
+
             # Test SES connectivity
             await self._test_ses_connection()
-            
+
             response_time = (time.time() - start_time) * 1000
-            
+
             return HealthCheck(
                 service_name=self.service_name,
                 status=ServiceStatus.HEALTHY,
@@ -83,27 +85,27 @@ class EmailService(BaseService):
                     "ses_connected": True,
                     "from_email": self.from_email,
                     "frontend_url": self.frontend_url,
-                    "region": os.getenv("AWS_REGION", "us-east-1")
+                    "region": os.getenv("AWS_REGION", "us-east-1"),
                 },
-                response_time_ms=response_time
+                response_time_ms=response_time,
             )
-            
+
         except Exception as e:
             response_time = (time.time() - start_time) * 1000
             self.logger.error(f"Health check failed: {str(e)}")
-            
+
             return HealthCheck(
                 service_name=self.service_name,
                 status=ServiceStatus.UNHEALTHY,
                 message=f"Health check failed: {str(e)}",
-                response_time_ms=response_time
+                response_time_ms=response_time,
             )
 
     async def _test_ses_connection(self):
         """Test SES connectivity."""
         if not self.ses_client:
             raise Exception("SES client not initialized")
-        
+
         try:
             # Test SES by getting sending quota (lightweight operation)
             self.ses_client.get_send_quota()
@@ -360,7 +362,7 @@ AWS User Group Cochabamba - Sistema de Registro de Personas
             message_id = response["MessageId"]
 
             # Log the email sending
-            await self.logger.log_email_sent(
+            await self.logging_service.log_email_sent(
                 recipient=to_email,
                 email_type=email_type.value,
                 message_id=message_id,
@@ -375,7 +377,7 @@ AWS User Group Cochabamba - Sistema de Registro de Personas
             error_code = e.response["Error"]["Code"]
             error_message = e.response["Error"]["Message"]
 
-            await self.logger.log_email_error(
+            await self.logging_service.log_email_error(
                 recipient=to_email,
                 email_type=email_type.value,
                 error_code=error_code,
@@ -389,7 +391,7 @@ AWS User Group Cochabamba - Sistema de Registro de Personas
             )
 
         except Exception as e:
-            await self.logger.log_email_error(
+            await self.logging_service.log_email_error(
                 recipient=to_email,
                 email_type=email_type.value,
                 error_code="UNKNOWN_ERROR",

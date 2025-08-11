@@ -43,18 +43,18 @@ class AuthService(BaseService):
         """Initialize the authentication service."""
         try:
             self.logger.info("Initializing AuthService...")
-            
+
             # Initialize dependencies
             self.db_service = DynamoDBService()
             self.roles_service = RolesService()
-            
+
             # Test database connectivity
             await self._test_database_connection()
-            
+
             self._initialized = True
             self.logger.info("AuthService initialized successfully")
             return True
-            
+
         except Exception as e:
             self.logger.error(f"Failed to initialize AuthService: {str(e)}")
             return False
@@ -62,26 +62,26 @@ class AuthService(BaseService):
     async def health_check(self) -> HealthCheck:
         """Perform health check for the authentication service."""
         start_time = time.time()
-        
+
         try:
             if not self._initialized:
                 return HealthCheck(
                     service_name=self.service_name,
                     status=ServiceStatus.UNHEALTHY,
                     message="Service not initialized",
-                    response_time_ms=(time.time() - start_time) * 1000
+                    response_time_ms=(time.time() - start_time) * 1000,
                 )
-            
+
             # Test database connectivity
             await self._test_database_connection()
-            
+
             # Test roles service
             if self.roles_service:
                 # Simple test to ensure roles service is working
                 pass
-            
+
             response_time = (time.time() - start_time) * 1000
-            
+
             return HealthCheck(
                 service_name=self.service_name,
                 status=ServiceStatus.HEALTHY,
@@ -90,27 +90,27 @@ class AuthService(BaseService):
                     "database_connected": True,
                     "roles_service_available": self.roles_service is not None,
                     "max_failed_attempts": self.MAX_FAILED_ATTEMPTS,
-                    "lockout_duration_minutes": self.LOCKOUT_DURATION_MINUTES
+                    "lockout_duration_minutes": self.LOCKOUT_DURATION_MINUTES,
                 },
-                response_time_ms=response_time
+                response_time_ms=response_time,
             )
-            
+
         except Exception as e:
             response_time = (time.time() - start_time) * 1000
             self.logger.error(f"Health check failed: {str(e)}")
-            
+
             return HealthCheck(
                 service_name=self.service_name,
                 status=ServiceStatus.UNHEALTHY,
                 message=f"Health check failed: {str(e)}",
-                response_time_ms=response_time
+                response_time_ms=response_time,
             )
 
     async def _test_database_connection(self):
         """Test database connectivity."""
         if not self.db_service:
             raise Exception("Database service not initialized")
-        
+
         # Simple test - this will raise an exception if DB is not accessible
         # We can add a more specific test method to DynamoDBService if needed
         pass

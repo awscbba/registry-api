@@ -3,6 +3,7 @@ Tests for authentication service.
 """
 
 import pytest
+import pytest_asyncio
 from datetime import datetime, timezone, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -11,10 +12,13 @@ from src.models.auth import LoginRequest, AccountLockout
 from src.models.person import Person, Address
 
 
-@pytest.fixture
-def auth_service():
+@pytest_asyncio.fixture
+async def auth_service():
     """Create an AuthService instance for testing."""
-    return AuthService()
+    service = AuthService()
+    # Initialize the service to set up dependencies
+    await service.initialize()
+    return service
 
 
 @pytest.fixture

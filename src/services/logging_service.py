@@ -112,10 +112,10 @@ class LoggingService(BaseService):
         """Initialize the logging service."""
         try:
             self.logger.info("Initializing LoggingService...")
-            
+
             # Initialize database service
             self.db_service = DynamoDBService()
-            
+
             # Configure structured logging format
             formatter = logging.Formatter(
                 "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -128,11 +128,11 @@ class LoggingService(BaseService):
                 handler.setFormatter(formatter)
                 self.structured_logger.addHandler(handler)
                 self.structured_logger.setLevel(logging.INFO)
-            
+
             self._initialized = True
             self.logger.info("LoggingService initialized successfully")
             return True
-            
+
         except Exception as e:
             self.logger.error(f"Failed to initialize LoggingService: {str(e)}")
             return False
@@ -140,23 +140,23 @@ class LoggingService(BaseService):
     async def health_check(self) -> HealthCheck:
         """Perform health check for the logging service."""
         start_time = time.time()
-        
+
         try:
             if not self._initialized:
                 return HealthCheck(
                     service_name=self.service_name,
                     status=ServiceStatus.UNHEALTHY,
                     message="Service not initialized",
-                    response_time_ms=(time.time() - start_time) * 1000
+                    response_time_ms=(time.time() - start_time) * 1000,
                 )
-            
+
             # Test database connectivity
             if self.db_service:
                 # Simple connectivity test
                 pass
-            
+
             response_time = (time.time() - start_time) * 1000
-            
+
             return HealthCheck(
                 service_name=self.service_name,
                 status=ServiceStatus.HEALTHY,
@@ -165,23 +165,21 @@ class LoggingService(BaseService):
                     "database_connected": self.db_service is not None,
                     "structured_logger_configured": self.structured_logger is not None,
                     "log_categories": len(LogCategory),
-                    "log_levels": len(LogLevel)
+                    "log_levels": len(LogLevel),
                 },
-                response_time_ms=response_time
+                response_time_ms=response_time,
             )
-            
+
         except Exception as e:
             response_time = (time.time() - start_time) * 1000
             self.logger.error(f"Health check failed: {str(e)}")
-            
+
             return HealthCheck(
                 service_name=self.service_name,
                 status=ServiceStatus.UNHEALTHY,
                 message=f"Health check failed: {str(e)}",
-                response_time_ms=response_time
+                response_time_ms=response_time,
             )
-            self.logger.addHandler(handler)
-            self.logger.setLevel(logging.INFO)
 
     async def log_structured(
         self,

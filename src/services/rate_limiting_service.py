@@ -91,7 +91,7 @@ class RateLimitingService(BaseService):
         """Initialize the rate limiting service."""
         try:
             self.logger.info("Initializing RateLimitingService...")
-            
+
             # Initialize database service
             self.db_service = DynamoDBService()
 
@@ -155,11 +155,11 @@ class RateLimitingService(BaseService):
                     block_duration_seconds=60,  # 1 minute
                 ),
             }
-            
+
             self._initialized = True
             self.logger.info("RateLimitingService initialized successfully")
             return True
-            
+
         except Exception as e:
             self.logger.error(f"Failed to initialize RateLimitingService: {str(e)}")
             return False
@@ -167,23 +167,23 @@ class RateLimitingService(BaseService):
     async def health_check(self) -> HealthCheck:
         """Perform health check for the rate limiting service."""
         start_time = time.time()
-        
+
         try:
             if not self._initialized:
                 return HealthCheck(
                     service_name=self.service_name,
                     status=ServiceStatus.UNHEALTHY,
                     message="Service not initialized",
-                    response_time_ms=(time.time() - start_time) * 1000
+                    response_time_ms=(time.time() - start_time) * 1000,
                 )
-            
+
             # Test database connectivity
             if self.db_service:
                 # Simple connectivity test
                 pass
-            
+
             response_time = (time.time() - start_time) * 1000
-            
+
             return HealthCheck(
                 service_name=self.service_name,
                 status=ServiceStatus.HEALTHY,
@@ -191,20 +191,20 @@ class RateLimitingService(BaseService):
                 details={
                     "database_connected": self.db_service is not None,
                     "configured_limits": len(self.configs),
-                    "limit_types": list(self.configs.keys())
+                    "limit_types": list(self.configs.keys()),
                 },
-                response_time_ms=response_time
+                response_time_ms=response_time,
             )
-            
+
         except Exception as e:
             response_time = (time.time() - start_time) * 1000
             self.logger.error(f"Health check failed: {str(e)}")
-            
+
             return HealthCheck(
                 service_name=self.service_name,
                 status=ServiceStatus.UNHEALTHY,
                 message=f"Health check failed: {str(e)}",
-                response_time_ms=response_time
+                response_time_ms=response_time,
             )
 
     async def check_rate_limit(

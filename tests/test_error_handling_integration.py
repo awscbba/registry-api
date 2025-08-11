@@ -4,6 +4,7 @@ Tests the comprehensive error handling, structured logging, and rate limiting fu
 """
 
 import pytest
+import pytest_asyncio
 import asyncio
 from datetime import datetime, timezone
 from unittest.mock import Mock, AsyncMock, patch
@@ -107,10 +108,12 @@ class TestErrorHandlingModels:
 class TestLoggingService:
     """Test the comprehensive logging service."""
 
-    @pytest.fixture
-    def logging_service(self):
+    @pytest_asyncio.fixture
+    async def logging_service(self):
         """Create logging service for testing."""
-        return LoggingService()
+        service = LoggingService()
+        await service.initialize()
+        return service
 
     @pytest.mark.asyncio
     async def test_structured_logging(self, logging_service):
@@ -201,10 +204,12 @@ class TestLoggingService:
 class TestRateLimitingService:
     """Test the rate limiting service."""
 
-    @pytest.fixture
-    def rate_limiting_service(self):
+    @pytest_asyncio.fixture
+    async def rate_limiting_service(self):
         """Create rate limiting service for testing."""
-        return RateLimitingService()
+        service = RateLimitingService()
+        await service.initialize()
+        return service
 
     @pytest.mark.asyncio
     async def test_rate_limit_check_allowed(self, rate_limiting_service):

@@ -5,6 +5,7 @@ This test verifies that email notifications are sent when subscription status ch
 """
 
 import pytest
+import pytest_asyncio
 from unittest.mock import AsyncMock, patch, MagicMock
 from src.services.email_service import EmailService, EmailType
 from src.models.email import EmailResponse
@@ -13,10 +14,12 @@ from src.models.email import EmailResponse
 class TestSubscriptionEmailNotifications:
     """Test subscription email notification functionality."""
 
-    @pytest.fixture
-    def email_service(self):
+    @pytest_asyncio.fixture
+    async def email_service(self):
         """Create email service instance for testing."""
-        return EmailService()
+        service = EmailService()
+        await service.initialize()
+        return service
 
     @pytest.mark.asyncio
     async def test_send_subscription_approved_email(self, email_service):
