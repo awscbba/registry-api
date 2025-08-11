@@ -1,28 +1,27 @@
 # Registry API
 
-FastAPI-based backend API for the People Registry system with Service Registry pattern.
+Backend API service for the People Registry application using FastAPI and Service Registry pattern.
 
-## Quick Start
+## 📚 Documentation
+
+All documentation has been consolidated in the **[registry-documentation](../registry-documentation/)** repository:
+
+- **[Architecture Overview](../registry-documentation/architecture/)**
+- **[API Documentation](../registry-documentation/api/)**
+- **[Development Guide](../registry-documentation/api/development.md)**
+- **[Service Registry Implementation](../registry-documentation/architecture/service-registry-implementation.md)**
+
+## 🚀 Quick Start
 
 ```bash
 # Install dependencies
 uv sync
 
-# Run development server
-uv run uvicorn main:app --reload
-
 # Run tests
-uv run pytest
+just test
+
+# Start development server
+just dev
 ```
 
-## Documentation
-
-All documentation is maintained in the `registry-documentation` repository.
-
-## Repository Structure
-
-- `src/` - Source code with Service Registry architecture
-- `tests/` - Test suites
-- `scripts/` - Utility scripts
-
-For detailed documentation, API reference, and architecture information, see the `registry-documentation` repository.
+For detailed setup instructions, see the [API Development Guide](../registry-documentation/api/development.md).
