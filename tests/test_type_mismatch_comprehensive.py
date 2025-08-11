@@ -156,6 +156,7 @@ class TestTypeMismatchComprehensive:
         # Configure roles service to allow admin access
         mock_roles_service.user_is_admin = AsyncMock(return_value=True)
         mock_roles_service.user_is_super_admin = AsyncMock(return_value=True)
+        mock_roles_service.get_user_roles = AsyncMock(return_value=[])
 
         admin_data = {"isAdmin": True}
 
