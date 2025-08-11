@@ -175,7 +175,7 @@ async def require_permission(permission: Permission):
             user_email = getattr(current_user, "email", "unknown")
 
         # Check if user has the required permission
-        has_permission = roles_service.user_has_permission(user_id, permission)
+        has_permission = await roles_service.user_has_permission(user_id, permission)
 
         if not has_permission:
             logger.warning(
@@ -274,7 +274,7 @@ class AdminActionLogger:
             admin_user_email = getattr(admin_user, "email", "unknown")
 
         # Get user roles for audit trail
-        user_roles = roles_service.get_user_roles(admin_user_id)
+        user_roles = await roles_service.get_user_roles(admin_user_id)
 
         log_data = {
             "action": action,
