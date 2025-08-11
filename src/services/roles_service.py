@@ -58,7 +58,11 @@ class RolesService:
                     not item.get("expires_at")
                     or datetime.fromisoformat(item["expires_at"]) > current_time
                 ):
-                    roles.append(RoleType(item["role_type"]))
+                    # Handle case-insensitive role matching
+                    role_type_str = item["role_type"]
+                    normalized_role = self._normalize_role_type(role_type_str)
+                    if normalized_role:
+                        roles.append(normalized_role)
 
             # If no roles found, assign default USER role
             if not roles:
@@ -97,7 +101,11 @@ class RolesService:
                     not item.get("expires_at")
                     or datetime.fromisoformat(item["expires_at"]) > current_time
                 ):
-                    roles.append(RoleType(item["role_type"]))
+                    # Handle case-insensitive role matching
+                    role_type_str = item["role_type"]
+                    normalized_role = self._normalize_role_type(role_type_str)
+                    if normalized_role:
+                        roles.append(normalized_role)
 
             return roles
 
@@ -339,6 +347,52 @@ class RolesService:
         except Exception as e:
             logger.error(f"Error listing user roles for {user_id}: {str(e)}")
             return []
+
+    def _normalize_role_type(self, role_type_str: str) -> Optional[RoleType]:
+        """
+        Normalize role type string to match RoleType enum values.
+        Handles case-insensitive matching and format variations.
+
+        Args:
+            role_type_str: Role type string from database
+
+        Returns:
+            Normalized RoleType or None if not recognized
+        """
+        if not role_type_str:
+            return None
+
+        # Convert to lowercase and handle common variations
+        normalized = role_type_str.lower().strip()
+
+        # Handle different formats
+        role_mapping = {
+            # Standard formats
+            "user": RoleType.USER,
+            "admin": RoleType.ADMIN,
+            "super_admin": RoleType.SUPER_ADMIN,
+            "moderator": RoleType.MODERATOR,
+            # Uppercase variations (from database)
+            "USER": RoleType.USER,
+            "ADMIN": RoleType.ADMIN,
+            "SUPER_ADMIN": RoleType.SUPER_ADMIN,
+            "MODERATOR": RoleType.MODERATOR,
+            # Alternative formats
+            "superadmin": RoleType.SUPER_ADMIN,
+            "super-admin": RoleType.SUPER_ADMIN,
+        }
+
+        # Try direct mapping first
+        if role_type_str in role_mapping:
+            return role_mapping[role_type_str]
+
+        # Try normalized (lowercase) mapping
+        if normalized in role_mapping:
+            return role_mapping[normalized]
+
+        # Log unrecognized role types for debugging
+        logger.warning(f"Unrecognized role type: '{role_type_str}', treating as USER")
+        return RoleType.USER
 
     async def _get_user_id_by_email(self, email: str) -> Optional[str]:
         """
