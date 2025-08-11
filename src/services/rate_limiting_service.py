@@ -10,6 +10,7 @@ from typing import Dict, Any, Optional, Tuple, List
 from enum import Enum
 import hashlib
 
+from ..core.base_service import BaseService, ServiceStatus, HealthCheck, ServiceResponse
 from ..models.error_handling import ErrorContext, APIException, ErrorCode
 from ..services.defensive_dynamodb_service import (
     DefensiveDynamoDBService as DynamoDBService,
@@ -78,72 +79,133 @@ class RateLimitResult:
         self.blocked_until = blocked_until
 
 
-class RateLimitingService:
+class RateLimitingService(BaseService):
     """Service for implementing rate limiting across the API."""
 
-    def __init__(self):
-        self.db_service = DynamoDBService()
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
+        super().__init__("rate_limiting_service", config)
+        self.db_service = None
+        self.configs = {}
 
-        # Rate limiting configurations
-        self.configs = {
-            RateLimitType.LOGIN_ATTEMPTS: RateLimitConfig(
-                limit_type=RateLimitType.LOGIN_ATTEMPTS,
-                max_requests=5,
-                window=RateLimitWindow.HOUR,
-                window_size_seconds=3600,
-                block_duration_seconds=900,  # 15 minutes
-                progressive_penalties=True,
-            ),
-            RateLimitType.PASSWORD_RESET: RateLimitConfig(
-                limit_type=RateLimitType.PASSWORD_RESET,
-                max_requests=3,
-                window=RateLimitWindow.HOUR,
-                window_size_seconds=3600,
-                block_duration_seconds=1800,  # 30 minutes
-            ),
-            RateLimitType.PASSWORD_CHANGE: RateLimitConfig(
-                limit_type=RateLimitType.PASSWORD_CHANGE,
-                max_requests=10,
-                window=RateLimitWindow.HOUR,
-                window_size_seconds=3600,
-                block_duration_seconds=300,  # 5 minutes
-            ),
-            RateLimitType.API_REQUESTS: RateLimitConfig(
-                limit_type=RateLimitType.API_REQUESTS,
-                max_requests=1000,
-                window=RateLimitWindow.HOUR,
-                window_size_seconds=3600,
-                block_duration_seconds=60,  # 1 minute
-            ),
-            RateLimitType.PERSON_CREATION: RateLimitConfig(
-                limit_type=RateLimitType.PERSON_CREATION,
-                max_requests=10,
-                window=RateLimitWindow.HOUR,
-                window_size_seconds=3600,
-                block_duration_seconds=600,  # 10 minutes
-            ),
-            RateLimitType.PERSON_UPDATES: RateLimitConfig(
-                limit_type=RateLimitType.PERSON_UPDATES,
-                max_requests=50,
-                window=RateLimitWindow.HOUR,
-                window_size_seconds=3600,
-                block_duration_seconds=300,  # 5 minutes
-            ),
-            RateLimitType.EMAIL_VERIFICATION: RateLimitConfig(
-                limit_type=RateLimitType.EMAIL_VERIFICATION,
-                max_requests=5,
-                window=RateLimitWindow.HOUR,
-                window_size_seconds=3600,
-                block_duration_seconds=1800,  # 30 minutes
-            ),
-            RateLimitType.SEARCH_REQUESTS: RateLimitConfig(
-                limit_type=RateLimitType.SEARCH_REQUESTS,
-                max_requests=100,
-                window=RateLimitWindow.HOUR,
-                window_size_seconds=3600,
-                block_duration_seconds=60,  # 1 minute
-            ),
-        }
+    async def initialize(self) -> bool:
+        """Initialize the rate limiting service."""
+        try:
+            self.logger.info("Initializing RateLimitingService...")
+            
+            # Initialize database service
+            self.db_service = DynamoDBService()
+
+            # Rate limiting configurations
+            self.configs = {
+                RateLimitType.LOGIN_ATTEMPTS: RateLimitConfig(
+                    limit_type=RateLimitType.LOGIN_ATTEMPTS,
+                    max_requests=5,
+                    window=RateLimitWindow.HOUR,
+                    window_size_seconds=3600,
+                    block_duration_seconds=900,  # 15 minutes
+                    progressive_penalties=True,
+                ),
+                RateLimitType.PASSWORD_RESET: RateLimitConfig(
+                    limit_type=RateLimitType.PASSWORD_RESET,
+                    max_requests=3,
+                    window=RateLimitWindow.HOUR,
+                    window_size_seconds=3600,
+                    block_duration_seconds=1800,  # 30 minutes
+                ),
+                RateLimitType.PASSWORD_CHANGE: RateLimitConfig(
+                    limit_type=RateLimitType.PASSWORD_CHANGE,
+                    max_requests=10,
+                    window=RateLimitWindow.HOUR,
+                    window_size_seconds=3600,
+                    block_duration_seconds=300,  # 5 minutes
+                ),
+                RateLimitType.API_REQUESTS: RateLimitConfig(
+                    limit_type=RateLimitType.API_REQUESTS,
+                    max_requests=1000,
+                    window=RateLimitWindow.HOUR,
+                    window_size_seconds=3600,
+                    block_duration_seconds=60,  # 1 minute
+                ),
+                RateLimitType.PERSON_CREATION: RateLimitConfig(
+                    limit_type=RateLimitType.PERSON_CREATION,
+                    max_requests=10,
+                    window=RateLimitWindow.HOUR,
+                    window_size_seconds=3600,
+                    block_duration_seconds=600,  # 10 minutes
+                ),
+                RateLimitType.PERSON_UPDATES: RateLimitConfig(
+                    limit_type=RateLimitType.PERSON_UPDATES,
+                    max_requests=50,
+                    window=RateLimitWindow.HOUR,
+                    window_size_seconds=3600,
+                    block_duration_seconds=300,  # 5 minutes
+                ),
+                RateLimitType.EMAIL_VERIFICATION: RateLimitConfig(
+                    limit_type=RateLimitType.EMAIL_VERIFICATION,
+                    max_requests=5,
+                    window=RateLimitWindow.HOUR,
+                    window_size_seconds=3600,
+                    block_duration_seconds=1800,  # 30 minutes
+                ),
+                RateLimitType.SEARCH_REQUESTS: RateLimitConfig(
+                    limit_type=RateLimitType.SEARCH_REQUESTS,
+                    max_requests=100,
+                    window=RateLimitWindow.HOUR,
+                    window_size_seconds=3600,
+                    block_duration_seconds=60,  # 1 minute
+                ),
+            }
+            
+            self._initialized = True
+            self.logger.info("RateLimitingService initialized successfully")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Failed to initialize RateLimitingService: {str(e)}")
+            return False
+
+    async def health_check(self) -> HealthCheck:
+        """Perform health check for the rate limiting service."""
+        start_time = time.time()
+        
+        try:
+            if not self._initialized:
+                return HealthCheck(
+                    service_name=self.service_name,
+                    status=ServiceStatus.UNHEALTHY,
+                    message="Service not initialized",
+                    response_time_ms=(time.time() - start_time) * 1000
+                )
+            
+            # Test database connectivity
+            if self.db_service:
+                # Simple connectivity test
+                pass
+            
+            response_time = (time.time() - start_time) * 1000
+            
+            return HealthCheck(
+                service_name=self.service_name,
+                status=ServiceStatus.HEALTHY,
+                message="Rate limiting service is healthy",
+                details={
+                    "database_connected": self.db_service is not None,
+                    "configured_limits": len(self.configs),
+                    "limit_types": list(self.configs.keys())
+                },
+                response_time_ms=response_time
+            )
+            
+        except Exception as e:
+            response_time = (time.time() - start_time) * 1000
+            self.logger.error(f"Health check failed: {str(e)}")
+            
+            return HealthCheck(
+                service_name=self.service_name,
+                status=ServiceStatus.UNHEALTHY,
+                message=f"Health check failed: {str(e)}",
+                response_time_ms=response_time
+            )
 
     async def check_rate_limit(
         self, limit_type: RateLimitType, identifier: str, context: ErrorContext

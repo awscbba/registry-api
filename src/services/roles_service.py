@@ -3,12 +3,14 @@ Role management service for database operations.
 """
 
 import logging
-from typing import List, Optional, Set
+import time
+from typing import List, Optional, Set, Dict, Any
 from datetime import datetime
 import boto3
 from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
 
+from ..core.base_service import BaseService, ServiceStatus, HealthCheck, ServiceResponse
 from ..models.roles import (
     RoleType,
     Permission,
@@ -25,13 +27,86 @@ from ..services.defensive_dynamodb_service import DefensiveDynamoDBService
 logger = logging.getLogger(__name__)
 
 
-class RolesService:
+class RolesService(BaseService):
     """Service for managing user roles and permissions."""
 
-    def __init__(self, table_name: str = "people-registry-roles"):
+    def __init__(self, config: Optional[Dict[str, Any]] = None, table_name: str = "people-registry-roles"):
+        super().__init__("roles_service", config)
         self.table_name = table_name
-        self.dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
-        self.table = self.dynamodb.Table(table_name)
+        self.dynamodb = None
+        self.table = None
+
+    async def initialize(self) -> bool:
+        """Initialize the roles service."""
+        try:
+            self.logger.info("Initializing RolesService...")
+            
+            # Initialize DynamoDB resources
+            self.dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
+            self.table = self.dynamodb.Table(self.table_name)
+            
+            # Test table connectivity
+            await self._test_table_connection()
+            
+            self._initialized = True
+            self.logger.info("RolesService initialized successfully")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Failed to initialize RolesService: {str(e)}")
+            return False
+
+    async def health_check(self) -> HealthCheck:
+        """Perform health check for the roles service."""
+        start_time = time.time()
+        
+        try:
+            if not self._initialized:
+                return HealthCheck(
+                    service_name=self.service_name,
+                    status=ServiceStatus.UNHEALTHY,
+                    message="Service not initialized",
+                    response_time_ms=(time.time() - start_time) * 1000
+                )
+            
+            # Test table connectivity
+            await self._test_table_connection()
+            
+            response_time = (time.time() - start_time) * 1000
+            
+            return HealthCheck(
+                service_name=self.service_name,
+                status=ServiceStatus.HEALTHY,
+                message="Roles service is healthy",
+                details={
+                    "table_name": self.table_name,
+                    "table_connected": True,
+                    "region": "us-east-1"
+                },
+                response_time_ms=response_time
+            )
+            
+        except Exception as e:
+            response_time = (time.time() - start_time) * 1000
+            self.logger.error(f"Health check failed: {str(e)}")
+            
+            return HealthCheck(
+                service_name=self.service_name,
+                status=ServiceStatus.UNHEALTHY,
+                message=f"Health check failed: {str(e)}",
+                response_time_ms=response_time
+            )
+
+    async def _test_table_connection(self):
+        """Test DynamoDB table connectivity."""
+        if not self.table:
+            raise Exception("DynamoDB table not initialized")
+        
+        try:
+            # Test table by describing it (lightweight operation)
+            self.table.table_status
+        except Exception as e:
+            raise Exception(f"DynamoDB table connection test failed: {str(e)}")
 
     async def get_user_roles(self, user_id: str) -> List[RoleType]:
         """

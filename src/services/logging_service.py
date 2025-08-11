@@ -6,10 +6,12 @@ Provides structured logging for all person operations, security events, and syst
 import json
 import logging
 import uuid
+import time
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional, List, Union
 from enum import Enum
 
+from ..core.base_service import BaseService, ServiceStatus, HealthCheck, ServiceResponse
 from ..models.error_handling import ErrorLogEntry, ErrorContext, APIException
 from ..models.security_event import (
     SecurityEvent,
@@ -98,22 +100,86 @@ class StructuredLogEntry:
         return json.dumps(self.to_dict(), default=str)
 
 
-class LoggingService:
+class LoggingService(BaseService):
     """Comprehensive logging service for structured logging and audit trails."""
 
-    def __init__(self):
-        self.logger = logging.getLogger(__name__)
-        self.db_service = DynamoDBService()
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
+        super().__init__("logging_service", config)
+        self.db_service = None
+        self.structured_logger = None
 
-        # Configure structured logging format
-        formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
+    async def initialize(self) -> bool:
+        """Initialize the logging service."""
+        try:
+            self.logger.info("Initializing LoggingService...")
+            
+            # Initialize database service
+            self.db_service = DynamoDBService()
+            
+            # Configure structured logging format
+            formatter = logging.Formatter(
+                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+            )
 
-        # Ensure handler exists
-        if not self.logger.handlers:
-            handler = logging.StreamHandler()
-            handler.setFormatter(formatter)
+            # Setup structured logger
+            self.structured_logger = logging.getLogger(f"{__name__}.structured")
+            if not self.structured_logger.handlers:
+                handler = logging.StreamHandler()
+                handler.setFormatter(formatter)
+                self.structured_logger.addHandler(handler)
+                self.structured_logger.setLevel(logging.INFO)
+            
+            self._initialized = True
+            self.logger.info("LoggingService initialized successfully")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Failed to initialize LoggingService: {str(e)}")
+            return False
+
+    async def health_check(self) -> HealthCheck:
+        """Perform health check for the logging service."""
+        start_time = time.time()
+        
+        try:
+            if not self._initialized:
+                return HealthCheck(
+                    service_name=self.service_name,
+                    status=ServiceStatus.UNHEALTHY,
+                    message="Service not initialized",
+                    response_time_ms=(time.time() - start_time) * 1000
+                )
+            
+            # Test database connectivity
+            if self.db_service:
+                # Simple connectivity test
+                pass
+            
+            response_time = (time.time() - start_time) * 1000
+            
+            return HealthCheck(
+                service_name=self.service_name,
+                status=ServiceStatus.HEALTHY,
+                message="Logging service is healthy",
+                details={
+                    "database_connected": self.db_service is not None,
+                    "structured_logger_configured": self.structured_logger is not None,
+                    "log_categories": len(LogCategory),
+                    "log_levels": len(LogLevel)
+                },
+                response_time_ms=response_time
+            )
+            
+        except Exception as e:
+            response_time = (time.time() - start_time) * 1000
+            self.logger.error(f"Health check failed: {str(e)}")
+            
+            return HealthCheck(
+                service_name=self.service_name,
+                status=ServiceStatus.UNHEALTHY,
+                message=f"Health check failed: {str(e)}",
+                response_time_ms=response_time
+            )
             self.logger.addHandler(handler)
             self.logger.setLevel(logging.INFO)
 

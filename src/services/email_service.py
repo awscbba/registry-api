@@ -6,27 +6,109 @@ import os
 import boto3
 import secrets
 import string
+import time
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 from botocore.exceptions import ClientError
 
+from ..core.base_service import BaseService, ServiceStatus, HealthCheck, ServiceResponse
 from ..models.email import EmailType, EmailRequest, EmailResponse
 from ..utils.defensive_utils import safe_isoformat
 from .logging_service import LoggingService
 
 
-class EmailService:
+class EmailService(BaseService):
     """Service for sending emails via AWS SES with template support."""
 
-    def __init__(self):
-        self.ses_client = boto3.client(
-            "ses", region_name=os.getenv("AWS_REGION", "us-east-1")
-        )
-        self.from_email = os.getenv("SES_FROM_EMAIL", "noreply@people-register.local")
-        self.frontend_url = os.getenv(
-            "FRONTEND_URL", "https://d28z2il3z2vmpc.cloudfront.net"
-        )
-        self.logger = LoggingService()
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
+        super().__init__("email_service", config)
+        self.ses_client = None
+        self.from_email = None
+        self.frontend_url = None
+        self.logging_service = None
+
+    async def initialize(self) -> bool:
+        """Initialize the email service."""
+        try:
+            self.logger.info("Initializing EmailService...")
+            
+            # Initialize SES client
+            self.ses_client = boto3.client(
+                "ses", region_name=os.getenv("AWS_REGION", "us-east-1")
+            )
+            
+            # Set configuration
+            self.from_email = os.getenv("SES_FROM_EMAIL", "noreply@people-register.local")
+            self.frontend_url = os.getenv(
+                "FRONTEND_URL", "https://d28z2il3z2vmpc.cloudfront.net"
+            )
+            
+            # Initialize logging service
+            self.logging_service = LoggingService()
+            
+            # Test SES connectivity
+            await self._test_ses_connection()
+            
+            self._initialized = True
+            self.logger.info("EmailService initialized successfully")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Failed to initialize EmailService: {str(e)}")
+            return False
+
+    async def health_check(self) -> HealthCheck:
+        """Perform health check for the email service."""
+        start_time = time.time()
+        
+        try:
+            if not self._initialized:
+                return HealthCheck(
+                    service_name=self.service_name,
+                    status=ServiceStatus.UNHEALTHY,
+                    message="Service not initialized",
+                    response_time_ms=(time.time() - start_time) * 1000
+                )
+            
+            # Test SES connectivity
+            await self._test_ses_connection()
+            
+            response_time = (time.time() - start_time) * 1000
+            
+            return HealthCheck(
+                service_name=self.service_name,
+                status=ServiceStatus.HEALTHY,
+                message="Email service is healthy",
+                details={
+                    "ses_connected": True,
+                    "from_email": self.from_email,
+                    "frontend_url": self.frontend_url,
+                    "region": os.getenv("AWS_REGION", "us-east-1")
+                },
+                response_time_ms=response_time
+            )
+            
+        except Exception as e:
+            response_time = (time.time() - start_time) * 1000
+            self.logger.error(f"Health check failed: {str(e)}")
+            
+            return HealthCheck(
+                service_name=self.service_name,
+                status=ServiceStatus.UNHEALTHY,
+                message=f"Health check failed: {str(e)}",
+                response_time_ms=response_time
+            )
+
+    async def _test_ses_connection(self):
+        """Test SES connectivity."""
+        if not self.ses_client:
+            raise Exception("SES client not initialized")
+        
+        try:
+            # Test SES by getting sending quota (lightweight operation)
+            self.ses_client.get_send_quota()
+        except Exception as e:
+            raise Exception(f"SES connection test failed: {str(e)}")
 
     def generate_temporary_password(self, length: int = 12) -> str:
         """Generate a secure temporary password."""
