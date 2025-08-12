@@ -88,6 +88,10 @@ class ProjectResponse(ProjectBase):
         json_encoders = {datetime: lambda v: v.isoformat()}
 
 
+# Alias for repository compatibility
+Project = ProjectResponse
+
+
 class ProjectListResponse(BaseModel):
     """Schema for project list responses"""
 
