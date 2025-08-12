@@ -1,6 +1,6 @@
 """
 Projects Service - Domain service for project-related operations.
-Implements the Service Registry pattern for project management.
+Implements the Service Registry pattern with Repository pattern integration.
 """
 
 from typing import Dict, Any, List, Optional
@@ -8,7 +8,8 @@ from datetime import datetime
 import uuid
 
 from ..core.base_service import BaseService
-from ..models.project import ProjectCreate, ProjectUpdate
+from ..models.project import ProjectCreate, ProjectUpdate, Project
+from ..repositories.project_repository import ProjectRepository
 from ..services.defensive_dynamodb_service import DefensiveDynamoDBService
 from ..utils.logging_config import get_handler_logger
 from ..utils.error_handler import handle_database_error
@@ -16,41 +17,65 @@ from ..utils.response_models import create_v1_response, create_v2_response
 
 
 class ProjectsService(BaseService):
-    """Service for managing project-related operations."""
+    """Service for managing project-related operations with repository pattern."""
 
     def __init__(self):
         super().__init__("projects_service")
+        # Initialize repository for clean data access
+        self.project_repository = ProjectRepository(table_name="projects")
+        # Keep legacy db_service for backward compatibility during transition
         self.db_service = DefensiveDynamoDBService()
         self.logger = get_handler_logger("projects_service")
 
     async def initialize(self):
-        """Initialize the projects service."""
+        """Initialize the projects service with repository pattern."""
         try:
-            # Test database connectivity
-            await self.db_service.get_all_projects()
-            self.logger.info("Projects service initialized successfully")
-            return True
+            # Test repository connectivity with a simple count operation
+            count_result = await self.project_repository.count()
+            if count_result.success:
+                self.logger.info(
+                    f"Projects service initialized successfully. Found {count_result.data} projects."
+                )
+                return True
+            else:
+                self.logger.error(
+                    f"Repository health check failed: {count_result.error}"
+                )
+                return False
         except Exception as e:
             self.logger.error(f"Failed to initialize projects service: {str(e)}")
             return False
 
     async def health_check(self) -> Dict[str, Any]:
-        """Check the health of the projects service."""
+        """Check the health of the projects service using repository pattern."""
         try:
-            # Test database connectivity
-            await self.db_service.get_all_projects()
-            return {
-                "service": "projects_service",
-                "status": "healthy",
-                "database": "connected",
-                "timestamp": datetime.now().isoformat(),
-            }
+            # Test repository connectivity and get performance stats
+            count_result = await self.project_repository.count()
+            performance_stats = self.project_repository.get_performance_stats()
+
+            if count_result.success:
+                return {
+                    "service": "projects_service",
+                    "status": "healthy",
+                    "repository": "connected",
+                    "project_count": count_result.data,
+                    "performance": performance_stats,
+                    "timestamp": datetime.now().isoformat(),
+                }
+            else:
+                return {
+                    "service": "projects_service",
+                    "status": "unhealthy",
+                    "repository": "disconnected",
+                    "error": count_result.error,
+                    "timestamp": datetime.now().isoformat(),
+                }
         except Exception as e:
             self.logger.error(f"Projects service health check failed: {str(e)}")
             return {
                 "service": "projects_service",
                 "status": "unhealthy",
-                "database": "disconnected",
+                "repository": "disconnected",
                 "error": str(e),
                 "timestamp": datetime.now().isoformat(),
             }
@@ -378,3 +403,161 @@ class ProjectsService(BaseService):
                 error_type=type(e).__name__,
             )
             raise handle_database_error("deleting project", e)
+
+    # New Repository-Based Methods for Enhanced Functionality
+
+    async def get_all_projects_repository(
+        self, limit: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """Get all projects using repository pattern with enhanced features."""
+        try:
+            self.logger.log_api_request("GET", "/repository/projects")
+
+            from ..repositories.base_repository import QueryOptions
+
+            options = QueryOptions(limit=limit) if limit else None
+
+            result = await self.project_repository.list_all(options)
+
+            if result.success:
+                # Convert Project objects to dict for response
+                projects_data = (
+                    [project.dict() for project in result.data] if result.data else []
+                )
+
+                response = create_v2_response(
+                    projects_data,
+                    metadata={
+                        "total_count": len(projects_data),
+                        "service": "projects_service",
+                        "version": "repository",
+                        "performance": self.project_repository.get_performance_stats(),
+                    },
+                )
+
+                # Add result metadata if available
+                if result.metadata:
+                    response["metadata"].update(result.metadata)
+                self.logger.log_api_response(
+                    "GET",
+                    "/repository/projects",
+                    200,
+                    additional_context={"count": len(projects_data)},
+                )
+                return response
+            else:
+                raise Exception(f"Repository error: {result.error}")
+
+        except Exception as e:
+            self.logger.error(
+                "Failed to retrieve projects via repository",
+                operation="get_all_projects_repository",
+                error_type=type(e).__name__,
+            )
+            raise handle_database_error("retrieving projects", e)
+
+    async def get_projects_by_status(self, status: str) -> Dict[str, Any]:
+        """Get projects by status using repository pattern."""
+        try:
+            self.logger.log_api_request("GET", f"/repository/projects/status/{status}")
+
+            result = await self.project_repository.get_by_status(status)
+
+            if result.success:
+                projects_data = (
+                    [project.dict() for project in result.data] if result.data else []
+                )
+
+                response = create_v2_response(
+                    projects_data,
+                    metadata={
+                        "status_filter": status,
+                        "count": len(projects_data),
+                        "service": "projects_service",
+                        "version": "repository",
+                    },
+                )
+                self.logger.log_api_response(
+                    "GET",
+                    f"/repository/projects/status/{status}",
+                    200,
+                    additional_context={"status": status, "count": len(projects_data)},
+                )
+                return response
+            else:
+                raise Exception(f"Repository error: {result.error}")
+
+        except Exception as e:
+            self.logger.error(
+                "Failed to retrieve projects by status",
+                operation="get_projects_by_status",
+                status=status,
+                error_type=type(e).__name__,
+            )
+            raise handle_database_error("retrieving projects by status", e)
+
+    async def get_projects_by_creator(self, creator_id: str) -> Dict[str, Any]:
+        """Get projects by creator using repository pattern."""
+        try:
+            self.logger.log_api_request(
+                "GET", f"/repository/projects/creator/{creator_id}"
+            )
+
+            result = await self.project_repository.get_by_creator(creator_id)
+
+            if result.success:
+                projects_data = (
+                    [project.dict() for project in result.data] if result.data else []
+                )
+
+                response = create_v2_response(
+                    projects_data,
+                    metadata={
+                        "creator_id": creator_id,
+                        "count": len(projects_data),
+                        "service": "projects_service",
+                        "version": "repository",
+                    },
+                )
+                self.logger.log_api_response(
+                    "GET",
+                    f"/repository/projects/creator/{creator_id}",
+                    200,
+                    additional_context={
+                        "creator_id": creator_id,
+                        "count": len(projects_data),
+                    },
+                )
+                return response
+            else:
+                raise Exception(f"Repository error: {result.error}")
+
+        except Exception as e:
+            self.logger.error(
+                "Failed to retrieve projects by creator",
+                operation="get_projects_by_creator",
+                creator_id=creator_id,
+                error_type=type(e).__name__,
+            )
+            raise handle_database_error("retrieving projects by creator", e)
+
+    async def get_projects_performance_stats(self) -> Dict[str, Any]:
+        """Get repository performance statistics."""
+        try:
+            stats = self.project_repository.get_performance_stats()
+            return create_v2_response(
+                stats,
+                metadata={
+                    "service": "projects_service",
+                    "version": "repository",
+                    "stats_type": "performance",
+                    "timestamp": datetime.now().isoformat(),
+                },
+            )
+        except Exception as e:
+            self.logger.error(
+                "Failed to get performance stats",
+                operation="get_projects_performance_stats",
+                error_type=type(e).__name__,
+            )
+            raise handle_database_error("getting performance stats", e)
