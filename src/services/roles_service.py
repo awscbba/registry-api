@@ -37,19 +37,17 @@ class RolesService(BaseService):
     ):
         super().__init__("roles_service", config)
         self.table_name = table_name
-        self.dynamodb = None
-        self.table = None
+        # Initialize DynamoDB resources immediately to avoid NoneType errors
+        self.dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
+        self.table = self.dynamodb.Table(self.table_name)
 
     async def initialize(self) -> bool:
         """Initialize the roles service."""
         try:
             self.logger.info("Initializing RolesService...")
 
-            # Initialize DynamoDB resources
-            self.dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
-            self.table = self.dynamodb.Table(self.table_name)
-
-            # Test table connectivity
+            # DynamoDB resources are already initialized in constructor
+            # Just test table connectivity
             await self._test_table_connection()
 
             self._initialized = True
