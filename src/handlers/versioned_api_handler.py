@@ -1103,6 +1103,7 @@ async def get_admin_dashboard(admin_user=Depends(require_admin_access)):
         # Get statistics from database
         projects = await db_service.get_all_projects()
         subscriptions = await db_service.get_all_subscriptions()
+        people = await db_service.get_all_people()  # Add people data
 
         # Count active projects
         active_projects = [p for p in projects if p.get("status") == "active"]
@@ -1114,6 +1115,10 @@ async def get_admin_dashboard(admin_user=Depends(require_admin_access)):
         ]
         # Current subscriptions = active + pending (excludes inactive)
         current_subscriptions = active_subscriptions + pending_subscriptions
+
+        # Count users by status (FIX: Add user statistics)
+        active_users = [p for p in people if p.get("isActive", True)]
+        admin_users = [p for p in people if p.get("isAdmin", False)]
 
         # Get recent activity (last 10 subscriptions)
         recent_subscriptions = sorted(
@@ -1130,6 +1135,10 @@ async def get_admin_dashboard(admin_user=Depends(require_admin_access)):
             "pendingSubscriptions": len(pending_subscriptions),
             # For transparency, also include total count including inactive
             "totalSubscriptionsEverCreated": len(subscriptions),
+            # FIX: Add user statistics that were missing
+            "totalUsers": len(people),
+            "activeUsers": len(active_users),
+            "adminUsers": len(admin_users),
             "recentActivity": recent_subscriptions,
             "statistics": {
                 "projectsCreatedThisMonth": len(
@@ -1147,9 +1156,15 @@ async def get_admin_dashboard(admin_user=Depends(require_admin_access)):
                         if s.get("createdAt", "").startswith("2025-08")
                     ]
                 ),
+                # FIX: Add users created this month
+                "usersCreatedThisMonth": len(
+                    [p for p in people if p.get("createdAt", "").startswith("2025-08")]
+                ),
                 # Calculate average based on current subscriptions
                 "averageSubscriptionsPerProject": len(current_subscriptions)
                 / max(len(projects), 1),
+                # FIX: Add user engagement rate
+                "userEngagementRate": len(current_subscriptions) / max(len(people), 1),
             },
         }
 
@@ -1608,6 +1623,236 @@ async def get_admin_registrations():
             error_type=type(e).__name__,
         )
         raise handle_database_error("getting admin registrations", e)
+
+
+@v2_router.put("/admin/people/{person_id}")
+async def edit_admin_person(
+    person_id: str,
+    person_data: dict,
+    admin_user=Depends(require_admin_access),
+):
+    """Edit person information (admin only)."""
+    try:
+        logger.log_api_request("PUT", f"/v2/admin/people/{person_id}")
+
+        # Log admin action
+        await AdminActionLogger.log_admin_action(
+            action="EDIT_USER",
+            admin_user=admin_user,
+            target_resource="user",
+            target_id=person_id,
+            details=person_data,
+        )
+
+        # Get current person
+        current_person = await db_service.get_person_by_id(person_id)
+        if not current_person:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Person not found"
+            )
+
+        # Convert camelCase to snake_case for PersonUpdate
+        update_data = {}
+        field_mapping = {
+            "firstName": "first_name",
+            "lastName": "last_name",
+            "dateOfBirth": "date_of_birth",
+            "isActive": "is_active",
+            "isAdmin": "is_admin",
+            "requirePasswordChange": "require_password_change",
+        }
+
+        for key, value in person_data.items():
+            if key in field_mapping:
+                update_data[field_mapping[key]] = value
+            elif key in ["email", "phone", "address"]:
+                update_data[key] = value
+
+        # Create PersonUpdate object
+        person_update = PersonUpdate(**update_data)
+
+        # Update person
+        updated_person = await db_service.update_person(person_id, person_update)
+
+        response_data = {
+            "message": "Person updated successfully",
+            "person": {
+                "id": updated_person.id,
+                "email": updated_person.email,
+                "firstName": updated_person.first_name,
+                "lastName": updated_person.last_name,
+                "phone": updated_person.phone,
+                "dateOfBirth": updated_person.date_of_birth,
+                "isActive": updated_person.is_active,
+                "isAdmin": updated_person.is_admin,
+                "requirePasswordChange": updated_person.require_password_change,
+                "address": updated_person.address,
+                "updatedAt": (
+                    updated_person.updated_at.isoformat()
+                    if updated_person.updated_at
+                    else None
+                ),
+            },
+            "updatedBy": {
+                "id": admin_user.id,
+                "email": admin_user.email,
+                "name": f"{admin_user.first_name} {admin_user.last_name}",
+            },
+        }
+
+        response = create_v2_response(response_data)
+        logger.log_api_response("PUT", f"/v2/admin/people/{person_id}", 200)
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to edit person {person_id}: {str(e)}")
+        raise handle_database_error("updating person", e)
+
+
+@v2_router.post("/admin/projects")
+async def create_admin_project(
+    project_data: dict,
+    admin_user=Depends(require_admin_access),
+):
+    """Create a new project (admin only)."""
+    try:
+        logger.log_api_request("POST", "/v2/admin/projects")
+
+        # Log admin action
+        await AdminActionLogger.log_admin_action(
+            action="CREATE_PROJECT",
+            admin_user=admin_user,
+            target_resource="project",
+            details=project_data,
+        )
+
+        # Convert camelCase to snake_case for ProjectCreate
+        create_data = {
+            "name": project_data.get("name"),
+            "description": project_data.get("description"),
+            "start_date": project_data.get("startDate"),
+            "end_date": project_data.get("endDate"),
+            "max_participants": project_data.get("maxParticipants", 50),
+            "status": project_data.get("status", "active"),
+            "created_by": f"{admin_user.first_name} {admin_user.last_name}",
+        }
+
+        project_create = ProjectCreate(**create_data)
+        created_project = await db_service.create_project(project_create)
+
+        response_data = {
+            "message": "Project created successfully",
+            "project": {
+                "id": created_project.id,
+                "name": created_project.name,
+                "description": created_project.description,
+                "startDate": created_project.start_date,
+                "endDate": created_project.end_date,
+                "maxParticipants": created_project.max_participants,
+                "status": created_project.status,
+                "createdBy": created_project.created_by,
+                "createdAt": (
+                    created_project.created_at.isoformat()
+                    if created_project.created_at
+                    else None
+                ),
+            },
+            "createdBy": {
+                "id": admin_user.id,
+                "email": admin_user.email,
+                "name": f"{admin_user.first_name} {admin_user.last_name}",
+            },
+        }
+
+        response = create_v2_response(response_data)
+        logger.log_api_response("POST", "/v2/admin/projects", 201)
+        return response
+
+    except Exception as e:
+        logger.error(f"Failed to create project: {str(e)}")
+        raise handle_database_error("creating project", e)
+
+
+@v2_router.put("/admin/projects/{project_id}")
+async def edit_admin_project(
+    project_id: str,
+    project_data: dict,
+    admin_user=Depends(require_admin_access),
+):
+    """Edit project information (admin only)."""
+    try:
+        logger.log_api_request("PUT", f"/v2/admin/projects/{project_id}")
+
+        # Log admin action
+        await AdminActionLogger.log_admin_action(
+            action="EDIT_PROJECT",
+            admin_user=admin_user,
+            target_resource="project",
+            target_id=project_id,
+            details=project_data,
+        )
+
+        # Get current project
+        current_project = await db_service.get_project_by_id(project_id)
+        if not current_project:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+            )
+
+        # Convert camelCase to snake_case for ProjectUpdate
+        update_data = {}
+        field_mapping = {
+            "startDate": "start_date",
+            "endDate": "end_date",
+            "maxParticipants": "max_participants",
+        }
+
+        for key, value in project_data.items():
+            if key in field_mapping:
+                update_data[field_mapping[key]] = value
+            elif key in ["name", "description", "status"]:
+                update_data[key] = value
+
+        # Create ProjectUpdate object
+        project_update = ProjectUpdate(**update_data)
+
+        # Update project
+        updated_project = await db_service.update_project(project_id, project_update)
+
+        response_data = {
+            "message": "Project updated successfully",
+            "project": {
+                "id": updated_project.id,
+                "name": updated_project.name,
+                "description": updated_project.description,
+                "startDate": updated_project.start_date,
+                "endDate": updated_project.end_date,
+                "maxParticipants": updated_project.max_participants,
+                "status": updated_project.status,
+                "updatedAt": (
+                    updated_project.updated_at.isoformat()
+                    if updated_project.updated_at
+                    else None
+                ),
+            },
+            "updatedBy": {
+                "id": admin_user.id,
+                "email": admin_user.email,
+                "name": f"{admin_user.first_name} {admin_user.last_name}",
+            },
+        }
+
+        response = create_v2_response(response_data)
+        logger.log_api_response("PUT", f"/v2/admin/projects/{project_id}", 200)
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to edit project {project_id}: {str(e)}")
+        raise handle_database_error("updating project", e)
 
 
 # Router registration moved to end of file after all endpoints are defined
