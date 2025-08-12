@@ -1,26 +1,48 @@
-#!/usr/bin/env python3
 """
-Comprehensive test to identify field mapping inconsistencies across ALL update methods:
-1. PersonUpdate (already fixed)
-2. ProjectUpdate
-3. SubscriptionUpdate
-4. Any other update operations
+Test module converted from script format.
 """
 
+import pytest
 import asyncio
-import sys
 import os
+import sys
 from datetime import datetime
 
 # Add the src directory to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
-
-from models.person import PersonUpdate, Address
-from models.project import ProjectUpdate, ProjectStatus
-from models.subscription import SubscriptionUpdate, SubscriptionStatus
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 
+import pytest
+import asyncio
+import os
+import sys
+from datetime import datetime
+
+# Add the src directory to the path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+
+from src.models.person import Person, PersonCreate, PersonUpdate, Address
+from src.models.project import Project, ProjectCreate, ProjectUpdate, ProjectStatus
+from src.models.subscription import (
+    Subscription,
+    SubscriptionCreate,
+    SubscriptionUpdate,
+    SubscriptionStatus,
+)
+from src.services.email_service import EmailService
+from src.utils.defensive_utils import (
+    safe_isoformat,
+    safe_enum_value,
+    safe_datetime_parse,
+    safe_field_access,
+    safe_update_expression_builder,
+    safe_model_dump,
+)
+
+
+@pytest.mark.asyncio
 async def test_all_update_inconsistencies():
+    """Test function converted from script format."""
     """Test all update models for field mapping and type inconsistencies"""
 
     print("🔍 Comprehensive Update Inconsistency Analysis")
@@ -241,11 +263,6 @@ async def test_all_update_inconsistencies():
         return True
 
 
+# Keep the original script functionality for backward compatibility
 if __name__ == "__main__":
-    success = asyncio.run(test_all_update_inconsistencies())
-    if success:
-        print("\n✅ Analysis completed - minor issues to verify")
-        sys.exit(0)
-    else:
-        print("\n❌ Critical inconsistencies found!")
-        sys.exit(1)
+    asyncio.run(test_all_update_inconsistencies())

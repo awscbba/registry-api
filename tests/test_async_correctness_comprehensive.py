@@ -16,82 +16,125 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import sys
 
 
+from fastapi.testclient import TestClient
+from unittest.mock import patch, MagicMock
+
+# Import the app for testing
+from src.handlers.versioned_api_handler import app
+
+
+@pytest.fixture
+def client():
+    """Test client fixture"""
+    return TestClient(app)
+
+
+@pytest.fixture
+def mock_db_service():
+    """Mock database service"""
+    with patch("src.handlers.versioned_api_handler.db_service") as mock:
+        yield mock
+
+
+@pytest.fixture
+def versioned_api_handler():
+    """Mock versioned API handler"""
+    import src.handlers.versioned_api_handler as handler
+
+    return handler
+
+
 class TestAsyncCorrectness:
     """Test suite for async/await correctness"""
 
     def test_all_endpoint_functions_are_async(self):
         """Verify all endpoint handler functions are properly async"""
         # Read source directly to avoid import issues
-        handler_path = os.path.join(os.path.dirname(__file__), "..", "src", "handlers", "versioned_api_handler.py")
+        handler_path = os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "src",
+            "handlers",
+            "versioned_api_handler.py",
+        )
         with open(handler_path, "r") as f:
             source = f.read()
-        
+
         tree = ast.parse(source)
-        
+
         # Find all async function definitions
         async_functions = []
         sync_functions = []
-        
+
         class FunctionVisitor(ast.NodeVisitor):
             def visit_AsyncFunctionDef(self, node):
                 async_functions.append(node.name)
                 self.generic_visit(node)
-            
+
             def visit_FunctionDef(self, node):
                 # Skip private functions and class methods
-                if not node.name.startswith('_'):
+                if not node.name.startswith("_"):
                     sync_functions.append(node.name)
                 self.generic_visit(node)
-        
+
         visitor = FunctionVisitor()
         visitor.visit(tree)
-        
+
         # Check that endpoint functions are async
         endpoint_patterns = ["_v1", "_v2", "health_check", "login", "test_admin_system"]
         non_async_endpoints = []
-        
+
         for func_name in sync_functions:
             if any(pattern in func_name for pattern in endpoint_patterns):
                 non_async_endpoints.append(func_name)
-        
-        assert len(non_async_endpoints) == 0, f"Non-async endpoint functions found: {non_async_endpoints}"
-        
+
+        assert (
+            len(non_async_endpoints) == 0
+        ), f"Non-async endpoint functions found: {non_async_endpoints}"
+
         # Verify we found some async functions
         assert len(async_functions) > 0, "No async functions found in handler"
 
     def test_database_calls_are_awaited(self):
         """Test that all database service calls are properly awaited"""
         # Read source directly to check for await keywords
-        handler_path = os.path.join(os.path.dirname(__file__), "..", "src", "handlers", "versioned_api_handler.py")
+        handler_path = os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "src",
+            "handlers",
+            "versioned_api_handler.py",
+        )
         with open(handler_path, "r") as f:
             source = f.read()
-        
+
         # Check that async database methods are called with await
         async_db_methods = [
             "get_all_subscriptions",
-            "get_all_projects", 
+            "get_all_projects",
             "get_person_by_email",
             "create_person",
-            "create_subscription"
+            "create_subscription",
         ]
-        
+
         missing_await = []
         for method in async_db_methods:
             pattern = f"db_service.{method}("
             if pattern in source:
                 # Find all occurrences
                 import re
+
                 matches = list(re.finditer(re.escape(pattern), source))
                 for match in matches:
                     # Get the line containing the match
-                    start = source.rfind('\n', 0, match.start()) + 1
-                    end = source.find('\n', match.end())
+                    start = source.rfind("\n", 0, match.start()) + 1
+                    end = source.find("\n", match.end())
                     line = source[start:end] if end != -1 else source[start:]
-                    
+
                     # Check if await is present before the call
-                    if 'await' not in line[:match.start() - start]:
+                    if "await" not in line[: match.start() - start]:
                         missing_await.append(f"{method} in: {line.strip()}")
-        
+
         assert len(missing_await) == 0, f"Database calls missing await: {missing_await}"
 
         response = client.get("/v2/projects")

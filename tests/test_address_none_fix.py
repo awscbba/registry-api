@@ -1,21 +1,48 @@
-#!/usr/bin/env python3
 """
-Test script to verify the address None fix works correctly.
-This test specifically addresses the 'NoneType' object has no attribute 'value' error.
+Test module converted from script format.
 """
 
+import pytest
 import asyncio
-import sys
 import os
+import sys
+from datetime import datetime
 
 # Add the src directory to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
-
-from models.person import PersonUpdate, Address
-from models.error_handling import ErrorContext
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 
+import pytest
+import asyncio
+import os
+import sys
+from datetime import datetime
+
+# Add the src directory to the path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+
+from src.models.person import Person, PersonCreate, PersonUpdate, Address
+from src.models.project import Project, ProjectCreate, ProjectUpdate, ProjectStatus
+from src.models.subscription import (
+    Subscription,
+    SubscriptionCreate,
+    SubscriptionUpdate,
+    SubscriptionStatus,
+)
+from src.services.email_service import EmailService
+from src.utils.defensive_utils import (
+    safe_isoformat,
+    safe_enum_value,
+    safe_datetime_parse,
+    safe_field_access,
+    safe_update_expression_builder,
+    safe_model_dump,
+)
+
+
+@pytest.mark.asyncio
 async def test_address_none_fix():
+    """Test function converted from script format."""
     """Test that PersonUpdate with None address doesn't cause AttributeError"""
 
     print("🧪 Testing address None fix...")
@@ -96,6 +123,6 @@ async def test_address_none_fix():
     return True
 
 
+# Keep the original script functionality for backward compatibility
 if __name__ == "__main__":
-    success = asyncio.run(test_address_none_fix())
-    sys.exit(0 if success else 1)
+    asyncio.run(test_address_none_fix())

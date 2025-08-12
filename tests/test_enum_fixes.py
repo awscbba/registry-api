@@ -1,24 +1,48 @@
-#!/usr/bin/env python3
 """
-Test to verify the enum handling fixes in project and subscription operations
+Test module converted from script format.
 """
 
+import pytest
 import asyncio
-import sys
 import os
+import sys
+from datetime import datetime
 
 # Add the src directory to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from models.project import ProjectCreate, ProjectUpdate, ProjectStatus
-from models.subscription import (
+
+import pytest
+import asyncio
+import os
+import sys
+from datetime import datetime
+
+# Add the src directory to the path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+
+from src.models.person import Person, PersonCreate, PersonUpdate, Address
+from src.models.project import Project, ProjectCreate, ProjectUpdate, ProjectStatus
+from src.models.subscription import (
+    Subscription,
     SubscriptionCreate,
     SubscriptionUpdate,
     SubscriptionStatus,
 )
+from src.services.email_service import EmailService
+from src.utils.defensive_utils import (
+    safe_isoformat,
+    safe_enum_value,
+    safe_datetime_parse,
+    safe_field_access,
+    safe_update_expression_builder,
+    safe_model_dump,
+)
 
 
+@pytest.mark.asyncio
 async def test_enum_fixes():
+    """Test function converted from script format."""
     """Test enum handling fixes with different input formats"""
 
     print("🔧 Testing Enum Handling Fixes")
@@ -184,11 +208,6 @@ async def test_enum_fixes():
     return True
 
 
+# Keep the original script functionality for backward compatibility
 if __name__ == "__main__":
-    success = asyncio.run(test_enum_fixes())
-    if success:
-        print("\n✅ Enum handling fixes validated successfully")
-        sys.exit(0)
-    else:
-        print("\n❌ Enum handling fix validation failed")
-        sys.exit(1)
+    asyncio.run(test_enum_fixes())

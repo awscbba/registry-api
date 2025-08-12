@@ -42,11 +42,11 @@ def test_xray_config():
         if not XRAY_ENABLED:
             print("✓ X-Ray correctly disabled outside Lambda environment")
 
-        return True
+        assert True
 
     except Exception as e:
         print(f"✗ X-Ray configuration error: {e}")
-        return False
+        assert False
 
 
 def test_lambda_handler():
@@ -79,11 +79,11 @@ def test_lambda_handler():
         # Note: We can't actually call the handler without a full FastAPI setup
         # but we can verify the imports work
 
-        return True
+        assert True
 
     except Exception as e:
         print(f"✗ Lambda handler error: {e}")
-        return False
+        assert False
 
 
 def test_dynamodb_service():
@@ -98,11 +98,11 @@ def test_dynamodb_service():
         # We can't test actual DynamoDB operations without AWS credentials
         # but we can verify the imports work
 
-        return True
+        assert True
 
     except Exception as e:
         print(f"✗ DynamoDB service error: {e}")
-        return False
+        assert False
 
 
 def main():
@@ -133,11 +133,11 @@ def main():
         print("2. Deploy the API code with X-Ray SDK")
         print("3. Test in AWS environment")
         print("4. Check X-Ray console for traces")
-        return 0
+        assert 0
     else:
         print("\n❌ Some X-Ray tests failed!")
         print("Please fix the issues before deploying.")
-        return 1
+        assert 1
 
 
 if __name__ == "__main__":

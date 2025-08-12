@@ -1,24 +1,48 @@
-#!/usr/bin/env python3
 """
-Test script to verify subscription email workflow with proper configuration.
+Test module converted from script format.
 """
 
+import pytest
+import asyncio
 import os
 import sys
-import asyncio
-
-# Set environment variables for testing
-os.environ["SES_FROM_EMAIL"] = "srinclan@gmail.com"  # Your real Gmail address
-os.environ["AWS_REGION"] = "us-east-1"
-os.environ["FRONTEND_URL"] = "https://d28z2il3z2vmpc.cloudfront.net"
+from datetime import datetime
 
 # Add the src directory to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
+
+import pytest
+import asyncio
+import os
+import sys
+from datetime import datetime
+
+# Add the src directory to the path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+
+from src.models.person import Person, PersonCreate, PersonUpdate, Address
+from src.models.project import Project, ProjectCreate, ProjectUpdate, ProjectStatus
+from src.models.subscription import (
+    Subscription,
+    SubscriptionCreate,
+    SubscriptionUpdate,
+    SubscriptionStatus,
+)
 from src.services.email_service import EmailService
+from src.utils.defensive_utils import (
+    safe_isoformat,
+    safe_enum_value,
+    safe_datetime_parse,
+    safe_field_access,
+    safe_update_expression_builder,
+    safe_model_dump,
+)
 
 
+@pytest.mark.asyncio
 async def test_subscription_workflow():
+    """Test function converted from script format."""
     """Test the complete subscription email workflow."""
 
     print("🧪 Testing Subscription Email Workflow...")
@@ -75,5 +99,6 @@ async def test_subscription_workflow():
         traceback.print_exc()
 
 
+# Keep the original script functionality for backward compatibility
 if __name__ == "__main__":
     asyncio.run(test_subscription_workflow())

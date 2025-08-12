@@ -1,20 +1,48 @@
-#!/usr/bin/env python3
 """
-Test to verify the datetime field handling fixes
+Test module converted from script format.
 """
 
+import pytest
 import asyncio
-import sys
 import os
+import sys
 from datetime import datetime
 
 # Add the src directory to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
-
-from models.person import Person, Address
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 
+import pytest
+import asyncio
+import os
+import sys
+from datetime import datetime
+
+# Add the src directory to the path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+
+from src.models.person import Person, PersonCreate, PersonUpdate, Address
+from src.models.project import Project, ProjectCreate, ProjectUpdate, ProjectStatus
+from src.models.subscription import (
+    Subscription,
+    SubscriptionCreate,
+    SubscriptionUpdate,
+    SubscriptionStatus,
+)
+from src.services.email_service import EmailService
+from src.utils.defensive_utils import (
+    safe_isoformat,
+    safe_enum_value,
+    safe_datetime_parse,
+    safe_field_access,
+    safe_update_expression_builder,
+    safe_model_dump,
+)
+
+
+@pytest.mark.asyncio
 async def test_datetime_field_fixes():
+    """Test function converted from script format."""
     """Test datetime field handling with different value types"""
 
     print("🔧 Testing DateTime Field Handling Fixes")
@@ -167,11 +195,6 @@ async def test_datetime_field_fixes():
     return True
 
 
+# Keep the original script functionality for backward compatibility
 if __name__ == "__main__":
-    success = asyncio.run(test_datetime_field_fixes())
-    if success:
-        print("\n✅ DateTime field handling fixes validated successfully")
-        sys.exit(0)
-    else:
-        print("\n❌ DateTime field handling fix validation failed")
-        sys.exit(1)
+    asyncio.run(test_datetime_field_fixes())

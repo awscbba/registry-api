@@ -25,7 +25,7 @@ def test_subscription_creation():
 
         if not projects.get("data"):
             print("❌ No projects available")
-            return False
+            assert False
 
         # Use the first project
         project = projects["data"][0]
@@ -36,7 +36,7 @@ def test_subscription_creation():
 
     except Exception as e:
         print(f"❌ Failed to get projects: {e}")
-        return False
+        assert False
 
     # Create a test subscription
     print("📝 Creating test subscription...")
@@ -79,22 +79,22 @@ def test_subscription_creation():
                 if "email_error" in result.get("data", {}):
                     print(f"📧 Error: {result['data']['email_error']}")
 
-            return True
+            assert True
 
         else:
             print(f"❌ Subscription creation failed!")
             print(f"📄 Response: {response.text}")
-            return False
+            assert False
 
     except requests.exceptions.Timeout:
         print("❌ Request timed out after 30 seconds")
-        return False
+        assert False
     except requests.exceptions.RequestException as e:
         print(f"❌ Request failed: {e}")
-        return False
+        assert False
     except Exception as e:
         print(f"❌ Unexpected error: {e}")
-        return False
+        assert False
 
 
 if __name__ == "__main__":

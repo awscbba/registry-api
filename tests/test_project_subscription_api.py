@@ -40,10 +40,10 @@ def test_project_subscription_apis():
             print(f"📡 API URL: {api_url}")
         else:
             print("❌ Could not get API URL from CloudFormation")
-            return False
+            assert False
     except Exception as e:
         print(f"❌ Error getting API URL: {e}")
-        return False
+        assert False
 
     # Test 1: Create a project
     print(f"\n1️⃣ Testing project creation...")
@@ -78,14 +78,14 @@ def test_project_subscription_apis():
             project_id = project_response.get("id")
         elif response.status_code == 500:
             print("   🚨 500 error - likely enum handling issue!")
-            return False
+            assert False
         else:
             print(f"   ❌ Project creation failed: {response.status_code}")
-            return False
+            assert False
 
     except Exception as e:
         print(f"   ❌ Request failed: {e}")
-        return False
+        assert False
 
     # Test 2: Update the project
     if "project_id" in locals():
@@ -113,7 +113,7 @@ def test_project_subscription_apis():
                 print("   ✅ Project update successful")
             elif response.status_code == 500:
                 print("   🚨 500 error - likely enum handling issue in update!")
-                return False
+                assert False
             else:
                 print(f"   ❌ Project update failed: {response.status_code}")
 
@@ -148,7 +148,7 @@ def test_project_subscription_apis():
             subscription_id = subscription_response.get("id")
         elif response.status_code == 500:
             print("   🚨 500 error - likely enum handling issue!")
-            return False
+            assert False
         else:
             print(f"   ❌ Subscription creation failed: {response.status_code}")
 
@@ -180,7 +180,7 @@ def test_project_subscription_apis():
                 print("   ✅ Subscription update successful")
             elif response.status_code == 500:
                 print("   🚨 500 error - likely enum handling issue in update!")
-                return False
+                assert False
             else:
                 print(f"   ❌ Subscription update failed: {response.status_code}")
 
@@ -188,7 +188,7 @@ def test_project_subscription_apis():
             print(f"   ❌ Request failed: {e}")
 
     print(f"\n🎯 API Testing Complete")
-    return True
+    assert True
 
 
 if __name__ == "__main__":

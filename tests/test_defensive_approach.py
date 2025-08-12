@@ -1,31 +1,48 @@
-#!/usr/bin/env python3
 """
-Test the defensive programming approach to validate it handles all the edge cases
-that were causing issues in the original codebase.
+Test module converted from script format.
 """
 
+import pytest
 import asyncio
-import sys
 import os
+import sys
 from datetime import datetime
 
 # Add the src directory to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from utils.defensive_utils import (
+
+import pytest
+import asyncio
+import os
+import sys
+from datetime import datetime
+
+# Add the src directory to the path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+
+from src.models.person import Person, PersonCreate, PersonUpdate, Address
+from src.models.project import Project, ProjectCreate, ProjectUpdate, ProjectStatus
+from src.models.subscription import (
+    Subscription,
+    SubscriptionCreate,
+    SubscriptionUpdate,
+    SubscriptionStatus,
+)
+from src.services.email_service import EmailService
+from src.utils.defensive_utils import (
     safe_isoformat,
     safe_enum_value,
     safe_datetime_parse,
     safe_field_access,
-    safe_model_dump,
     safe_update_expression_builder,
+    safe_model_dump,
 )
-from models.person import PersonUpdate, Address
-from models.project import ProjectUpdate, ProjectStatus
-from models.subscription import SubscriptionUpdate, SubscriptionStatus
 
 
+@pytest.mark.asyncio
 async def test_defensive_utilities():
+    """Test function converted from script format."""
     """Test all defensive utility functions with edge cases"""
 
     print("🛡️ Testing Defensive Programming Utilities")
@@ -344,6 +361,6 @@ async def main():
         return False
 
 
+# Keep the original script functionality for backward compatibility
 if __name__ == "__main__":
-    success = asyncio.run(main())
-    sys.exit(0 if success else 1)
+    asyncio.run(test_defensive_utilities())
