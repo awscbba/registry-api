@@ -12,7 +12,7 @@ from .audit_repository import AuditRepository
 
 __all__ = [
     "BaseRepository",
-    "UserRepository", 
+    "UserRepository",
     "ProjectRepository",
     "AuditRepository",
 ]

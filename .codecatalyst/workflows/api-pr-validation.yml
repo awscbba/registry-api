@@ -123,9 +123,9 @@ Actions:
                 exit 1
             fi
 
-            # Run flake8 linting with project configuration
+            # Run flake8 linting with explicit project configuration
             echo "🔍 Running Flake8 linting (using .flake8 config)..."
-            if uv run flake8 src/ tests/ scripts/; then
+            if uv run flake8 --config=.flake8 src/ tests/ scripts/; then
                 echo "✅ Flake8 linting passed"
             else
                 echo "❌ Linting issues found"

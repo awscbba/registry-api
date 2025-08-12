@@ -84,10 +84,13 @@ Actions:
                 exit 1
             }
             
-            # Run linting
-            echo "🔍 Running linting..."
-            flake8 . || {
+            # Run linting with project configuration
+            echo "🔍 Running linting (using .flake8 config)..."
+            flake8 --config=.flake8 src/ tests/ scripts/ || {
                 echo "❌ Linting failed"
+                echo "💡 Check .flake8 configuration and fix linting errors"
+                echo "💡 Current .flake8 rules:"
+                cat .flake8
                 exit 1
             }
             
