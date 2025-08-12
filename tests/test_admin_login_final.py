@@ -18,9 +18,9 @@ def test_admin_login():
 
     client = TestClient(app)
 
-    # Use the admin credentials from the creation script
+    # Use the correct admin credentials
     admin_email = "admin@awsugcbba.org"
-    admin_password = "admin123"
+    admin_password = "awsugcbba2025"
 
     print(f"1. Testing login with admin credentials: {admin_email}")
     response = client.post(

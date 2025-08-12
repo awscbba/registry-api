@@ -11,6 +11,16 @@ All documentation has been consolidated in the **[registry-documentation](../reg
 - **[Development Guide](../registry-documentation/api/development.md)**
 - **[Service Registry Implementation](../registry-documentation/architecture/service-registry-implementation.md)**
 
+## 🛠️ Scripts & Tools
+
+The **[scripts/](./scripts/)** directory contains utility scripts for:
+- **Admin Management**: User creation, password resets, diagnostics
+- **Database Maintenance**: Health checks, cleanup, data migration
+- **Infrastructure**: Deployment validation, service setup
+- **Analysis**: Data verification and troubleshooting tools
+
+See **[scripts/README.md](./scripts/README.md)** for detailed documentation.
+
 ## 🚀 Quick Start
 
 ```bash

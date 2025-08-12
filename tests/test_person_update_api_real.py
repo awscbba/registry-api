@@ -41,10 +41,10 @@ def test_person_update_api():
             print(f"📡 API URL: {api_url}")
         else:
             print("❌ Could not get API URL from CloudFormation")
-            return False
+            assert False
     except Exception as e:
         print(f"❌ Error getting API URL: {e}")
-        return False
+        assert False
 
     # Test data that mimics what frontend would send
     test_person_id = "02724257-4c6a-4aac-9c19-89c87c499bc8"  # Known test person
@@ -70,11 +70,11 @@ def test_person_update_api():
             print("   ✅ camelCase firstName update successful")
         else:
             print(f"   ❌ camelCase firstName update failed: {response.status_code}")
-            return False
+            assert False
 
     except Exception as e:
         print(f"   ❌ Request failed: {e}")
-        return False
+        assert False
 
     # Test 2: Complex update with address (camelCase)
     print(f"\n2️⃣ Testing complex update with address...")
@@ -127,11 +127,11 @@ def test_person_update_api():
                 print(
                     "   🚨 This might be the address field issue we're investigating!"
                 )
-            return False
+            assert False
 
     except Exception as e:
         print(f"   ❌ Request failed: {e}")
-        return False
+        assert False
 
     # Test 3: Test with snake_case (should fail)
     print(f"\n3️⃣ Testing with snake_case (should fail)...")
@@ -188,7 +188,7 @@ def test_person_update_api():
         print(f"   ❌ Request failed: {e}")
 
     print(f"\n🎯 API Testing Complete")
-    return True
+    assert True
 
 
 if __name__ == "__main__":
