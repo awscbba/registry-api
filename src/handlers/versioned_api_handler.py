@@ -1714,9 +1714,9 @@ async def get_events_legacy():
 
 
 @app.get("/admin/dashboard")
-async def get_admin_dashboard_legacy():
+async def get_admin_dashboard_legacy(admin_user=Depends(require_admin_access)):
     """Legacy admin dashboard endpoint - redirects to v2."""
-    return await get_admin_dashboard()
+    return await get_admin_dashboard(admin_user)
 
 
 @app.post("/public/subscribe")
