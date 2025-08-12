@@ -12,9 +12,9 @@ import os
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from services.people_service import PeopleService
-from services.projects_service import ProjectsService
-from services.audit_service import AuditService
+from src.services.people_service import PeopleService
+from src.services.projects_service import ProjectsService
+from src.services.audit_service import AuditService
 
 
 class TestPhase4ServiceRepositoryIntegration:
@@ -208,7 +208,7 @@ class TestPhase4ServiceRepositoryIntegration:
         audit_service = AuditService()
 
         # Verify all services inherit from BaseService
-        from core.base_service import BaseService
+        from src.core.base_service import BaseService
 
         assert isinstance(people_service, BaseService)
         assert isinstance(projects_service, BaseService)
