@@ -49,25 +49,38 @@ class PeopleService(BaseService):
     async def health_check(self) -> Dict[str, Any]:
         """Check the health of the people service using repository pattern."""
         try:
-            # Test repository connectivity and get performance stats
-            count_result = await self.user_repository.count()
-            performance_stats = self.user_repository.get_performance_stats()
+            import asyncio
 
-            if count_result.success:
+            # Test repository connectivity with timeout
+            try:
+                count_result = await asyncio.wait_for(
+                    self.user_repository.count(), timeout=1.0
+                )
+                performance_stats = self.user_repository.get_performance_stats()
+
+                if count_result.success:
+                    return {
+                        "service": "people_service",
+                        "status": "healthy",
+                        "repository": "connected",
+                        "user_count": count_result.data,
+                        "performance": performance_stats,
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                else:
+                    return {
+                        "service": "people_service",
+                        "status": "unhealthy",
+                        "repository": "disconnected",
+                        "error": count_result.error,
+                        "timestamp": datetime.now().isoformat(),
+                    }
+            except asyncio.TimeoutError:
                 return {
                     "service": "people_service",
-                    "status": "healthy",
-                    "repository": "connected",
-                    "user_count": count_result.data,
-                    "performance": performance_stats,
-                    "timestamp": datetime.now().isoformat(),
-                }
-            else:
-                return {
-                    "service": "people_service",
-                    "status": "unhealthy",
-                    "repository": "disconnected",
-                    "error": count_result.error,
+                    "status": "degraded",
+                    "repository": "timeout",
+                    "message": "Repository check timed out",
                     "timestamp": datetime.now().isoformat(),
                 }
         except Exception as e:
