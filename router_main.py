@@ -27,6 +27,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
     Routing rules:
     - /auth/* -> AuthFunction
+    - /v2/auth/* -> AuthFunction  
     - Everything else -> PeopleApiFunction
     """
 
@@ -40,10 +41,10 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     logger.info(f"Extracted path: {path}, method: {http_method}")
 
     # Determine target function based on path
-    if path.startswith("/auth"):
-        # Route auth requests to API function (which now handles auth endpoints)
-        target_function = API_FUNCTION_NAME
-        logger.info(f"Routing auth request to API function: {path}")
+    if path.startswith("/auth") or path.startswith("/v2/auth"):
+        # Route auth requests to AuthFunction (both /auth/* and /v2/auth/* paths)
+        target_function = AUTH_FUNCTION_NAME
+        logger.info(f"Routing auth request to AuthFunction: {path}")
     else:
         # Route all other requests to API function
         target_function = API_FUNCTION_NAME
