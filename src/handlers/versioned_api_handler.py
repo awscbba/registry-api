@@ -1103,7 +1103,7 @@ async def get_admin_dashboard(admin_user=Depends(require_admin_access)):
         # Get statistics from database
         projects = await db_service.get_all_projects()
         subscriptions = await db_service.get_all_subscriptions()
-        people = await db_service.get_all_people()  # Add people data
+        people = await db_service.list_people()  # Fix: Use correct method name
 
         # Count active projects
         active_projects = [p for p in projects if p.get("status") == "active"]
@@ -1645,7 +1645,9 @@ async def edit_admin_person(
         )
 
         # Get current person
-        current_person = await db_service.get_person_by_id(person_id)
+        current_person = await db_service.get_person(
+            person_id
+        )  # Fix: Use correct method name
         if not current_person:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Person not found"

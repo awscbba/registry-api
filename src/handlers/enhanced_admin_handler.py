@@ -96,7 +96,7 @@ async def get_enhanced_admin_dashboard(
         # Get all data from database
         projects = await db_service.get_all_projects()
         subscriptions = await db_service.get_all_subscriptions()
-        people = await db_service.get_all_people()
+        people = await db_service.list_people()  # Fix: Use correct method name
 
         # Calculate project statistics
         active_projects = [p for p in projects if p.get("status") == "active"]
@@ -221,7 +221,9 @@ async def edit_user(
         )
 
         # Get current user data
-        current_user = await db_service.get_person_by_id(user_id)
+        current_user = await db_service.get_person(
+            user_id
+        )  # Fix: Use correct method name
         if not current_user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
@@ -470,7 +472,9 @@ async def bulk_user_action(
         for user_id in bulk_request.userIds:
             try:
                 # Get user
-                user = await db_service.get_person_by_id(user_id)
+                user = await db_service.get_person(
+                    user_id
+                )  # Fix: Use correct method name
                 if not user:
                     errors.append({"userId": user_id, "error": "User not found"})
                     continue
@@ -553,7 +557,7 @@ async def get_admin_analytics(
         # Get all data
         projects = await db_service.get_all_projects()
         subscriptions = await db_service.get_all_subscriptions()
-        people = await db_service.get_all_people()
+        people = await db_service.list_people()  # Fix: Use correct method name
 
         # Calculate monthly trends (last 6 months)
         monthly_data = {}

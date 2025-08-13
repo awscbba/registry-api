@@ -119,7 +119,7 @@ class TestSubscriptionCountFix:
                 mock_db.get_all_subscriptions = AsyncMock(
                     return_value=mock_subscriptions
                 )
-
+                mock_db.list_people = AsyncMock(return_value=[])  # Add missing mock
                 # Mock the response creation
                 with patch(
                     "src.handlers.versioned_api_handler.create_v2_response"
@@ -180,7 +180,7 @@ class TestSubscriptionCountFix:
                 mock_db.get_all_subscriptions = AsyncMock(
                     return_value=mock_subscriptions
                 )
-
+                mock_db.list_people = AsyncMock(return_value=[])  # Add missing mock
                 # Mock the response creation
                 with patch(
                     "src.handlers.versioned_api_handler.create_v2_response"
@@ -278,6 +278,8 @@ class TestSubscriptionCountFix:
             )
 
             # Mock the admin middleware
+            mock_db.list_people = AsyncMock(return_value=[])  # Add missing mock
+
             with patch(
                 "src.handlers.versioned_api_handler.require_admin_access"
             ) as mock_admin_access:
@@ -309,6 +311,8 @@ class TestSubscriptionCountFix:
             with patch(
                 "src.handlers.versioned_api_handler.create_v2_response"
             ) as mock_response:
+                mock_db.list_people = AsyncMock(return_value=[])  # Add missing mock
+
                 with patch("src.handlers.versioned_api_handler.logger"):
                     with patch(
                         "src.handlers.versioned_api_handler.AdminActionLogger.log_admin_action"

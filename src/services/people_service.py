@@ -244,7 +244,7 @@ class PeopleService(BaseService):
             self.logger.log_api_request("PUT", f"/v1/people/{person_id}")
 
             # Check if person exists
-            existing_person = await self.db_service.get_person_by_id(person_id)
+            existing_person = await self.db_service.get_person(person_id)
             if not existing_person:
                 from fastapi import HTTPException, status
 
@@ -277,7 +277,7 @@ class PeopleService(BaseService):
             self.logger.log_api_request("PUT", f"/v2/people/{person_id}")
 
             # Check if person exists
-            existing_person = await self.db_service.get_person_by_id(person_id)
+            existing_person = await self.db_service.get_person(person_id)
             if not existing_person:
                 from fastapi import HTTPException, status
 
@@ -316,7 +316,7 @@ class PeopleService(BaseService):
             self.logger.log_api_request("DELETE", f"/v1/people/{person_id}")
 
             # Check if person exists
-            existing_person = await self.db_service.get_person_by_id(person_id)
+            existing_person = await self.db_service.get_person(person_id)
             if not existing_person:
                 from fastapi import HTTPException, status
 
@@ -356,7 +356,7 @@ class PeopleService(BaseService):
             self.logger.log_api_request("DELETE", f"/v2/people/{person_id}")
 
             # Check if person exists
-            existing_person = await self.db_service.get_person_by_id(person_id)
+            existing_person = await self.db_service.get_person(person_id)
             if not existing_person:
                 from fastapi import HTTPException, status
 
