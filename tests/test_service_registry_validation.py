@@ -95,11 +95,15 @@ class TestServiceRegistryValidation:
 
     def test_main_entry_point_uses_modular_handler(self):
         """Test that main.py uses the modular handler."""
+        import os
+
+        # Get the project root directory
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(current_dir)
+        main_py_path = os.path.join(project_root, "main.py")
+
         # Read main.py to verify it imports the correct handler
-        with open(
-            "/Users/sergio.rodriguez/Projects/Community/AWS/UserGroupCbba/CodeCatalyst/people-registry-03/registry-api/main.py",
-            "r",
-        ) as f:
+        with open(main_py_path, "r") as f:
             main_content = f.read()
 
         # Should import modular handler, not versioned handler
