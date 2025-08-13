@@ -15,7 +15,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Import the FastAPI app after X-Ray initialization
-from src.handlers.versioned_api_handler import app
+# Using Service Registry-based modular handler instead of monolithic versioned handler
+from src.handlers.modular_api_handler import app
 
 # Create Lambda handler using Mangum
 _original_lambda_handler = Mangum(app)
@@ -31,6 +32,7 @@ def traced_lambda_handler(event, context):
         if XRAY_ENABLED:
             add_annotation("service", "people-registry-api")
             add_annotation("version", "v2")
+            add_annotation("architecture", "service-registry")
             add_annotation(
                 "function_name", context.function_name if context else "unknown"
             )
@@ -43,7 +45,7 @@ def traced_lambda_handler(event, context):
             )
 
         logger.info(
-            f"Processing request: {event.get('httpMethod', 'unknown')} {event.get('path', 'unknown')}"
+            f"Processing request via Service Registry: {event.get('httpMethod', 'unknown')} {event.get('path', 'unknown')}"
         )
 
         # Call the original handler (not the traced one!)

@@ -16,14 +16,58 @@ from ..models.audit import AuditLog
 class AuditRepository(BaseRepository[AuditLog]):
     """Repository for audit trail data access and management."""
 
-    def __init__(self, table_name: str = "audit_logs"):
+    def __init__(self, table_name: str = "audit_logs", region: str = "us-east-1"):
         """
         Initialize AuditRepository.
 
         Args:
             table_name: DynamoDB table name for audit logs
+            region: AWS region for DynamoDB
         """
-        super().__init__(table_name, AuditLog)
+        super().__init__(table_name, region)
+
+    def _get_primary_key(self, entity: AuditLog) -> Dict[str, Any]:
+        """Get primary key from AuditLog entity."""
+        return {"id": entity.id}
+
+    def _to_entity(self, item: Dict[str, Any]) -> AuditLog:
+        """Convert DynamoDB item to AuditLog entity."""
+        return AuditLog(
+            id=item["id"],
+            user_id=item["user_id"],
+            action=item["action"],
+            resource_type=item["resource_type"],
+            resource_id=item["resource_id"],
+            timestamp=item["timestamp"],
+            details=item.get("details", {}),
+            ip_address=item.get("ip_address"),
+            user_agent=item.get("user_agent"),
+            success=item.get("success", True),
+            error_message=item.get("error_message"),
+        )
+
+    def _to_item(self, entity: AuditLog) -> Dict[str, Any]:
+        """Convert AuditLog entity to DynamoDB item."""
+        item = {
+            "id": entity.id,
+            "user_id": entity.user_id,
+            "action": entity.action,
+            "resource_type": entity.resource_type,
+            "resource_id": entity.resource_id,
+            "timestamp": entity.timestamp,
+            "success": entity.success,
+        }
+
+        if entity.details:
+            item["details"] = entity.details
+        if entity.ip_address:
+            item["ip_address"] = entity.ip_address
+        if entity.user_agent:
+            item["user_agent"] = entity.user_agent
+        if entity.error_message:
+            item["error_message"] = entity.error_message
+
+        return item
 
     async def create_audit_log(
         self,

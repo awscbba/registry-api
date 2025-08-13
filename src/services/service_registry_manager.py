@@ -11,6 +11,12 @@ from ..core.config import ServiceConfig
 from .people_service import PeopleService
 from .projects_service import ProjectsService
 from .subscriptions_service import SubscriptionsService
+from .auth_service import AuthService
+from .roles_service import RolesService
+from .email_service import EmailService
+from .audit_service import AuditService
+from .logging_service import LoggingService
+from .rate_limiting_service import RateLimitingService
 from ..utils.logging_config import get_handler_logger
 
 
@@ -33,19 +39,38 @@ class ServiceRegistryManager:
     def _initialize_services(self):
         """Initialize and register all domain services."""
         try:
-            # Register People Service
+            # Register Domain Services
             people_service = PeopleService()
             self.registry.register_service("people", people_service)
 
-            # Register Projects Service
             projects_service = ProjectsService()
             self.registry.register_service("projects", projects_service)
 
-            # Register Subscriptions Service
             subscriptions_service = SubscriptionsService()
             self.registry.register_service("subscriptions", subscriptions_service)
 
-            self.logger.info("All domain services registered successfully")
+            # Register Core Services
+            auth_service = AuthService()
+            self.registry.register_service("auth", auth_service)
+
+            roles_service = RolesService()
+            self.registry.register_service("roles", roles_service)
+
+            email_service = EmailService()
+            self.registry.register_service("email", email_service)
+
+            audit_service = AuditService()
+            self.registry.register_service("audit", audit_service)
+
+            logging_service = LoggingService()
+            self.registry.register_service("logging", logging_service)
+
+            rate_limiting_service = RateLimitingService()
+            self.registry.register_service("rate_limiting", rate_limiting_service)
+
+            self.logger.info(
+                f"All services registered successfully: {list(self.registry.services.keys())}"
+            )
 
         except Exception as e:
             self.logger.error(f"Failed to initialize services: {str(e)}")
