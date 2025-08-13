@@ -1,0 +1,72 @@
+#!/bin/bash
+# Git pre-commit hook for registry-api
+# Automatically format code and validate before commit
+
+echo "🔍 Running pre-commit validation..."
+
+# Get the git repository root directory
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+# Check if we're in the right directory
+if [ ! -f "pyproject.toml" ]; then
+    echo "❌ Error: Not in registry-api root directory"
+    exit 1
+fi
+
+# Check if uv is available
+if ! command -v uv &> /dev/null; then
+    echo "❌ Error: uv is not installed or not in PATH"
+    echo "💡 Install uv: curl -LsSf https://astral.sh/uv/install.sh | sh"
+    exit 1
+fi
+
+# Get list of staged Python files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(py)$' || true)
+
+if [ -z "$STAGED_FILES" ]; then
+    echo "ℹ️  No Python files staged for commit"
+    exit 0
+fi
+
+echo "📝 Formatting staged Python files..."
+
+# Format only staged files and re-stage them
+for file in $STAGED_FILES; do
+    if [ -f "$file" ]; then
+        echo "  📝 Formatting: $file"
+        uv run black "$file"
+        git add "$file"
+    fi
+done
+
+# Run linting on staged files
+echo "🔍 Running flake8 on staged files..."
+for file in $STAGED_FILES; do
+    if [ -f "$file" ]; then
+        uv run flake8 "$file" --config=.flake8
+        if [ $? -ne 0 ]; then
+            echo "❌ Linting failed for: $file"
+            echo "💡 Fix the linting issues and try committing again"
+            exit 1
+        fi
+    fi
+done
+
+# Run syntax check on staged files
+echo "🔍 Running syntax validation..."
+for file in $STAGED_FILES; do
+    if [ -f "$file" ]; then
+        python -m py_compile "$file"
+        if [ $? -ne 0 ]; then
+            echo "❌ Syntax error in: $file"
+            exit 1
+        fi
+    fi
+done
+
+echo "✅ Pre-commit validation passed!"
+echo "📊 Completed checks:"
+echo "   ✅ Code formatting (black) - auto-applied"
+echo "   ✅ Code linting (flake8)"
+echo "   ✅ Syntax validation"

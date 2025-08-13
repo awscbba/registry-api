@@ -613,12 +613,82 @@ help-validation-scripts:
     @echo "  production-ready-check     - Complete production readiness check"
     @echo ""
 
+# Setup git hooks for development workflow
+setup-git-hooks:
+    @just print-info "Setting up git hooks for registry-api..."
+    @if [ ! -f "pyproject.toml" ]; then \
+        just print-error "Not in registry-api root directory"; \
+        exit 1; \
+    fi
+    @just print-info "Configuring git hooks path..."
+    @git config core.hooksPath .githooks
+    @just print-info "Making hooks executable..."
+    @chmod +x .githooks/pre-commit .githooks/pre-push
+    @just print-success "Git hooks setup completed!"
+    @echo ""
+    @echo "📊 Configured hooks:"
+    @echo "   📝 pre-commit: Auto-format code and validate syntax"
+    @echo "   🚀 pre-push: Run comprehensive tests and quality checks"
+    @echo ""
+    @echo "💡 How it works:"
+    @echo "   • When you commit: Code is automatically formatted and validated"
+    @echo "   • When you push: Full test suite runs to prevent bugs"
+    @echo ""
+    @echo "🔧 To disable hooks temporarily:"
+    @echo "   git commit --no-verify"
+    @echo "   git push --no-verify"
+
+# Run pre-commit checks manually
+pre-commit-check:
+    @just print-info "Running pre-commit checks..."
+    @if [ ! -f ".githooks/pre-commit" ]; then \
+        just print-error "Pre-commit hook not found. Run 'just setup-git-hooks' first"; \
+        exit 1; \
+    fi
+    @.githooks/pre-commit
+    @just print-success "Pre-commit checks completed"
+
+# Run pre-push checks manually
+pre-push-check:
+    @just print-info "Running pre-push checks..."
+    @if [ ! -f ".githooks/pre-push" ]; then \
+        just print-error "Pre-push hook not found. Run 'just setup-git-hooks' first"; \
+        exit 1; \
+    fi
+    @.githooks/pre-push
+    @just print-success "Pre-push checks completed"
+
+# Complete development environment setup
+dev-setup:
+    @just print-info "Setting up complete development environment..."
+    @just setup
+    @just setup-git-hooks
+    @just print-success "Development environment ready!"
+    @echo ""
+    @echo "🎯 Next steps:"
+    @echo "   1. Create a feature branch: git checkout -b feature/your-feature"
+    @echo "   2. Make your changes"
+    @echo "   3. Commit (auto-formatting will apply): git commit -m 'your message'"
+    @echo "   4. Push (tests will run): git push origin feature/your-feature"
+    @echo "   5. Create a pull request in CodeCatalyst"
+
+# Show help for git hooks tasks
+help-git-hooks:
+    @echo ""
+    @echo "🔧 Git Hooks & Development Tasks:"
+    @echo "  setup-git-hooks            - Configure git hooks for quality checks"
+    @echo "  pre-commit-check           - Run pre-commit checks manually"
+    @echo "  pre-push-check             - Run pre-push checks manually"
+    @echo "  dev-setup                  - Complete development environment setup"
+    @echo ""
+
 # Show comprehensive help for all script tasks
 help-all-scripts:
     @just help-rbac-scripts
     @just help-db-scripts
     @just help-admin-scripts
     @just help-validation-scripts
+    @just help-git-hooks
     @echo "📧 Email & SES Tasks:"
     @echo "  ses-request-production     - Request SES production access"
     @echo ""
@@ -626,8 +696,10 @@ help-all-scripts:
     @echo "  rbac-full-implementation   - Complete RBAC implementation"
     @echo "  db-full-setup              - Complete database setup"
     @echo "  production-ready-check     - Production readiness check"
+    @echo "  dev-setup                  - Complete development environment setup"
     @echo ""
     @echo "💡 Quick Start Examples:"
+    @echo "  just dev-setup                         # Complete dev environment setup"
     @echo "  just rbac-full-implementation          # Complete RBAC setup"
     @echo "  just admin-create admin@example.com    # Create admin user"
     @echo "  just db-full-setup                     # Database setup & maintenance"
