@@ -97,6 +97,10 @@ class PeopleService(BaseService):
             )
             raise handle_database_error("retrieving people", e)
 
+    async def get_all_people(self) -> Dict[str, Any]:
+        """Get all people (backward compatibility method)."""
+        return await self.get_all_people_v1()
+
     async def get_all_people_v2(self) -> Dict[str, Any]:
         """Get all people (v2 format with enhanced metadata)."""
         try:
@@ -149,6 +153,10 @@ class PeopleService(BaseService):
                 error_type=type(e).__name__,
             )
             raise handle_database_error("retrieving person", e)
+
+    async def get_person_by_id(self, person_id: str) -> Dict[str, Any]:
+        """Get person by ID (backward compatibility method)."""
+        return await self.get_person_by_id_v1(person_id)
 
     async def get_person_by_id_v2(self, person_id: str) -> Dict[str, Any]:
         """Get person by ID (v2 format with enhanced metadata)."""

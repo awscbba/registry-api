@@ -299,7 +299,7 @@ async def list_registered_services():
         for service_name in service_manager.registry.services.keys():
             service = service_manager.get_service(service_name)
             services_info[service_name] = {
-                "name": service.name,
+                "name": service.service_name,
                 "status": "registered",
                 "type": type(service).__name__,
             }
@@ -326,22 +326,22 @@ async def get_service_config():
         config_info = {
             "database": {
                 "region": service_manager.config.database.region,
-                "environment": service_manager.config.database.environment,
+                "environment": service_manager.config.environment.value,
             },
             "auth": {
-                "jwt_expiry_hours": service_manager.config.auth.jwt_expiry_hours,
+                "access_token_expiry_hours": service_manager.config.auth.access_token_expiry_hours,
                 "password_policy": {
-                    "min_length": service_manager.config.auth.password_min_length,
-                    "require_special_chars": service_manager.config.auth.require_special_chars,
+                    "min_length": service_manager.config.security.password_min_length,
+                    "require_special_chars": service_manager.config.security.password_require_special,
                 },
             },
             "email": {
-                "region": service_manager.config.email.region,
-                "from_address": service_manager.config.email.from_address,
+                "region": service_manager.config.email.ses_region,
+                "from_address": service_manager.config.email.from_email,
             },
             "security": {
-                "rate_limit_enabled": service_manager.config.security.rate_limit_enabled,
-                "max_requests_per_minute": service_manager.config.security.max_requests_per_minute,
+                "rate_limit_requests_per_minute": service_manager.config.security.rate_limit_requests_per_minute,
+                "rate_limit_requests_per_hour": service_manager.config.security.rate_limit_requests_per_hour,
             },
         }
 
@@ -351,6 +351,44 @@ async def get_service_config():
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve configuration information",
+        )
+
+
+# ==================== AUTH ENDPOINTS ====================
+
+
+@auth_router.post("/login", response_model=Dict[str, Any])
+async def login(login_request: LoginRequest):
+    """Authenticate user and return access token."""
+    try:
+        auth_service = service_manager.get_service("auth")
+        success, login_response, error_message = await auth_service.authenticate_user(
+            login_request
+        )
+
+        if success and login_response:
+            return {
+                "success": True,
+                "data": {
+                    "access_token": login_response.access_token,
+                    "refresh_token": login_response.refresh_token,
+                    "token_type": login_response.token_type,
+                    "expires_in": login_response.expires_in,
+                    "user": login_response.user.dict() if login_response.user else None,
+                },
+            }
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=error_message or "Authentication failed",
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Login failed: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication failed",
         )
 
 
