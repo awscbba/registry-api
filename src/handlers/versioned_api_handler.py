@@ -1117,8 +1117,8 @@ async def get_admin_dashboard(admin_user=Depends(require_admin_access)):
         current_subscriptions = active_subscriptions + pending_subscriptions
 
         # Count users by status (FIX: Add user statistics)
-        active_users = [p for p in people if p.get("isActive", True)]
-        admin_users = [p for p in people if p.get("isAdmin", False)]
+        active_users = [p for p in people if getattr(p, "is_active", True)]
+        admin_users = [p for p in people if getattr(p, "is_admin", False)]
 
         # Get recent activity (last 10 subscriptions)
         recent_subscriptions = sorted(
@@ -1158,7 +1158,11 @@ async def get_admin_dashboard(admin_user=Depends(require_admin_access)):
                 ),
                 # FIX: Add users created this month
                 "usersCreatedThisMonth": len(
-                    [p for p in people if p.get("createdAt", "").startswith("2025-08")]
+                    [
+                        p
+                        for p in people
+                        if str(getattr(p, "created_at", "")).startswith("2025-08")
+                    ]
                 ),
                 # Calculate average based on current subscriptions
                 "averageSubscriptionsPerProject": len(current_subscriptions)
