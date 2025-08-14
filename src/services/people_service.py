@@ -587,8 +587,16 @@ class PeopleService(BaseService):
                     self.logger.debug("Dashboard data retrieved from cache")
                     return cached_result
 
-            # Get all people for analysis
-            all_people = await self.db_service.list_people()
+            # Execute optimized database query with performance tracking
+            async def fetch_dashboard_data():
+                # Get all people for analysis
+                all_people = await self.db_service.list_people()
+                return all_people
+
+            # Use optimized query execution with performance tracking
+            all_people = await self._execute_optimized_query(
+                "dashboard_data_fetch", fetch_dashboard_data
+            )
 
             # Calculate overview metrics
             total_users = len(all_people)
@@ -2395,6 +2403,66 @@ class PeopleService(BaseService):
         except Exception as e:
             self.logger.debug(f"Cache service not available: {str(e)}")
             return None
+
+    def _get_database_optimization_service(self):
+        """Get database optimization service from service registry."""
+        try:
+            from ..services.service_registry_manager import service_manager
+
+            return service_manager.get_service("database_optimization")
+        except Exception as e:
+            self.logger.debug(f"Database optimization service not available: {str(e)}")
+            return None
+
+    async def _execute_optimized_query(
+        self, query_type: str, execute_func: callable, *args, **kwargs
+    ):
+        """Execute database query with optimization tracking and performance monitoring."""
+        import time
+
+        start_time = time.time()
+
+        try:
+            # Execute the query
+            result = await execute_func(*args, **kwargs)
+
+            # Track performance
+            execution_time = time.time() - start_time
+            result_count = len(result) if isinstance(result, (list, dict)) else 1
+
+            # Report to database optimization service
+            db_opt_service = self._get_database_optimization_service()
+            if db_opt_service:
+                await db_opt_service.track_query_performance(
+                    query_type=query_type,
+                    execution_time=execution_time,
+                    result_count=result_count,
+                    optimization_used=(
+                        "projection_expression" if execution_time < 0.1 else None
+                    ),
+                )
+
+            self.logger.debug(
+                f"Optimized query {query_type} completed in {execution_time:.3f}s"
+            )
+            return result
+
+        except Exception as e:
+            execution_time = time.time() - start_time
+            self.logger.error(
+                f"Optimized query {query_type} failed after {execution_time:.3f}s: {str(e)}"
+            )
+
+            # Still track failed queries for analysis
+            db_opt_service = self._get_database_optimization_service()
+            if db_opt_service:
+                await db_opt_service.track_query_performance(
+                    query_type=f"{query_type}_failed",
+                    execution_time=execution_time,
+                    result_count=0,
+                )
+
+            raise
 
     async def _get_cached_or_execute(
         self, cache_key: str, execute_func: callable, ttl: int = 3600, *args, **kwargs

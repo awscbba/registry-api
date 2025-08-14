@@ -21,6 +21,7 @@ from .metrics_service import MetricsService
 from .project_administration_service import ProjectAdministrationService
 from .cache_service import CacheService
 from .performance_metrics_service import PerformanceMetricsService
+from .database_optimization_service import DatabaseOptimizationService
 from ..utils.logging_config import get_handler_logger
 
 
@@ -83,6 +84,11 @@ class ServiceRegistryManager:
             performance_metrics_service = PerformanceMetricsService()
             self.registry.register_service(
                 "performance_metrics", performance_metrics_service
+            )
+
+            database_optimization_service = DatabaseOptimizationService()
+            self.registry.register_service(
+                "database_optimization", database_optimization_service
             )
 
             # Register Administration Services

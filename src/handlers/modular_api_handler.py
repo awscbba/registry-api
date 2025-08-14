@@ -77,6 +77,10 @@ openapi_tags = [
         "description": "System performance monitoring, caching, and optimization tools",
     },
     {
+        "name": "Database Optimization",
+        "description": "Database performance analysis, query optimization, and connection pooling",
+    },
+    {
         "name": "Service Registry",
         "description": "Service Registry pattern operations and health monitoring",
     },
@@ -3383,6 +3387,316 @@ async def clear_performance_alerts(
         logger.error(f"Failed to clear performance alerts: {str(e)}")
         raise HTTPException(
             status_code=500, detail="Failed to clear performance alerts"
+        )
+
+
+# ==================== DATABASE OPTIMIZATION ENDPOINTS ====================
+
+
+@app.get(
+    "/admin/database/performance-analysis",
+    tags=["Database Optimization"],
+    summary="Database Performance Analysis",
+    description="""
+    Get comprehensive database performance analysis and optimization insights.
+
+    **Analysis Includes:**
+    - Query performance metrics with execution times and optimization rates
+    - Connection pool utilization and efficiency analysis
+    - Slowest queries identification and optimization opportunities
+    - Performance trends and patterns over specified time window
+    - Optimization recommendations with priority and impact assessment
+
+    **Key Metrics:**
+    - Average query execution times by query type
+    - Query optimization rates and performance improvements
+    - Connection pool utilization and efficiency metrics
+    - Database operation throughput and response times
+    - Performance bottleneck identification and analysis
+
+    **Use Cases:**
+    - Database performance monitoring and optimization
+    - Query performance bottleneck identification
+    - Connection pool sizing and optimization
+    - Performance trend analysis and capacity planning
+    - Database optimization strategy development
+
+    **Access:** Requires admin privileges for database monitoring
+    """,
+    response_model=Dict[str, Any],
+)
+async def get_database_performance_analysis(
+    time_window_hours: int = Query(
+        24, ge=1, le=168, description="Analysis time window in hours (1-168)"
+    ),
+    current_user: Dict[str, Any] = Depends(require_admin_access),
+):
+    """Get comprehensive database performance analysis."""
+    try:
+        logger.info(
+            "Getting database performance analysis",
+            extra={
+                "admin_user": current_user.get("id"),
+                "time_window_hours": time_window_hours,
+            },
+        )
+
+        db_opt_service = service_manager.get_service("database_optimization")
+        if not db_opt_service:
+            raise HTTPException(
+                status_code=503, detail="Database optimization service not available"
+            )
+
+        analysis = await db_opt_service.get_query_performance_analysis(
+            time_window_hours=time_window_hours
+        )
+
+        return create_v2_response(
+            data=analysis,
+            message="Database performance analysis retrieved successfully",
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get database performance analysis: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve database performance analysis"
+        )
+
+
+@app.get(
+    "/admin/database/optimization-recommendations",
+    tags=["Database Optimization"],
+    summary="Database Optimization Recommendations",
+    description="""
+    Get current database optimization recommendations based on performance analysis.
+
+    **Recommendation Types:**
+    - Query optimization suggestions for slow or inefficient queries
+    - Connection pool sizing and configuration recommendations
+    - Index optimization opportunities for improved query performance
+    - Query pattern improvements and best practices
+    - Performance threshold adjustments and monitoring enhancements
+
+    **Use Cases:**
+    - Proactive database performance optimization
+    - Performance bottleneck resolution planning
+    - Database configuration optimization
+    - Query performance improvement strategies
+    - Capacity planning and scaling preparation
+
+    **Access:** Requires admin privileges
+    """,
+    response_model=Dict[str, Any],
+)
+async def get_database_optimization_recommendations(
+    current_user: Dict[str, Any] = Depends(require_admin_access),
+):
+    """Get database optimization recommendations."""
+    try:
+        logger.info(
+            "Getting database optimization recommendations",
+            extra={"admin_user": current_user.get("id")},
+        )
+
+        db_opt_service = service_manager.get_service("database_optimization")
+        if not db_opt_service:
+            raise HTTPException(
+                status_code=503, detail="Database optimization service not available"
+            )
+
+        recommendations = await db_opt_service.get_optimization_recommendations()
+
+        return create_v2_response(
+            data={
+                "recommendations": recommendations,
+                "total_recommendations": len(recommendations),
+                "high_priority": len(
+                    [r for r in recommendations if r.get("priority") == "high"]
+                ),
+                "medium_priority": len(
+                    [r for r in recommendations if r.get("priority") == "medium"]
+                ),
+                "low_priority": len(
+                    [r for r in recommendations if r.get("priority") == "low"]
+                ),
+                "generated_at": datetime.utcnow().isoformat(),
+            },
+            message=f"Retrieved {len(recommendations)} database optimization recommendations",
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get database optimization recommendations: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve optimization recommendations"
+        )
+
+
+@app.post(
+    "/admin/database/optimize-queries",
+    tags=["Database Optimization"],
+    summary="Optimize Database Query Patterns",
+    description="""
+    Analyze and optimize database query patterns for improved performance.
+
+    **Optimization Process:**
+    - Analyze current query patterns and execution times
+    - Identify optimization opportunities and performance bottlenecks
+    - Apply query optimizations including projection expressions and batching
+    - Implement connection pooling and resource management improvements
+    - Generate performance improvement reports and metrics
+
+    **Expected Performance Improvements:**
+    - Reduced query execution times (target: 30-50% improvement)
+    - Improved connection utilization and efficiency
+    - Lower database resource consumption
+    - Enhanced system responsiveness and throughput
+
+    **Access:** Requires admin privileges for system optimization
+    """,
+    response_model=Dict[str, Any],
+)
+async def optimize_database_queries(
+    current_user: Dict[str, Any] = Depends(require_admin_access),
+):
+    """Optimize database query patterns for improved performance."""
+    try:
+        logger.info(
+            "Starting database query optimization",
+            extra={"admin_user": current_user.get("id")},
+        )
+
+        db_opt_service = service_manager.get_service("database_optimization")
+        if not db_opt_service:
+            raise HTTPException(
+                status_code=503, detail="Database optimization service not available"
+            )
+
+        optimization_result = await db_opt_service.optimize_query_patterns()
+
+        return create_v2_response(
+            data=optimization_result,
+            message="Database query optimization completed successfully",
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to optimize database queries: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Failed to optimize database queries"
+        )
+
+
+@app.get(
+    "/admin/database/connection-pools",
+    tags=["Database Optimization"],
+    summary="Database Connection Pool Status",
+    description="""
+    Get status and performance metrics for database connection pools.
+
+    **Connection Pool Metrics:**
+    - Pool size and active connection counts
+    - Connection utilization rates and efficiency metrics
+    - Connection reuse statistics and performance indicators
+    - Pool health status and optimization recommendations
+
+    **Use Cases:**
+    - Connection pool performance monitoring
+    - Resource utilization analysis and optimization
+    - Capacity planning for database connections
+    - Performance bottleneck identification
+
+    **Access:** Requires admin privileges
+    """,
+    response_model=Dict[str, Any],
+)
+async def get_connection_pool_status(
+    current_user: Dict[str, Any] = Depends(require_admin_access),
+):
+    """Get database connection pool status and metrics."""
+    try:
+        logger.info(
+            "Getting connection pool status",
+            extra={"admin_user": current_user.get("id")},
+        )
+
+        db_opt_service = service_manager.get_service("database_optimization")
+        if not db_opt_service:
+            raise HTTPException(
+                status_code=503, detail="Database optimization service not available"
+            )
+
+        pool_status = await db_opt_service.manage_connection_pools("status")
+
+        return create_v2_response(
+            data=pool_status, message="Connection pool status retrieved successfully"
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get connection pool status: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve connection pool status"
+        )
+
+
+@app.post(
+    "/admin/database/connection-pools/optimize",
+    tags=["Database Optimization"],
+    summary="Optimize Database Connection Pools",
+    description="""
+    Optimize database connection pools based on current usage patterns and performance metrics.
+
+    **Optimization Process:**
+    - Analyze current connection pool utilization and performance
+    - Identify over-utilized or under-utilized connection pools
+    - Adjust pool sizes based on usage patterns and performance requirements
+    - Generate optimization reports with before/after metrics
+
+    **Expected Benefits:**
+    - Improved connection utilization and efficiency
+    - Reduced resource waste and better performance
+    - Enhanced system responsiveness under varying loads
+    - Better scalability and resource management
+
+    **Access:** Requires admin privileges for system optimization
+    """,
+    response_model=Dict[str, Any],
+)
+async def optimize_connection_pools(
+    current_user: Dict[str, Any] = Depends(require_admin_access),
+):
+    """Optimize database connection pools for improved performance."""
+    try:
+        logger.info(
+            "Optimizing database connection pools",
+            extra={"admin_user": current_user.get("id")},
+        )
+
+        db_opt_service = service_manager.get_service("database_optimization")
+        if not db_opt_service:
+            raise HTTPException(
+                status_code=503, detail="Database optimization service not available"
+            )
+
+        optimization_result = await db_opt_service.manage_connection_pools("optimize")
+
+        return create_v2_response(
+            data=optimization_result,
+            message="Connection pool optimization completed successfully",
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to optimize connection pools: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Failed to optimize connection pools"
         )
 
 
