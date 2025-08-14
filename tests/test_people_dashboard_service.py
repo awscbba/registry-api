@@ -110,8 +110,11 @@ class TestPeopleDashboardService:
         assert "generated_at" in result["metadata"]
 
     @pytest.mark.asyncio
-    @pytest.mark.asyncio
-    async def test_get_dashboard_data_empty_users(self, people_service):
+    @patch(
+        "src.services.people_service.PeopleService._get_cache_service",
+        return_value=None,
+    )
+    async def test_get_dashboard_data_empty_users(self, mock_cache, people_service):
         """Test dashboard data with no users."""
         # Mock empty user list
         people_service.db_service.list_people.return_value = []
@@ -128,7 +131,11 @@ class TestPeopleDashboardService:
         assert overview["admin_users"] == 0
 
     @pytest.mark.asyncio
-    async def test_get_dashboard_data_database_error(self, people_service):
+    @patch(
+        "src.services.people_service.PeopleService._get_cache_service",
+        return_value=None,
+    )
+    async def test_get_dashboard_data_database_error(self, mock_cache, people_service):
         """Test dashboard data with database error."""
         # Mock database error
         people_service.db_service.list_people.side_effect = Exception("Database error")
@@ -449,7 +456,11 @@ class TestPeopleDashboardErrorHandling:
         return service
 
     @pytest.mark.asyncio
-    async def test_dashboard_data_database_exception(self, people_service):
+    @patch(
+        "src.services.people_service.PeopleService._get_cache_service",
+        return_value=None,
+    )
+    async def test_dashboard_data_database_exception(self, mock_cache, people_service):
         """Test dashboard data handling when database throws exception."""
         # Mock database to throw exception
         people_service.db_service.list_people.side_effect = Exception(
