@@ -58,8 +58,8 @@ class TestServiceRegistryAPIEndpoints:
         assert "total_services" in data["service_registry"]
         assert "services" in data["service_registry"]
 
-        # Should have all 13 services (including new performance services)
-        assert data["service_registry"]["total_services"] == 13
+        # Should have all 14 services (including database optimization service)
+        assert data["service_registry"]["total_services"] == 14
 
     def test_registry_config_endpoint(self, client):
         """Test the service registry configuration endpoint."""
@@ -133,7 +133,7 @@ class TestServiceRegistryAPIIntegration:
 
         assert service_manager is not None
         assert hasattr(service_manager, "registry")
-        assert len(service_manager.registry.services) == 13
+        assert len(service_manager.registry.services) == 14
 
     @patch(
         "src.services.service_registry_manager.ServiceRegistryManager.get_all_people_v1"

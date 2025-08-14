@@ -45,7 +45,8 @@ class TestServiceRegistryValidation:
             "rate_limiting",  # Core services
             "metrics",
             "cache",
-            "performance_metrics",  # Performance services
+            "performance_metrics",
+            "database_optimization",  # Performance services
             "project_administration",  # Administration services
         }
 
@@ -57,8 +58,8 @@ class TestServiceRegistryValidation:
 
         # Check that we have exactly the expected number
         assert (
-            len(registered_services) == 13
-        ), f"Expected 13 services, got {len(registered_services)}"
+            len(registered_services) == 14
+        ), f"Expected 14 services, got {len(registered_services)}"
 
     def test_services_inherit_from_base_service(self):
         """Test that all services properly inherit from BaseService."""
@@ -202,7 +203,7 @@ class TestServiceRegistryValidation:
         # Modular handler should use service manager
         assert service_manager is not None
         assert hasattr(service_manager, "registry")
-        assert len(service_manager.registry.services) == 13
+        assert len(service_manager.registry.services) == 14
 
 
 if __name__ == "__main__":
