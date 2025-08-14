@@ -73,8 +73,10 @@ echo "✅ Critical tests passed"
 # 4. FULL TEST SUITE
 echo "🧪 Running full test suite..."
 if ! just test-all > /dev/null 2>&1; then
-    echo "⚠️  Some tests failed, but continuing (non-critical)"
+    echo "❌ Test suite failed - push blocked"
     echo "💡 Run 'just test-all' to see detailed test results"
+    echo "💡 All tests must pass before pushing to maintain code quality"
+    exit 1
 else
     echo "✅ All tests passed"
 fi
