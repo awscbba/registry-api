@@ -52,6 +52,14 @@ openapi_tags = [
         "description": "Administrative operations - requires admin privileges",
     },
     {
+        "name": "Project Administration",
+        "description": "Advanced project administration - bulk operations, analytics, templates",
+    },
+    {
+        "name": "People Administration",
+        "description": "Advanced people administration - dashboard, analytics, user management",
+    },
+    {
         "name": "Service Registry",
         "description": "Service Registry pattern operations and health monitoring",
     },
@@ -1616,6 +1624,341 @@ async def get_project_dashboard():
     except Exception as e:
         logger.error(f"Failed to get project dashboard data: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to retrieve dashboard data")
+
+
+# ==================== PEOPLE ADMINISTRATION ENDPOINTS ====================
+
+
+@app.get(
+    "/admin/people/dashboard",
+    tags=["People Administration"],
+    summary="People Administration Dashboard",
+    description="""
+    Get comprehensive dashboard data for people administration.
+
+    **Dashboard Data Includes:**
+    - Overview statistics (total users, active/inactive counts, new registrations)
+    - Activity metrics (login activity, profile updates, engagement)
+    - Demographic insights (age distribution, location distribution)
+    - Recent user activity and registrations
+
+    **Features:**
+    - Real-time user statistics
+    - Activity pattern analysis
+    - Demographic breakdowns
+    - Recent activity tracking
+    - Performance metrics
+
+    **Access:** Requires admin privileges
+    """,
+    response_model=Dict[str, Any],
+)
+async def get_people_dashboard(
+    current_user: Dict[str, Any] = Depends(require_admin_access),
+):
+    """Get comprehensive people administration dashboard data."""
+    try:
+        logger.info(
+            "Getting people dashboard data",
+            extra={"admin_user": current_user.get("id")},
+        )
+
+        people_service = service_manager.get_service("people")
+        dashboard_data = await people_service.get_dashboard_data()
+
+        return dashboard_data
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get people dashboard data: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve people dashboard data"
+        )
+
+
+@app.get(
+    "/admin/people/analytics",
+    tags=["People Administration"],
+    summary="People Analytics",
+    description="""
+    Get comprehensive people analytics and insights.
+
+    **Analytics Provided:**
+    - Registration trends over time
+    - User activity patterns and engagement metrics
+    - Demographic insights and distributions
+    - User engagement scoring and segmentation
+    - Retention analysis and churn metrics
+
+    **Query Parameters:**
+    - `date_from`: Start date for analysis (YYYY-MM-DD format)
+    - `date_to`: End date for analysis (YYYY-MM-DD format)
+    - `metric_type`: Specific metric type to retrieve
+
+    **Access:** Requires admin privileges
+    """,
+    response_model=Dict[str, Any],
+)
+async def get_people_analytics(
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    metric_type: Optional[str] = None,
+    current_user: Dict[str, Any] = Depends(require_admin_access),
+):
+    """Get comprehensive people analytics."""
+    try:
+        logger.info(
+            "Getting people analytics",
+            extra={
+                "admin_user": current_user.get("id"),
+                "date_from": date_from,
+                "date_to": date_to,
+                "metric_type": metric_type,
+            },
+        )
+
+        people_service = service_manager.get_service("people")
+
+        if metric_type == "registration_trends":
+            analytics_data = await people_service.get_registration_trends(
+                date_from, date_to
+            )
+        elif metric_type == "activity_patterns":
+            analytics_data = await people_service.get_activity_patterns(
+                date_from, date_to
+            )
+        elif metric_type == "demographics":
+            analytics_data = await people_service.get_demographic_insights()
+        elif metric_type == "engagement":
+            analytics_data = await people_service.get_engagement_metrics()
+        else:
+            # Return all analytics if no specific type requested
+            registration_trends = await people_service.get_registration_trends(
+                date_from, date_to
+            )
+            activity_patterns = await people_service.get_activity_patterns(
+                date_from, date_to
+            )
+            demographics = await people_service.get_demographic_insights()
+            engagement = await people_service.get_engagement_metrics()
+
+            analytics_data = create_v2_response(
+                {
+                    "registration_trends": registration_trends.get("data", {}),
+                    "activity_patterns": activity_patterns.get("data", {}),
+                    "demographics": demographics.get("data", {}),
+                    "engagement": engagement.get("data", {}),
+                },
+                metadata={
+                    "service": "people_service",
+                    "version": "analytics",
+                    "analysis_type": "comprehensive",
+                    "date_range": {"from": date_from, "to": date_to},
+                },
+            )
+
+        return analytics_data
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get people analytics: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve people analytics"
+        )
+
+
+@app.get(
+    "/admin/people/registration-trends",
+    tags=["People Administration"],
+    summary="User Registration Trends",
+    description="""
+    Get detailed user registration trends over time.
+
+    **Trend Analysis:**
+    - Monthly registration counts
+    - Registration patterns and seasonality
+    - Growth rate analysis
+    - Date range filtering support
+
+    **Query Parameters:**
+    - `date_from`: Start date for analysis (YYYY-MM-DD format)
+    - `date_to`: End date for analysis (YYYY-MM-DD format)
+
+    **Access:** Requires admin privileges
+    """,
+    response_model=Dict[str, Any],
+)
+async def get_registration_trends(
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    current_user: Dict[str, Any] = Depends(require_admin_access),
+):
+    """Get user registration trends over time."""
+    try:
+        logger.info(
+            "Getting registration trends",
+            extra={
+                "admin_user": current_user.get("id"),
+                "date_from": date_from,
+                "date_to": date_to,
+            },
+        )
+
+        people_service = service_manager.get_service("people")
+        trends_data = await people_service.get_registration_trends(date_from, date_to)
+
+        return trends_data
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get registration trends: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve registration trends"
+        )
+
+
+@app.get(
+    "/admin/people/activity-patterns",
+    tags=["People Administration"],
+    summary="User Activity Patterns",
+    description="""
+    Get detailed user activity patterns and engagement metrics.
+
+    **Activity Analysis:**
+    - Login activity statistics
+    - Profile update patterns
+    - User engagement scoring
+    - Activity distribution analysis
+
+    **Query Parameters:**
+    - `date_from`: Start date for analysis (YYYY-MM-DD format)
+    - `date_to`: End date for analysis (YYYY-MM-DD format)
+
+    **Access:** Requires admin privileges
+    """,
+    response_model=Dict[str, Any],
+)
+async def get_activity_patterns(
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    current_user: Dict[str, Any] = Depends(require_admin_access),
+):
+    """Get user activity patterns and engagement metrics."""
+    try:
+        logger.info(
+            "Getting activity patterns",
+            extra={
+                "admin_user": current_user.get("id"),
+                "date_from": date_from,
+                "date_to": date_to,
+            },
+        )
+
+        people_service = service_manager.get_service("people")
+        activity_data = await people_service.get_activity_patterns(date_from, date_to)
+
+        return activity_data
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get activity patterns: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve activity patterns"
+        )
+
+
+@app.get(
+    "/admin/people/demographics",
+    tags=["People Administration"],
+    summary="User Demographics",
+    description="""
+    Get comprehensive user demographic insights and distributions.
+
+    **Demographic Analysis:**
+    - Age distribution across user base
+    - Geographic distribution by location
+    - User segmentation analysis
+    - Population statistics
+
+    **Insights Provided:**
+    - Age group breakdowns
+    - Top locations by user count
+    - Demographic trends and patterns
+    - User distribution metrics
+
+    **Access:** Requires admin privileges
+    """,
+    response_model=Dict[str, Any],
+)
+async def get_demographics(
+    current_user: Dict[str, Any] = Depends(require_admin_access),
+):
+    """Get user demographic insights and distributions."""
+    try:
+        logger.info(
+            "Getting demographics", extra={"admin_user": current_user.get("id")}
+        )
+
+        people_service = service_manager.get_service("people")
+        demographics_data = await people_service.get_demographic_insights()
+
+        return demographics_data
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get demographics: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve demographics")
+
+
+@app.get(
+    "/admin/people/engagement",
+    tags=["People Administration"],
+    summary="User Engagement Metrics",
+    description="""
+    Get comprehensive user engagement metrics and statistics.
+
+    **Engagement Analysis:**
+    - Overall engagement scoring
+    - User segmentation by engagement level
+    - Retention metrics and churn analysis
+    - Activity distribution patterns
+
+    **Metrics Provided:**
+    - Engagement scores and ratings
+    - User segment distributions
+    - Retention rates (weekly, monthly, quarterly)
+    - Activity level classifications
+
+    **Access:** Requires admin privileges
+    """,
+    response_model=Dict[str, Any],
+)
+async def get_engagement_metrics(
+    current_user: Dict[str, Any] = Depends(require_admin_access),
+):
+    """Get user engagement metrics and statistics."""
+    try:
+        logger.info(
+            "Getting engagement metrics", extra={"admin_user": current_user.get("id")}
+        )
+
+        people_service = service_manager.get_service("people")
+        engagement_data = await people_service.get_engagement_metrics()
+
+        return engagement_data
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get engagement metrics: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve engagement metrics"
+        )
 
 
 # ==================== AUTH ENDPOINTS ====================

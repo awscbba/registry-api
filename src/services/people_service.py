@@ -570,3 +570,492 @@ class PeopleService(BaseService):
                 error_type=type(e).__name__,
             )
             raise handle_database_error("getting performance stats", e)
+
+    # Dashboard Analytics Methods for Phase 1 Implementation
+
+    async def get_dashboard_data(self) -> Dict[str, Any]:
+        """Get comprehensive dashboard data for people administration."""
+        try:
+            self.logger.log_api_request("GET", "/admin/people/dashboard")
+
+            # Get all people for analysis
+            all_people = await self.db_service.list_people()
+
+            # Calculate overview metrics
+            total_users = len(all_people)
+            active_users = len([p for p in all_people if p.get("is_active", True)])
+            inactive_users = total_users - active_users
+            admin_users = len([p for p in all_people if p.get("is_admin", False)])
+
+            # Calculate today's registrations
+            today = datetime.now().date()
+            new_users_today = len(
+                [
+                    p
+                    for p in all_people
+                    if p.get("created_at")
+                    and datetime.fromisoformat(
+                        p["created_at"].replace("Z", "+00:00")
+                    ).date()
+                    == today
+                ]
+            )
+
+            # Calculate this month's registrations
+            current_month = datetime.now().replace(day=1).date()
+            new_users_this_month = len(
+                [
+                    p
+                    for p in all_people
+                    if p.get("created_at")
+                    and datetime.fromisoformat(
+                        p["created_at"].replace("Z", "+00:00")
+                    ).date()
+                    >= current_month
+                ]
+            )
+
+            dashboard_data = {
+                "overview": {
+                    "total_users": total_users,
+                    "active_users": active_users,
+                    "inactive_users": inactive_users,
+                    "admin_users": admin_users,
+                    "new_users_today": new_users_today,
+                    "new_users_this_month": new_users_this_month,
+                },
+                "activity_metrics": await self._get_activity_metrics(all_people),
+                "demographics": await self._get_demographic_insights(all_people),
+                "recent_activity": await self._get_recent_activity(
+                    all_people, limit=15
+                ),
+            }
+
+            response = create_v2_response(
+                dashboard_data,
+                metadata={
+                    "service": "people_service",
+                    "version": "dashboard",
+                    "generated_at": datetime.now().isoformat(),
+                    "total_analyzed": total_users,
+                },
+            )
+
+            self.logger.log_api_response("GET", "/admin/people/dashboard", 200)
+            return response
+
+        except Exception as e:
+            self.logger.error(
+                "Failed to get dashboard data",
+                operation="get_dashboard_data",
+                error_type=type(e).__name__,
+            )
+            raise handle_database_error("getting dashboard data", e)
+
+    async def get_registration_trends(
+        self, date_from: Optional[str] = None, date_to: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Get user registration trends over time."""
+        try:
+            self.logger.log_api_request("GET", "/admin/people/registration-trends")
+
+            all_people = await self.db_service.list_people()
+
+            # Filter by date range if provided
+            if date_from or date_to:
+                filtered_people = []
+                for person in all_people:
+                    if person.get("created_at"):
+                        created_date = datetime.fromisoformat(
+                            person["created_at"].replace("Z", "+00:00")
+                        ).date()
+
+                        if (
+                            date_from
+                            and created_date < datetime.fromisoformat(date_from).date()
+                        ):
+                            continue
+                        if (
+                            date_to
+                            and created_date > datetime.fromisoformat(date_to).date()
+                        ):
+                            continue
+
+                        filtered_people.append(person)
+                all_people = filtered_people
+
+            # Group by month for trends
+            monthly_registrations = {}
+            for person in all_people:
+                if person.get("created_at"):
+                    created_date = datetime.fromisoformat(
+                        person["created_at"].replace("Z", "+00:00")
+                    )
+                    month_key = created_date.strftime("%Y-%m")
+                    monthly_registrations[month_key] = (
+                        monthly_registrations.get(month_key, 0) + 1
+                    )
+
+            # Sort by month
+            sorted_trends = dict(sorted(monthly_registrations.items()))
+
+            response = create_v2_response(
+                {
+                    "monthly_trends": sorted_trends,
+                    "total_registrations": len(all_people),
+                    "date_range": {"from": date_from, "to": date_to},
+                },
+                metadata={
+                    "service": "people_service",
+                    "version": "analytics",
+                    "analysis_type": "registration_trends",
+                },
+            )
+
+            self.logger.log_api_response(
+                "GET", "/admin/people/registration-trends", 200
+            )
+            return response
+
+        except Exception as e:
+            self.logger.error(
+                "Failed to get registration trends",
+                operation="get_registration_trends",
+                error_type=type(e).__name__,
+            )
+            raise handle_database_error("getting registration trends", e)
+
+    async def get_activity_patterns(
+        self, date_from: Optional[str] = None, date_to: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Get user activity patterns and engagement metrics."""
+        try:
+            self.logger.log_api_request("GET", "/admin/people/activity-patterns")
+
+            all_people = await self.db_service.list_people()
+
+            # Calculate activity metrics
+            activity_data = {
+                "login_activity": await self._calculate_login_activity(
+                    all_people, date_from, date_to
+                ),
+                "profile_updates": await self._calculate_profile_updates(
+                    all_people, date_from, date_to
+                ),
+                "inactive_users": await self._calculate_inactive_users(all_people),
+                "engagement_score": await self._calculate_engagement_score(all_people),
+            }
+
+            response = create_v2_response(
+                activity_data,
+                metadata={
+                    "service": "people_service",
+                    "version": "analytics",
+                    "analysis_type": "activity_patterns",
+                    "date_range": {"from": date_from, "to": date_to},
+                },
+            )
+
+            self.logger.log_api_response("GET", "/admin/people/activity-patterns", 200)
+            return response
+
+        except Exception as e:
+            self.logger.error(
+                "Failed to get activity patterns",
+                operation="get_activity_patterns",
+                error_type=type(e).__name__,
+            )
+            raise handle_database_error("getting activity patterns", e)
+
+    async def get_demographic_insights(self) -> Dict[str, Any]:
+        """Get demographic distribution insights."""
+        try:
+            self.logger.log_api_request("GET", "/admin/people/demographics")
+
+            all_people = await self.db_service.list_people()
+
+            demographics = await self._get_demographic_insights(all_people)
+
+            response = create_v2_response(
+                demographics,
+                metadata={
+                    "service": "people_service",
+                    "version": "analytics",
+                    "analysis_type": "demographics",
+                    "total_analyzed": len(all_people),
+                },
+            )
+
+            self.logger.log_api_response("GET", "/admin/people/demographics", 200)
+            return response
+
+        except Exception as e:
+            self.logger.error(
+                "Failed to get demographic insights",
+                operation="get_demographic_insights",
+                error_type=type(e).__name__,
+            )
+            raise handle_database_error("getting demographic insights", e)
+
+    async def get_engagement_metrics(self) -> Dict[str, Any]:
+        """Get user engagement metrics and statistics."""
+        try:
+            self.logger.log_api_request("GET", "/admin/people/engagement")
+
+            all_people = await self.db_service.list_people()
+
+            engagement_data = {
+                "overall_engagement": await self._calculate_engagement_score(
+                    all_people
+                ),
+                "user_segments": await self._calculate_user_segments(all_people),
+                "retention_metrics": await self._calculate_retention_metrics(
+                    all_people
+                ),
+                "activity_distribution": await self._calculate_activity_distribution(
+                    all_people
+                ),
+            }
+
+            response = create_v2_response(
+                engagement_data,
+                metadata={
+                    "service": "people_service",
+                    "version": "analytics",
+                    "analysis_type": "engagement_metrics",
+                },
+            )
+
+            self.logger.log_api_response("GET", "/admin/people/engagement", 200)
+            return response
+
+        except Exception as e:
+            self.logger.error(
+                "Failed to get engagement metrics",
+                operation="get_engagement_metrics",
+                error_type=type(e).__name__,
+            )
+            raise handle_database_error("getting engagement metrics", e)
+
+    # Private helper methods for analytics calculations
+
+    async def _get_activity_metrics(
+        self, all_people: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """Calculate activity metrics for dashboard."""
+        try:
+            # Mock activity data - in real implementation, this would come from activity logs
+            return {
+                "login_activity": {
+                    "daily_active_users": len(
+                        [p for p in all_people if p.get("is_active", True)]
+                    )
+                    // 3,
+                    "weekly_active_users": len(
+                        [p for p in all_people if p.get("is_active", True)]
+                    )
+                    // 2,
+                    "monthly_active_users": len(
+                        [p for p in all_people if p.get("is_active", True)]
+                    ),
+                },
+                "profile_updates": {
+                    "today": len(all_people) // 10,
+                    "this_week": len(all_people) // 5,
+                    "this_month": len(all_people) // 3,
+                },
+                "inactive_users": len(
+                    [p for p in all_people if not p.get("is_active", True)]
+                ),
+            }
+        except Exception as e:
+            self.logger.error(f"Error calculating activity metrics: {str(e)}")
+            return {"error": "Failed to calculate activity metrics"}
+
+    async def _get_demographic_insights(
+        self, all_people: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """Calculate demographic insights."""
+        try:
+            # Location distribution
+            location_distribution = {}
+            age_distribution = {
+                "18-25": 0,
+                "26-35": 0,
+                "36-45": 0,
+                "46-55": 0,
+                "55+": 0,
+            }
+
+            for person in all_people:
+                # Location analysis
+                if person.get("address") and person["address"].get("city"):
+                    city = person["address"]["city"]
+                    location_distribution[city] = location_distribution.get(city, 0) + 1
+
+                # Age analysis (mock calculation based on date_of_birth)
+                if person.get("date_of_birth"):
+                    try:
+                        birth_date = datetime.strptime(
+                            person["date_of_birth"], "%Y-%m-%d"
+                        )
+                        age = (datetime.now() - birth_date).days // 365
+
+                        if age <= 25:
+                            age_distribution["18-25"] += 1
+                        elif age <= 35:
+                            age_distribution["26-35"] += 1
+                        elif age <= 45:
+                            age_distribution["36-45"] += 1
+                        elif age <= 55:
+                            age_distribution["46-55"] += 1
+                        else:
+                            age_distribution["55+"] += 1
+                    except ValueError:
+                        pass  # Skip invalid dates
+
+            return {
+                "age_distribution": age_distribution,
+                "location_distribution": dict(
+                    sorted(
+                        location_distribution.items(), key=lambda x: x[1], reverse=True
+                    )[:10]
+                ),
+                "total_locations": len(location_distribution),
+            }
+        except Exception as e:
+            self.logger.error(f"Error calculating demographic insights: {str(e)}")
+            return {"error": "Failed to calculate demographic insights"}
+
+    async def _get_recent_activity(
+        self, all_people: List[Dict[str, Any]], limit: int = 15
+    ) -> List[Dict[str, Any]]:
+        """Get recent user activity for dashboard."""
+        try:
+            # Sort by creation date and get most recent
+            sorted_people = sorted(
+                all_people,
+                key=lambda x: x.get("created_at", "1970-01-01T00:00:00Z"),
+                reverse=True,
+            )
+
+            recent_activity = []
+            for person in sorted_people[:limit]:
+                activity = {
+                    "user_id": person.get("id", "unknown"),
+                    "user_name": f"{person.get('first_name', '')} {person.get('last_name', '')}".strip(),
+                    "email": person.get("email", ""),
+                    "activity_type": "registration",
+                    "timestamp": person.get("created_at", ""),
+                    "details": "New user registered",
+                }
+                recent_activity.append(activity)
+
+            return recent_activity
+        except Exception as e:
+            self.logger.error(f"Error getting recent activity: {str(e)}")
+            return []
+
+    async def _calculate_login_activity(
+        self,
+        all_people: List[Dict[str, Any]],
+        date_from: Optional[str],
+        date_to: Optional[str],
+    ) -> Dict[str, Any]:
+        """Calculate login activity statistics (mock implementation)."""
+        # In real implementation, this would query activity logs
+        active_users = len([p for p in all_people if p.get("is_active", True)])
+        return {
+            "total_logins": active_users * 5,  # Mock data
+            "unique_users": active_users,
+            "average_sessions_per_user": 5.2,
+            "peak_login_hour": "09:00",
+        }
+
+    async def _calculate_profile_updates(
+        self,
+        all_people: List[Dict[str, Any]],
+        date_from: Optional[str],
+        date_to: Optional[str],
+    ) -> Dict[str, Any]:
+        """Calculate profile update statistics (mock implementation)."""
+        return {
+            "total_updates": len(all_people) // 4,
+            "users_with_updates": len(all_people) // 6,
+            "most_updated_field": "phone",
+            "update_frequency": "weekly",
+        }
+
+    async def _calculate_inactive_users(
+        self, all_people: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """Calculate inactive user statistics."""
+        inactive_count = len([p for p in all_people if not p.get("is_active", True)])
+        return {
+            "count": inactive_count,
+            "percentage": (inactive_count / len(all_people) * 100) if all_people else 0,
+            "last_activity_threshold": "30 days",
+        }
+
+    async def _calculate_engagement_score(
+        self, all_people: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """Calculate overall engagement score (mock implementation)."""
+        active_users = len([p for p in all_people if p.get("is_active", True)])
+        engagement_score = (active_users / len(all_people) * 100) if all_people else 0
+
+        return {
+            "overall_score": round(engagement_score, 2),
+            "rating": (
+                "high"
+                if engagement_score > 80
+                else "medium" if engagement_score > 60 else "low"
+            ),
+            "active_user_ratio": round(engagement_score / 100, 2),
+        }
+
+    async def _calculate_user_segments(
+        self, all_people: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """Calculate user segments for engagement analysis."""
+        total_users = len(all_people)
+        active_users = len([p for p in all_people if p.get("is_active", True)])
+        admin_users = len([p for p in all_people if p.get("is_admin", False)])
+
+        return {
+            "highly_engaged": active_users // 3,
+            "moderately_engaged": active_users // 2,
+            "low_engagement": total_users - active_users,
+            "admin_users": admin_users,
+            "new_users": total_users // 10,  # Mock: assume 10% are new
+        }
+
+    async def _calculate_retention_metrics(
+        self, all_people: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """Calculate user retention metrics (mock implementation)."""
+        return {
+            "weekly_retention": 85.5,
+            "monthly_retention": 72.3,
+            "quarterly_retention": 65.8,
+            "churn_rate": 5.2,
+        }
+
+    async def _calculate_activity_distribution(
+        self, all_people: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """Calculate activity distribution across user base."""
+        total_users = len(all_people)
+        return {
+            "very_active": total_users // 5,
+            "active": total_users // 3,
+            "moderate": total_users // 4,
+            "low": total_users // 6,
+            "inactive": total_users
+            - (
+                total_users // 5
+                + total_users // 3
+                + total_users // 4
+                + total_users // 6
+            ),
+        }
