@@ -18,6 +18,7 @@ from .audit_service import AuditService
 from .logging_service import LoggingService
 from .rate_limiting_service import RateLimitingService
 from .metrics_service import MetricsService
+from .project_administration_service import ProjectAdministrationService
 from ..utils.logging_config import get_handler_logger
 
 
@@ -72,6 +73,12 @@ class ServiceRegistryManager:
             # Register Monitoring Services
             metrics_service = MetricsService()
             self.registry.register_service("metrics", metrics_service)
+
+            # Register Administration Services
+            project_admin_service = ProjectAdministrationService()
+            self.registry.register_service(
+                "project_administration", project_admin_service
+            )
 
             self.logger.info(
                 f"All services registered successfully: {list(self.registry.services.keys())}"

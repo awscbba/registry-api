@@ -1011,6 +1011,613 @@ async def get_monitoring_dashboard():
         )
 
 
+# ==================== PROJECT ADMINISTRATION ENDPOINTS ====================
+
+
+@app.get(
+    "/admin/projects/search",
+    tags=["Project Administration"],
+    summary="Advanced Project Search",
+    description="""
+    Advanced project search with comprehensive filtering and sorting capabilities.
+
+    **Features:**
+    - Text search in project names and descriptions
+    - Filter by status, category, date ranges, participant counts, location
+    - Sort by multiple fields with ascending/descending order
+    - Pagination support for large result sets
+
+    **Use Cases:**
+    - Project management dashboards
+    - Administrative reporting
+    - Project discovery and filtering
+    - Bulk operation preparation
+
+    **Filters Available:**
+    - `query`: Text search in name and description
+    - `status`: Filter by project status (pending, active, completed, etc.)
+    - `category`: Filter by project category
+    - `start_date_from/to`: Filter by project start date range
+    - `end_date_from/to`: Filter by project end date range
+    - `min/max_participants`: Filter by participant count range
+    - `location`: Filter by location (partial match)
+
+    **Sorting Options:**
+    - `sort_by`: name, createdAt, updatedAt, startDate, endDate, status, maxParticipants
+    - `sort_order`: asc (ascending) or desc (descending)
+    """,
+    response_model=Dict[str, Any],
+    responses=COMMON_RESPONSES,
+)
+async def search_projects_advanced(
+    query: Optional[str] = None,
+    status: Optional[str] = None,
+    category: Optional[str] = None,
+    start_date_from: Optional[str] = None,
+    start_date_to: Optional[str] = None,
+    end_date_from: Optional[str] = None,
+    end_date_to: Optional[str] = None,
+    min_participants: Optional[int] = None,
+    max_participants: Optional[int] = None,
+    location: Optional[str] = None,
+    sort_by: str = "createdAt",
+    sort_order: str = "desc",
+    limit: int = 50,
+    offset: int = 0,
+):
+    """
+    Advanced project search with comprehensive filtering and sorting.
+
+    Provides powerful search capabilities for project administration,
+    including multiple filters, sorting options, and pagination.
+    """
+    try:
+        project_admin_service = service_manager.get_service("project_administration")
+
+        # Convert string parameters to enums where needed
+        from ..services.project_administration_service import (
+            ProjectSortField,
+            SortOrder,
+            ProjectStatus,
+        )
+
+        # Validate and convert sort_by
+        try:
+            sort_field = ProjectSortField(sort_by)
+        except ValueError:
+            sort_field = ProjectSortField.CREATED_AT
+
+        # Validate and convert sort_order
+        try:
+            sort_order_enum = SortOrder(sort_order.lower())
+        except ValueError:
+            sort_order_enum = SortOrder.DESC
+
+        # Validate and convert status
+        status_enum = None
+        if status:
+            try:
+                status_enum = ProjectStatus(status.lower())
+            except ValueError:
+                pass  # Invalid status will be ignored
+
+        search_result = await project_admin_service.search_projects(
+            query=query,
+            status=status_enum,
+            category=category,
+            start_date_from=start_date_from,
+            start_date_to=start_date_to,
+            end_date_from=end_date_from,
+            end_date_to=end_date_to,
+            min_participants=min_participants,
+            max_participants=max_participants,
+            location=location,
+            sort_by=sort_field,
+            sort_order=sort_order_enum,
+            limit=min(limit, 100),  # Cap at 100 for performance
+            offset=max(offset, 0),  # Ensure non-negative
+        )
+
+        if search_result.get("success"):
+            return create_v2_response(
+                data=search_result,
+                message=f"Found {search_result.get('filtered_count', 0)} projects matching criteria",
+            )
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail=search_result.get("error", "Search operation failed"),
+            )
+
+    except Exception as e:
+        logger.error(f"Failed to search projects: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to search projects")
+
+
+@app.post(
+    "/admin/projects/bulk-create",
+    tags=["Project Administration"],
+    summary="Bulk Create Projects",
+    description="""
+    Create multiple projects in a single operation.
+
+    **Features:**
+    - Create up to 50 projects in one request
+    - Detailed success/failure reporting for each project
+    - Atomic operation with rollback on critical failures
+    - Progress tracking and error details
+
+    **Use Cases:**
+    - Importing projects from external systems
+    - Creating multiple similar projects
+    - Batch project setup for events or programs
+    - Administrative bulk operations
+
+    **Request Body:**
+    Array of project creation objects, each containing:
+    - name, description, startDate, endDate (required)
+    - maxParticipants, status, category, location, requirements (optional)
+
+    **Response:**
+    - `total_processed`: Total number of projects processed
+    - `successful_count`: Number of successfully created projects
+    - `failed_count`: Number of failed creations
+    - `successful_ids`: Array of created project IDs
+    - `failures`: Array of failure details with reasons
+    - `success_rate`: Percentage of successful operations
+    """,
+    response_model=Dict[str, Any],
+    responses=COMMON_RESPONSES,
+)
+async def bulk_create_projects(projects_data: List[Dict[str, Any]]):
+    """
+    Create multiple projects in bulk operation.
+
+    Processes multiple project creation requests and provides
+    detailed reporting on success/failure for each project.
+    """
+    try:
+        if not projects_data:
+            raise HTTPException(status_code=400, detail="No project data provided")
+
+        if len(projects_data) > 50:
+            raise HTTPException(
+                status_code=400,
+                detail="Maximum 50 projects can be created in one bulk operation",
+            )
+
+        project_admin_service = service_manager.get_service("project_administration")
+
+        # Convert to ProjectCreate objects
+        from ..models.project import ProjectCreate
+
+        project_creates = []
+
+        for i, project_data in enumerate(projects_data):
+            try:
+                project_create = ProjectCreate(**project_data)
+                project_creates.append(project_create)
+            except Exception as e:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid project data at index {i}: {str(e)}",
+                )
+
+        # Perform bulk creation
+        result = await project_admin_service.bulk_create_projects(project_creates)
+
+        return create_v2_response(
+            data=result.to_dict(),
+            message=f"Bulk creation completed: {len(result.successful)} successful, {len(result.failed)} failed",
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to bulk create projects: {str(e)}")
+        raise HTTPException(status_code=500, detail="Bulk project creation failed")
+
+
+@app.put(
+    "/admin/projects/bulk-update",
+    tags=["Project Administration"],
+    summary="Bulk Update Projects",
+    description="""
+    Update multiple projects in a single operation.
+
+    **Features:**
+    - Update up to 50 projects in one request
+    - Partial updates supported (only specified fields are updated)
+    - Detailed success/failure reporting for each project
+    - Validation of project existence before update
+
+    **Use Cases:**
+    - Batch status updates (e.g., marking projects as completed)
+    - Bulk field modifications (e.g., updating categories)
+    - Administrative maintenance operations
+    - Data migration and cleanup
+
+    **Request Body:**
+    Array of update objects, each containing:
+    - `id`: Project ID to update (required)
+    - Any project fields to update (optional)
+
+    **Response:**
+    Similar to bulk create with success/failure details
+    """,
+    response_model=Dict[str, Any],
+    responses=COMMON_RESPONSES,
+)
+async def bulk_update_projects(updates_data: List[Dict[str, Any]]):
+    """
+    Update multiple projects in bulk operation.
+
+    Processes multiple project update requests with detailed
+    reporting on success/failure for each project.
+    """
+    try:
+        if not updates_data:
+            raise HTTPException(status_code=400, detail="No update data provided")
+
+        if len(updates_data) > 50:
+            raise HTTPException(
+                status_code=400,
+                detail="Maximum 50 projects can be updated in one bulk operation",
+            )
+
+        # Validate that all updates have an ID
+        for i, update_data in enumerate(updates_data):
+            if "id" not in update_data:
+                raise HTTPException(
+                    status_code=400, detail=f"Missing project ID at index {i}"
+                )
+
+        project_admin_service = service_manager.get_service("project_administration")
+
+        # Perform bulk update
+        result = await project_admin_service.bulk_update_projects(updates_data)
+
+        return create_v2_response(
+            data=result.to_dict(),
+            message=f"Bulk update completed: {len(result.successful)} successful, {len(result.failed)} failed",
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to bulk update projects: {str(e)}")
+        raise HTTPException(status_code=500, detail="Bulk project update failed")
+
+
+@app.delete(
+    "/admin/projects/bulk-delete",
+    tags=["Project Administration"],
+    summary="Bulk Delete Projects",
+    description="""
+    Delete multiple projects in a single operation.
+
+    **⚠️ Warning:** This operation permanently deletes projects and cannot be undone.
+
+    **Features:**
+    - Delete up to 50 projects in one request
+    - Detailed success/failure reporting for each project
+    - Validation of project existence before deletion
+    - Audit logging of all deletion operations
+
+    **Use Cases:**
+    - Cleanup of test or obsolete projects
+    - Administrative maintenance operations
+    - Bulk removal of cancelled projects
+    - Data archival operations
+
+    **Request Body:**
+    Array of project IDs to delete
+
+    **Response:**
+    Detailed success/failure reporting with project IDs
+    """,
+    response_model=Dict[str, Any],
+    responses=COMMON_RESPONSES,
+)
+async def bulk_delete_projects(project_ids: List[str]):
+    """
+    Delete multiple projects in bulk operation.
+
+    ⚠️ WARNING: This permanently deletes projects and cannot be undone.
+    Provides detailed reporting on success/failure for each deletion.
+    """
+    try:
+        if not project_ids:
+            raise HTTPException(status_code=400, detail="No project IDs provided")
+
+        if len(project_ids) > 50:
+            raise HTTPException(
+                status_code=400,
+                detail="Maximum 50 projects can be deleted in one bulk operation",
+            )
+
+        project_admin_service = service_manager.get_service("project_administration")
+
+        # Perform bulk deletion
+        result = await project_admin_service.bulk_delete_projects(project_ids)
+
+        return create_v2_response(
+            data=result.to_dict(),
+            message=f"Bulk deletion completed: {len(result.successful)} successful, {len(result.failed)} failed",
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to bulk delete projects: {str(e)}")
+        raise HTTPException(status_code=500, detail="Bulk project deletion failed")
+
+
+@app.get(
+    "/admin/projects/analytics",
+    tags=["Project Administration"],
+    summary="Project Analytics",
+    description="""
+    Get comprehensive project analytics and insights.
+
+    **Analytics Provided:**
+    - Project count and distribution statistics
+    - Status distribution (pending, active, completed, etc.)
+    - Category distribution and trends
+    - Monthly project creation trends (last 12 months)
+    - Participant statistics and averages
+    - Recent activity and upcoming projects
+
+    **Use Cases:**
+    - Administrative dashboards
+    - Performance reporting
+    - Trend analysis and forecasting
+    - Resource planning and allocation
+    - Business intelligence and insights
+
+    **Parameters:**
+    - `days`: Number of days to include in recent activity analysis (default: 30)
+
+    **Response Includes:**
+    - Overview statistics
+    - Status and category distributions
+    - Monthly trends data
+    - Recent and upcoming project lists
+    - Participant statistics
+    """,
+    response_model=Dict[str, Any],
+    responses=COMMON_RESPONSES,
+)
+async def get_project_analytics(days: int = 30):
+    """
+    Get comprehensive project analytics and insights.
+
+    Provides detailed analytics including distributions, trends,
+    and statistics for project administration and reporting.
+    """
+    try:
+        if days < 1 or days > 365:
+            raise HTTPException(
+                status_code=400, detail="Days parameter must be between 1 and 365"
+            )
+
+        project_admin_service = service_manager.get_service("project_administration")
+
+        analytics = await project_admin_service.get_project_analytics(days=days)
+
+        if analytics.get("success"):
+            return create_v2_response(
+                data=analytics,
+                message=f"Project analytics generated for {days} days period",
+            )
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail=analytics.get("error", "Analytics generation failed"),
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get project analytics: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Failed to generate project analytics"
+        )
+
+
+@app.get(
+    "/admin/projects/templates",
+    tags=["Project Administration"],
+    summary="Project Templates",
+    description="""
+    Get all available project templates for quick project creation.
+
+    **Templates Include:**
+    - Pre-configured project settings
+    - Default values for common project types
+    - Usage statistics and popularity metrics
+    - Template descriptions and use cases
+
+    **Default Templates:**
+    - Software Development Project
+    - Research Project
+    - Community Event
+
+    **Use Cases:**
+    - Quick project creation
+    - Standardized project setup
+    - Template-based project workflows
+    - Administrative project management
+    """,
+    response_model=Dict[str, Any],
+    responses=COMMON_RESPONSES,
+)
+async def get_project_templates():
+    """
+    Get all available project templates.
+
+    Returns a list of project templates that can be used
+    for quick project creation with pre-configured settings.
+    """
+    try:
+        project_admin_service = service_manager.get_service("project_administration")
+
+        templates_result = await project_admin_service.get_project_templates()
+
+        if templates_result.get("success"):
+            return create_v2_response(
+                data=templates_result,
+                message=f"Retrieved {templates_result.get('total_count', 0)} project templates",
+            )
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail=templates_result.get("error", "Failed to retrieve templates"),
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get project templates: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve project templates"
+        )
+
+
+@app.post(
+    "/admin/projects/create-from-template",
+    tags=["Project Administration"],
+    summary="Create Project from Template",
+    description="""
+    Create a new project using a predefined template.
+
+    **Features:**
+    - Use predefined templates for quick project creation
+    - Override template values with custom data
+    - Automatic template usage tracking
+    - Validation of template existence
+
+    **Process:**
+    1. Template data is loaded as defaults
+    2. Provided project data overrides template values
+    3. Project is created with merged data
+    4. Template usage count is incremented
+
+    **Request Body:**
+    - `template_id`: ID of the template to use
+    - `project_data`: Project-specific data to override template defaults
+
+    **Use Cases:**
+    - Standardized project creation
+    - Quick setup for common project types
+    - Template-based workflows
+    - Consistent project configuration
+    """,
+    response_model=Dict[str, Any],
+    responses=COMMON_RESPONSES,
+)
+async def create_project_from_template(request_data: Dict[str, Any]):
+    """
+    Create a new project from a predefined template.
+
+    Uses template defaults merged with provided project data
+    to create a new project quickly and consistently.
+    """
+    try:
+        template_id = request_data.get("template_id")
+        project_data = request_data.get("project_data", {})
+
+        if not template_id:
+            raise HTTPException(status_code=400, detail="Template ID is required")
+
+        project_admin_service = service_manager.get_service("project_administration")
+
+        result = await project_admin_service.create_project_from_template(
+            template_id=template_id, project_data=project_data
+        )
+
+        if result.get("success"):
+            return create_v2_response(
+                data=result,
+                message=f"Project created successfully from template {template_id}",
+            )
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail=result.get("error", "Failed to create project from template"),
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to create project from template: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Failed to create project from template"
+        )
+
+
+@app.get(
+    "/admin/projects/dashboard",
+    tags=["Project Administration"],
+    summary="Project Administration Dashboard",
+    description="""
+    Get comprehensive dashboard data for project administration.
+
+    **Dashboard Data Includes:**
+    - Overview statistics and key metrics
+    - Project analytics and distributions
+    - Recent projects and activity
+    - Projects organized by status
+    - Template information and usage
+    - Quick statistics for admin panels
+
+    **Perfect for:**
+    - Administrative dashboards
+    - Project management interfaces
+    - Executive reporting
+    - System overview displays
+
+    **Data Sections:**
+    - `overview`: Key metrics and totals
+    - `analytics`: Charts and distribution data
+    - `recent_projects`: Latest project activity
+    - `projects_by_status`: Projects grouped by status
+    - `templates`: Template availability and usage
+    - `quick_stats`: Summary numbers for widgets
+    """,
+    response_model=Dict[str, Any],
+    responses=COMMON_RESPONSES,
+)
+async def get_project_dashboard():
+    """
+    Get comprehensive project administration dashboard data.
+
+    Returns all data needed for a complete project administration
+    dashboard including analytics, recent activity, and quick stats.
+    """
+    try:
+        project_admin_service = service_manager.get_service("project_administration")
+
+        dashboard_data = await project_admin_service.get_dashboard_data()
+
+        if dashboard_data.get("success"):
+            return create_v2_response(
+                data=dashboard_data,
+                message="Project administration dashboard data retrieved successfully",
+            )
+        else:
+            raise HTTPException(
+                status_code=500,
+                detail=dashboard_data.get("error", "Failed to generate dashboard data"),
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get project dashboard data: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve dashboard data")
+
+
 # ==================== AUTH ENDPOINTS ====================
 
 
