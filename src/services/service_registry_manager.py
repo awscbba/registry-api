@@ -17,6 +17,7 @@ from .email_service import EmailService
 from .audit_service import AuditService
 from .logging_service import LoggingService
 from .rate_limiting_service import RateLimitingService
+from .metrics_service import MetricsService
 from ..utils.logging_config import get_handler_logger
 
 
@@ -67,6 +68,10 @@ class ServiceRegistryManager:
 
             rate_limiting_service = RateLimitingService()
             self.registry.register_service("rate_limiting", rate_limiting_service)
+
+            # Register Monitoring Services
+            metrics_service = MetricsService()
+            self.registry.register_service("metrics", metrics_service)
 
             self.logger.info(
                 f"All services registered successfully: {list(self.registry.services.keys())}"

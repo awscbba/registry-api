@@ -23,6 +23,7 @@ from ..middleware.admin_middleware_v2 import (
 )
 from ..middleware.auth_middleware import get_current_user
 from ..utils.logging_config import get_handler_logger
+from ..utils.response_models import create_v2_response
 
 # Configure standardized logging
 logger = get_handler_logger("modular_api")
@@ -224,6 +225,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add metrics collection middleware
+from ..middleware.metrics_middleware import MetricsMiddleware
+
+app.add_middleware(MetricsMiddleware)
 
 # Create version-specific routers
 v1_router = APIRouter(prefix="/v1", tags=["v1"])
@@ -746,6 +752,263 @@ async def get_version():
             "Role-Based Access Control",
         ],
     }
+
+
+# ==================== MONITORING AND METRICS ENDPOINTS ====================
+
+
+@app.get(
+    "/metrics",
+    tags=["Monitoring"],
+    summary="System Metrics",
+    description="""
+    Get comprehensive system performance metrics including:
+
+    - Request counts and error rates
+    - Response time analytics
+    - Active request monitoring
+    - System uptime information
+    - Performance grading
+
+    **Use Cases:**
+    - Performance monitoring dashboards
+    - System health assessment
+    - Capacity planning
+    - Performance optimization
+    """,
+    response_model=Dict[str, Any],
+    responses=COMMON_RESPONSES,
+)
+async def get_system_metrics():
+    """
+    Get comprehensive system performance metrics.
+
+    Returns real-time metrics including request counts, response times,
+    error rates, and performance analytics.
+    """
+    try:
+        metrics_service = service_manager.get_service("metrics")
+        metrics = await metrics_service.get_current_metrics()
+
+        return create_v2_response(
+            data=metrics, message="System metrics retrieved successfully"
+        )
+    except Exception as e:
+        logger.error(f"Failed to get system metrics: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve system metrics")
+
+
+@app.get(
+    "/metrics/analytics",
+    tags=["Monitoring"],
+    summary="Performance Analytics",
+    description="""
+    Get detailed performance analytics and trends over time.
+
+    Provides:
+    - Historical performance trends
+    - Performance recommendations
+    - Capacity utilization analysis
+    - Optimization suggestions
+    """,
+    response_model=Dict[str, Any],
+    responses=COMMON_RESPONSES,
+)
+async def get_performance_analytics(hours: int = 24):
+    """
+    Get performance analytics for the specified time period.
+
+    Args:
+        hours: Number of hours to analyze (default: 24)
+    """
+    try:
+        metrics_service = service_manager.get_service("metrics")
+        analytics = await metrics_service.get_performance_analytics(hours)
+
+        return create_v2_response(
+            data=analytics,
+            message=f"Performance analytics for last {hours} hours retrieved successfully",
+        )
+    except Exception as e:
+        logger.error(f"Failed to get performance analytics: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve performance analytics"
+        )
+
+
+@app.get(
+    "/metrics/alerts",
+    tags=["Monitoring"],
+    summary="System Alerts",
+    description="""
+    Get current system alerts and alert history.
+
+    Monitors:
+    - High error rates
+    - Slow response times
+    - High system load
+    - Resource utilization
+
+    **Alert Severities:**
+    - `warning`: Requires attention but not critical
+    - `critical`: Immediate action required
+    """,
+    response_model=Dict[str, Any],
+    responses=COMMON_RESPONSES,
+)
+async def get_system_alerts():
+    """
+    Get current system alerts and monitoring status.
+
+    Returns active alerts based on predefined thresholds for
+    error rates, response times, and system load.
+    """
+    try:
+        metrics_service = service_manager.get_service("metrics")
+
+        # Get current alerts and recent history
+        current_alerts = await metrics_service.check_alerts()
+        alerts_history = await metrics_service.get_alerts_history(limit=20)
+
+        return create_v2_response(
+            data={
+                "current_alerts": current_alerts,
+                "alerts_count": len(current_alerts),
+                "recent_history": alerts_history,
+                "status": (
+                    "critical"
+                    if any(a.get("severity") == "critical" for a in current_alerts)
+                    else "warning" if current_alerts else "healthy"
+                ),
+            },
+            message="System alerts retrieved successfully",
+        )
+    except Exception as e:
+        logger.error(f"Failed to get system alerts: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve system alerts")
+
+
+@app.get(
+    "/metrics/endpoints",
+    tags=["Monitoring"],
+    summary="Endpoint Metrics",
+    description="""
+    Get performance metrics for API endpoints.
+
+    Provides per-endpoint analytics including:
+    - Request counts
+    - Error rates
+    - Average response times
+    - Performance trends
+    """,
+    response_model=Dict[str, Any],
+    responses=COMMON_RESPONSES,
+)
+async def get_endpoint_metrics(endpoint: Optional[str] = None):
+    """
+    Get performance metrics for specific endpoint or all endpoints.
+
+    Args:
+        endpoint: Optional specific endpoint to analyze
+    """
+    try:
+        metrics_service = service_manager.get_service("metrics")
+        endpoint_metrics = await metrics_service.get_endpoint_metrics(endpoint)
+
+        return create_v2_response(
+            data=endpoint_metrics,
+            message=f"Endpoint metrics retrieved successfully"
+            + (f" for {endpoint}" if endpoint else " for all endpoints"),
+        )
+    except Exception as e:
+        logger.error(f"Failed to get endpoint metrics: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve endpoint metrics"
+        )
+
+
+@app.get(
+    "/monitoring/dashboard",
+    tags=["Monitoring"],
+    summary="Monitoring Dashboard Data",
+    description="""
+    Get comprehensive monitoring dashboard data.
+
+    Combines all monitoring information into a single response:
+    - System health status
+    - Performance metrics
+    - Active alerts
+    - Endpoint analytics
+    - Recommendations
+
+    **Perfect for building monitoring dashboards and admin panels.**
+    """,
+    response_model=Dict[str, Any],
+    responses=COMMON_RESPONSES,
+)
+async def get_monitoring_dashboard():
+    """
+    Get comprehensive monitoring dashboard data.
+
+    Returns all monitoring information needed for a complete
+    system health and performance dashboard.
+    """
+    try:
+        metrics_service = service_manager.get_service("metrics")
+
+        # Gather all monitoring data
+        current_metrics = await metrics_service.get_current_metrics()
+        current_alerts = await metrics_service.check_alerts()
+        endpoint_metrics = await metrics_service.get_endpoint_metrics()
+
+        # Get system health from health service
+        health_data = {}
+        try:
+            for service_name in service_manager.registry.services.keys():
+                service = service_manager.registry.get_service(service_name)
+                health_data[service_name] = await service.health_check()
+        except Exception as e:
+            logger.warning(f"Failed to get complete health data: {str(e)}")
+
+        dashboard_data = {
+            "overview": {
+                "status": current_metrics.get("health_status", "unknown"),
+                "performance_grade": current_metrics.get("performance_grade", "N/A"),
+                "uptime": current_metrics.get("uptime_formatted", "Unknown"),
+                "total_requests": current_metrics.get("total_requests", 0),
+                "error_rate": current_metrics.get("error_rate", 0),
+                "active_requests": current_metrics.get("active_requests", 0),
+            },
+            "alerts": {
+                "active_count": len(current_alerts),
+                "critical_count": len(
+                    [a for a in current_alerts if a.get("severity") == "critical"]
+                ),
+                "warning_count": len(
+                    [a for a in current_alerts if a.get("severity") == "warning"]
+                ),
+                "alerts": current_alerts[:5],  # Show top 5 alerts
+            },
+            "performance": {"metrics": current_metrics, "endpoints": endpoint_metrics},
+            "services": {
+                "total_services": len(health_data),
+                "healthy_services": len(
+                    [s for s in health_data.values() if s.get("healthy", False)]
+                ),
+                "service_status": health_data,
+            },
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+
+        return create_v2_response(
+            data=dashboard_data,
+            message="Monitoring dashboard data retrieved successfully",
+        )
+    except Exception as e:
+        logger.error(f"Failed to get monitoring dashboard data: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve monitoring dashboard data"
+        )
 
 
 # ==================== AUTH ENDPOINTS ====================
