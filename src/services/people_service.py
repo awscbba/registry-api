@@ -1806,8 +1806,16 @@ class PeopleService(BaseService):
     ) -> Dict[str, Any]:
         """Import users from uploaded CSV/Excel file with comprehensive validation."""
         try:
-            import pandas as pd
-            import io
+            # Import pandas only when needed
+            try:
+                import pandas as pd
+                import io
+            except ImportError:
+                return {
+                    "success": False,
+                    "error": "File import functionality requires pandas and openpyxl packages. Please install them or contact your administrator.",
+                }
+
             from datetime import datetime
 
             self.logger.info(
@@ -1984,11 +1992,6 @@ class PeopleService(BaseService):
 
             return result
 
-        except ImportError:
-            return {
-                "success": False,
-                "error": "pandas library not available for file processing",
-            }
         except Exception as e:
             self.logger.error(f"Failed to import users from file: {str(e)}")
             return {"success": False, "error": f"Import failed: {str(e)}"}
