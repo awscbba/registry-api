@@ -19,6 +19,8 @@ from .logging_service import LoggingService
 from .rate_limiting_service import RateLimitingService
 from .metrics_service import MetricsService
 from .project_administration_service import ProjectAdministrationService
+from .cache_service import CacheService
+from .performance_metrics_service import PerformanceMetricsService
 from ..utils.logging_config import get_handler_logger
 
 
@@ -73,6 +75,15 @@ class ServiceRegistryManager:
             # Register Monitoring Services
             metrics_service = MetricsService()
             self.registry.register_service("metrics", metrics_service)
+
+            # Register Performance Services
+            cache_service = CacheService()
+            self.registry.register_service("cache", cache_service)
+
+            performance_metrics_service = PerformanceMetricsService()
+            self.registry.register_service(
+                "performance_metrics", performance_metrics_service
+            )
 
             # Register Administration Services
             project_admin_service = ProjectAdministrationService()

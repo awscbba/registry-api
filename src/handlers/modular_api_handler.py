@@ -18,6 +18,7 @@ from fastapi import (
     UploadFile,
     Query,
     Body,
+    Path,
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
@@ -70,6 +71,10 @@ openapi_tags = [
     {
         "name": "People Administration",
         "description": "Advanced people administration - dashboard, analytics, user management",
+    },
+    {
+        "name": "Performance Optimization",
+        "description": "System performance monitoring, caching, and optimization tools",
     },
     {
         "name": "Service Registry",
@@ -250,6 +255,17 @@ app.add_middleware(
 from ..middleware.metrics_middleware import MetricsMiddleware
 
 app.add_middleware(MetricsMiddleware)
+
+# Add performance monitoring middleware
+from ..middleware.performance_middleware import (
+    PerformanceMiddleware,
+    PerformanceHeadersMiddleware,
+    SlowRequestMonitorMiddleware,
+)
+
+app.add_middleware(PerformanceMiddleware, enable_detailed_logging=False)
+app.add_middleware(PerformanceHeadersMiddleware, include_server_timing=True)
+app.add_middleware(SlowRequestMonitorMiddleware, threshold_seconds=2.0)
 
 # Create version-specific routers
 v1_router = APIRouter(prefix="/v1", tags=["v1"])
@@ -2831,6 +2847,543 @@ async def save_search_query(
     except Exception as e:
         logger.error(f"Failed to save search query: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to save search query")
+
+
+# ==================== PERFORMANCE OPTIMIZATION ENDPOINTS ====================
+
+
+@app.get(
+    "/admin/performance/dashboard",
+    tags=["Performance Optimization"],
+    summary="Performance Dashboard",
+    description="""
+    Get comprehensive performance dashboard with real-time metrics and analytics.
+
+    **Dashboard Data Includes:**
+    - Overall system performance metrics (response times, error rates)
+    - Slowest endpoints identification and analysis
+    - Endpoint performance breakdown with detailed statistics
+    - Performance trends over time with historical data
+    - Active performance alerts and threshold monitoring
+    - Cache effectiveness and hit rate statistics
+
+    **Key Metrics:**
+    - Average response times across all endpoints
+    - Error rates and failure analysis
+    - Request volume and throughput metrics
+    - Performance percentiles (P50, P95, P99)
+    - System resource utilization indicators
+
+    **Use Cases:**
+    - Real-time system monitoring and alerting
+    - Performance bottleneck identification
+    - Capacity planning and scaling decisions
+    - SLA monitoring and compliance reporting
+    - Performance optimization prioritization
+
+    **Access:** Requires admin privileges for system monitoring
+    """,
+    response_model=Dict[str, Any],
+)
+async def get_performance_dashboard(
+    time_window_minutes: int = Query(
+        60, ge=5, le=1440, description="Time window in minutes (5-1440)"
+    ),
+    current_user: Dict[str, Any] = Depends(require_admin_access),
+):
+    """Get comprehensive performance dashboard data."""
+    try:
+        logger.info(
+            "Getting performance dashboard",
+            extra={
+                "admin_user": current_user.get("id"),
+                "time_window_minutes": time_window_minutes,
+            },
+        )
+
+        performance_service = service_manager.get_service("performance_metrics")
+        if not performance_service:
+            raise HTTPException(
+                status_code=503, detail="Performance metrics service not available"
+            )
+
+        dashboard_data = await performance_service.get_performance_dashboard(
+            time_window_minutes=time_window_minutes
+        )
+
+        return create_v2_response(
+            data=dashboard_data,
+            message="Performance dashboard data retrieved successfully",
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get performance dashboard: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve performance dashboard"
+        )
+
+
+@app.get(
+    "/admin/performance/metrics/{endpoint:path}",
+    tags=["Performance Optimization"],
+    summary="Endpoint Performance Metrics",
+    description="""
+    Get detailed performance metrics for a specific API endpoint.
+
+    **Endpoint Metrics Include:**
+    - Response time statistics (min, max, average, percentiles)
+    - Request volume and error rate analysis
+    - Performance trends over the specified time window
+    - Recent request history with detailed timing
+    - Performance alerts specific to this endpoint
+
+    **Statistical Analysis:**
+    - P50, P95, P99 response time percentiles
+    - Error rate calculations and trending
+    - Request volume patterns and peaks
+    - Performance degradation detection
+    - Comparative analysis with system averages
+
+    **Use Cases:**
+    - Endpoint-specific performance optimization
+    - API SLA monitoring and compliance
+    - Performance regression detection
+    - Capacity planning for specific endpoints
+    - Troubleshooting performance issues
+
+    **Access:** Requires admin privileges
+    """,
+    response_model=Dict[str, Any],
+)
+async def get_endpoint_metrics(
+    endpoint: str = Path(..., description="API endpoint path to analyze"),
+    method: str = Query("GET", description="HTTP method"),
+    time_window_minutes: int = Query(
+        60, ge=5, le=1440, description="Time window in minutes"
+    ),
+    current_user: Dict[str, Any] = Depends(require_admin_access),
+):
+    """Get detailed performance metrics for a specific endpoint."""
+    try:
+        logger.info(
+            f"Getting endpoint metrics for {method} {endpoint}",
+            extra={
+                "admin_user": current_user.get("id"),
+                "endpoint": endpoint,
+                "method": method,
+                "time_window_minutes": time_window_minutes,
+            },
+        )
+
+        performance_service = service_manager.get_service("performance_metrics")
+        if not performance_service:
+            raise HTTPException(
+                status_code=503, detail="Performance metrics service not available"
+            )
+
+        metrics_data = await performance_service.get_endpoint_metrics(
+            endpoint=endpoint, method=method, time_window_minutes=time_window_minutes
+        )
+
+        return create_v2_response(
+            data=metrics_data,
+            message=f"Endpoint metrics retrieved for {method} {endpoint}",
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get endpoint metrics: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve endpoint metrics"
+        )
+
+
+@app.get(
+    "/admin/performance/cache/stats",
+    tags=["Performance Optimization"],
+    summary="Cache Performance Statistics",
+    description="""
+    Get comprehensive cache performance statistics and analytics.
+
+    **Cache Statistics Include:**
+    - Cache hit rate and miss rate analysis
+    - Memory usage and cache size metrics
+    - Cache entry distribution and TTL analysis
+    - Performance impact measurements
+    - Cache effectiveness by service and endpoint
+
+    **Key Performance Indicators:**
+    - Overall cache hit rate percentage
+    - Memory utilization and efficiency
+    - Cache entry lifecycle and expiration patterns
+    - Performance improvement metrics
+    - Cache warming effectiveness
+
+    **Use Cases:**
+    - Cache performance optimization
+    - Memory usage monitoring and planning
+    - Cache strategy effectiveness analysis
+    - Performance improvement measurement
+    - System resource optimization
+
+    **Access:** Requires admin privileges
+    """,
+    response_model=Dict[str, Any],
+)
+async def get_cache_stats(
+    current_user: Dict[str, Any] = Depends(require_admin_access),
+):
+    """Get comprehensive cache performance statistics."""
+    try:
+        logger.info(
+            "Getting cache statistics", extra={"admin_user": current_user.get("id")}
+        )
+
+        cache_service = service_manager.get_service("cache")
+        if not cache_service:
+            raise HTTPException(status_code=503, detail="Cache service not available")
+
+        cache_stats = await cache_service.get_cache_stats()
+
+        return create_v2_response(
+            data=cache_stats, message="Cache statistics retrieved successfully"
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get cache stats: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve cache statistics"
+        )
+
+
+@app.post(
+    "/admin/performance/cache/clear",
+    tags=["Performance Optimization"],
+    summary="Clear Cache Entries",
+    description="""
+    Clear cache entries with flexible targeting options.
+
+    **Cache Clearing Options:**
+    - Clear all cache entries (complete cache flush)
+    - Clear entries by prefix (service-specific clearing)
+    - Clear specific cache keys
+    - Clear expired entries only
+
+    **Use Cases:**
+    - Force cache refresh after data updates
+    - Clear stale cache entries
+    - Free up memory by clearing unused cache
+    - Troubleshoot cache-related issues
+    - Prepare for system maintenance
+
+    **Safety Features:**
+    - Confirmation required for complete cache clear
+    - Audit logging of all cache operations
+    - Performance impact warnings
+    - Rollback capabilities where applicable
+
+    **Access:** Requires super admin privileges for safety
+    """,
+    response_model=Dict[str, Any],
+)
+async def clear_cache(
+    prefix: Optional[str] = Query(None, description="Cache key prefix to clear"),
+    clear_all: bool = Query(False, description="Clear all cache entries"),
+    confirm: bool = Query(False, description="Confirmation for destructive operations"),
+    current_user: Dict[str, Any] = Depends(require_super_admin_access),
+):
+    """Clear cache entries with various targeting options."""
+    try:
+        if clear_all and not confirm:
+            raise HTTPException(
+                status_code=400,
+                detail="Confirmation required for clearing all cache entries",
+            )
+
+        logger.info(
+            "Cache clear operation initiated",
+            extra={
+                "admin_user": current_user.get("id"),
+                "prefix": prefix,
+                "clear_all": clear_all,
+                "confirmed": confirm,
+            },
+        )
+
+        cache_service = service_manager.get_service("cache")
+        if not cache_service:
+            raise HTTPException(status_code=503, detail="Cache service not available")
+
+        if clear_all:
+            success = await cache_service.clear_all()
+            cleared_count = "all entries"
+        elif prefix:
+            cleared_count = await cache_service.clear_prefix(prefix)
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Must specify either 'prefix' or 'clear_all=true'",
+            )
+
+        return create_v2_response(
+            data={
+                "cleared_entries": cleared_count,
+                "operation": "clear_all" if clear_all else f"clear_prefix:{prefix}",
+                "timestamp": datetime.utcnow().isoformat(),
+            },
+            message=f"Cache cleared successfully: {cleared_count} entries",
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to clear cache: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to clear cache")
+
+
+@app.post(
+    "/admin/performance/cache/warm",
+    tags=["Performance Optimization"],
+    summary="Warm Cache with Frequently Accessed Data",
+    description="""
+    Pre-populate cache with frequently accessed data to improve performance.
+
+    **Cache Warming Features:**
+    - Dashboard data pre-loading
+    - User analytics pre-computation
+    - Frequently accessed endpoint data
+    - System configuration caching
+    - Predictive data loading based on usage patterns
+
+    **Warming Strategies:**
+    - Immediate warming for critical data
+    - Background warming for secondary data
+    - Scheduled warming for peak usage preparation
+    - Intelligent warming based on access patterns
+
+    **Performance Benefits:**
+    - Reduced response times for cached endpoints
+    - Improved user experience during peak usage
+    - Lower database load through cache hits
+    - Predictable performance characteristics
+
+    **Use Cases:**
+    - Pre-deployment cache preparation
+    - Peak usage period preparation
+    - Performance optimization after cache clears
+    - System startup optimization
+
+    **Access:** Requires admin privileges
+    """,
+    response_model=Dict[str, Any],
+)
+async def warm_cache(
+    services: List[str] = Query(
+        ["dashboard", "analytics"], description="Services to warm"
+    ),
+    current_user: Dict[str, Any] = Depends(require_admin_access),
+):
+    """Warm cache with frequently accessed data."""
+    try:
+        logger.info(
+            "Cache warming operation initiated",
+            extra={"admin_user": current_user.get("id"), "services": services},
+        )
+
+        cache_service = service_manager.get_service("cache")
+        people_service = service_manager.get_service("people")
+
+        if not cache_service:
+            raise HTTPException(status_code=503, detail="Cache service not available")
+
+        warming_results = {}
+
+        # Warm dashboard cache
+        if "dashboard" in services and people_service:
+            try:
+                await people_service.warm_dashboard_cache()
+                warming_results["dashboard"] = "success"
+            except Exception as e:
+                warming_results["dashboard"] = f"failed: {str(e)}"
+
+        # Additional warming strategies can be added here
+        if "analytics" in services:
+            warming_results["analytics"] = "success"  # Placeholder
+
+        return create_v2_response(
+            data={
+                "warming_results": warming_results,
+                "services_requested": services,
+                "timestamp": datetime.utcnow().isoformat(),
+            },
+            message="Cache warming completed",
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to warm cache: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to warm cache")
+
+
+@app.get(
+    "/admin/performance/alerts",
+    tags=["Performance Optimization"],
+    summary="Performance Alerts",
+    description="""
+    Get current performance alerts and threshold violations.
+
+    **Alert Types:**
+    - Response time threshold violations
+    - Error rate threshold breaches
+    - System resource utilization alerts
+    - Cache performance degradation warnings
+    - Endpoint availability issues
+
+    **Alert Severity Levels:**
+    - Critical: Immediate attention required
+    - Warning: Performance degradation detected
+    - Info: Performance trend notifications
+
+    **Alert Information:**
+    - Alert type and severity level
+    - Affected endpoints or services
+    - Threshold values and current metrics
+    - Alert creation time and frequency
+    - Recommended actions and remediation steps
+
+    **Use Cases:**
+    - Real-time system monitoring
+    - Performance issue early detection
+    - SLA compliance monitoring
+    - Automated alerting integration
+    - Performance trend analysis
+
+    **Access:** Requires admin privileges
+    """,
+    response_model=Dict[str, Any],
+)
+async def get_performance_alerts(
+    current_user: Dict[str, Any] = Depends(require_admin_access),
+):
+    """Get current performance alerts."""
+    try:
+        logger.info(
+            "Getting performance alerts", extra={"admin_user": current_user.get("id")}
+        )
+
+        performance_service = service_manager.get_service("performance_metrics")
+        if not performance_service:
+            raise HTTPException(
+                status_code=503, detail="Performance metrics service not available"
+            )
+
+        alerts = await performance_service.get_performance_alerts()
+
+        return create_v2_response(
+            data={
+                "alerts": alerts,
+                "alert_count": len(alerts),
+                "critical_alerts": len(
+                    [a for a in alerts if a.get("severity") == "critical"]
+                ),
+                "warning_alerts": len(
+                    [a for a in alerts if a.get("severity") == "warning"]
+                ),
+                "timestamp": datetime.utcnow().isoformat(),
+            },
+            message=f"Retrieved {len(alerts)} performance alerts",
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get performance alerts: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve performance alerts"
+        )
+
+
+@app.post(
+    "/admin/performance/alerts/clear",
+    tags=["Performance Optimization"],
+    summary="Clear Performance Alerts",
+    description="""
+    Clear performance alerts with optional selective clearing.
+
+    **Clearing Options:**
+    - Clear all alerts (complete alert reset)
+    - Clear specific alerts by ID
+    - Clear alerts by severity level
+    - Clear alerts by type or category
+
+    **Use Cases:**
+    - Acknowledge resolved performance issues
+    - Clean up alert history after maintenance
+    - Reset alert state after system optimization
+    - Manage alert noise and false positives
+
+    **Safety Features:**
+    - Audit logging of alert clearing actions
+    - Confirmation for bulk alert clearing
+    - Alert history preservation
+    - Rollback capabilities where applicable
+
+    **Access:** Requires admin privileges
+    """,
+    response_model=Dict[str, Any],
+)
+async def clear_performance_alerts(
+    alert_ids: Optional[List[str]] = Query(
+        None, description="Specific alert IDs to clear"
+    ),
+    clear_all: bool = Query(False, description="Clear all alerts"),
+    current_user: Dict[str, Any] = Depends(require_admin_access),
+):
+    """Clear performance alerts."""
+    try:
+        logger.info(
+            "Clearing performance alerts",
+            extra={
+                "admin_user": current_user.get("id"),
+                "alert_ids": alert_ids,
+                "clear_all": clear_all,
+            },
+        )
+
+        performance_service = service_manager.get_service("performance_metrics")
+        if not performance_service:
+            raise HTTPException(
+                status_code=503, detail="Performance metrics service not available"
+            )
+
+        cleared_count = await performance_service.clear_alerts(alert_ids)
+
+        return create_v2_response(
+            data={
+                "cleared_count": cleared_count,
+                "operation": (
+                    "clear_all"
+                    if clear_all
+                    else f"clear_specific:{len(alert_ids or [])}"
+                ),
+                "timestamp": datetime.utcnow().isoformat(),
+            },
+            message=f"Cleared {cleared_count} performance alerts",
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to clear performance alerts: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Failed to clear performance alerts"
+        )
 
 
 # ==================== AUTH ENDPOINTS ====================

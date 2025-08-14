@@ -578,6 +578,15 @@ class PeopleService(BaseService):
         try:
             self.logger.log_api_request("GET", "/admin/people/dashboard")
 
+            # Try to get from cache first
+            cache_service = self._get_cache_service()
+            if cache_service:
+                cache_key = cache_service.generate_cache_key("dashboard_data")
+                cached_result = await cache_service.get(cache_key)
+                if cached_result:
+                    self.logger.debug("Dashboard data retrieved from cache")
+                    return cached_result
+
             # Get all people for analysis
             all_people = await self.db_service.list_people()
 
@@ -640,6 +649,11 @@ class PeopleService(BaseService):
                     "total_analyzed": total_users,
                 },
             )
+
+            # Cache the result for 15 minutes (dashboard data doesn't change frequently)
+            if cache_service:
+                await cache_service.set(cache_key, response, ttl=900)  # 15 minutes
+                self.logger.debug("Dashboard data cached for 15 minutes")
 
             self.logger.log_api_response("GET", "/admin/people/dashboard", 200)
             return response
@@ -2369,3 +2383,92 @@ class PeopleService(BaseService):
             tags.append("project-filter")
 
         return tags
+
+    # Performance Optimization Helper Methods
+
+    def _get_cache_service(self):
+        """Get cache service from service registry."""
+        try:
+            from ..services.service_registry_manager import service_manager
+
+            return service_manager.get_service("cache")
+        except Exception as e:
+            self.logger.debug(f"Cache service not available: {str(e)}")
+            return None
+
+    async def _get_cached_or_execute(
+        self, cache_key: str, execute_func: callable, ttl: int = 3600, *args, **kwargs
+    ):
+        """Generic method to get cached result or execute function."""
+        try:
+            cache_service = self._get_cache_service()
+            if cache_service:
+                # Try cache first
+                cached_result = await cache_service.get(cache_key)
+                if cached_result:
+                    self.logger.debug(f"Cache hit for key: {cache_key[:20]}...")
+                    return cached_result
+
+            # Execute function
+            result = await execute_func(*args, **kwargs)
+
+            # Cache successful results
+            if (
+                cache_service
+                and isinstance(result, dict)
+                and result.get("success", True)
+            ):
+                await cache_service.set(cache_key, result, ttl)
+                self.logger.debug(f"Cached result for key: {cache_key[:20]}...")
+
+            return result
+
+        except Exception as e:
+            self.logger.error(f"Error in cached execution: {str(e)}")
+            # Fallback to direct execution
+            return await execute_func(*args, **kwargs)
+
+    async def clear_user_cache(self, user_id: Optional[str] = None):
+        """Clear user-related cache entries."""
+        try:
+            cache_service = self._get_cache_service()
+            if not cache_service:
+                return False
+
+            if user_id:
+                # Clear specific user cache
+                await cache_service.clear_prefix(f"user:{user_id}")
+                self.logger.info(f"Cleared cache for user: {user_id}")
+            else:
+                # Clear all people-related cache
+                await cache_service.clear_prefix("people_")
+                await cache_service.clear_prefix("dashboard_")
+                await cache_service.clear_prefix("analytics_")
+                self.logger.info("Cleared all people-related cache")
+
+            return True
+
+        except Exception as e:
+            self.logger.error(f"Error clearing user cache: {str(e)}")
+            return False
+
+    async def warm_dashboard_cache(self):
+        """Warm up dashboard cache with frequently accessed data."""
+        try:
+            self.logger.info("Starting dashboard cache warming")
+
+            # Pre-load dashboard data
+            await self.get_dashboard_data()
+
+            # Pre-load analytics data
+            await self.get_registration_trends()
+            await self.get_activity_patterns()
+            await self.get_demographic_insights()
+            await self.get_engagement_metrics()
+
+            self.logger.info("Dashboard cache warming completed")
+            return True
+
+        except Exception as e:
+            self.logger.error(f"Error warming dashboard cache: {str(e)}")
+            return False
