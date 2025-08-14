@@ -122,7 +122,14 @@ class TestMetricsService:
 
     def setup_method(self):
         """Set up test environment."""
+        # Create a fresh metrics service with a clean collector for each test
         self.metrics_service = MetricsService()
+        # Reset the collector state to ensure test isolation
+        self.metrics_service.collector.request_count.clear()
+        self.metrics_service.collector.response_times.clear()
+        self.metrics_service.collector.error_count.clear()
+        self.metrics_service.collector.active_requests = 0
+        self.metrics_service.alerts_history.clear()
 
     @pytest.mark.asyncio
     async def test_metrics_service_initialization(self):
