@@ -53,7 +53,7 @@ class TestServiceRegistryCore:
             ), f"Service '{service_name}' not registered"
 
         assert (
-            len(registered_services) == 10
+            len(registered_services) == 11
         ), f"Expected 10 services, got {len(registered_services)}"
 
     def test_service_registry_get_service(self):
@@ -113,7 +113,7 @@ class TestServiceRegistryCore:
             assert "services" in health_status
             assert health_status["service_registry_manager"]["status"] == "healthy"
             assert (
-                health_status["service_registry_manager"]["services_registered"] == 10
+                health_status["service_registry_manager"]["services_registered"] == 11
             )
 
 

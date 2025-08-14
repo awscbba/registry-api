@@ -53,7 +53,7 @@ class TestServiceRegistryValidation:
 
         # Check that we have exactly the expected number
         assert (
-            len(registered_services) == 10
+            len(registered_services) == 11
         ), f"Expected 10 services, got {len(registered_services)}"
 
     def test_services_inherit_from_base_service(self):
@@ -198,7 +198,7 @@ class TestServiceRegistryValidation:
         # Modular handler should use service manager
         assert service_manager is not None
         assert hasattr(service_manager, "registry")
-        assert len(service_manager.registry.services) == 10
+        assert len(service_manager.registry.services) == 11
 
 
 if __name__ == "__main__":
