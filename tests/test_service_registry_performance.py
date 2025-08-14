@@ -252,8 +252,8 @@ class TestServiceRegistryResourceUsage:
         for i, manager in enumerate(managers):
             services = list(manager.registry.services.keys())
             assert (
-                len(services) == 11
-            ), f"Manager {i} has {len(services)} services, expected 10"
+                len(services) == 13
+            ), f"Manager {i} has {len(services)} services, expected 13"
 
     def test_service_instance_reuse(self):
         """Test that services are properly reused."""
