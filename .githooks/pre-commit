@@ -57,7 +57,7 @@ done
 echo "🔍 Running syntax validation..."
 for file in $STAGED_FILES; do
     if [ -f "$file" ]; then
-        python -m py_compile "$file"
+        uv run python -m py_compile "$file"
         if [ $? -ne 0 ]; then
             echo "❌ Syntax error in: $file"
             exit 1

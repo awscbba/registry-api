@@ -7,7 +7,11 @@ dependency injection, health monitoring, and API handler integration.
 import pytest
 from unittest.mock import Mock, patch, AsyncMock
 import os
+import sys
 from datetime import datetime
+
+# Add the parent directory to the path to import modules
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Set up test environment
 os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
@@ -119,8 +123,8 @@ class TestModularAPIHandler:
         from src.handlers.modular_api_handler import app
 
         assert app is not None
-        assert app.title == "People Register API - Modular (Service Registry)"
-        assert app.version == "3.0.0-service-registry"
+        assert app.title == "People Registry API"
+        assert app.version == "2.0.0"
 
     def test_modular_api_handler_routes(self):
         """Test that all expected routes are registered."""

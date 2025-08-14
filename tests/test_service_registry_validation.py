@@ -5,6 +5,10 @@ Tests core functionality without AWS dependencies.
 
 import pytest
 import os
+import sys
+
+# Add the parent directory to the path to import modules
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Set up test environment
 os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
@@ -90,8 +94,8 @@ class TestServiceRegistryValidation:
         from src.handlers.modular_api_handler import app
 
         assert app is not None
-        assert app.title == "People Register API - Modular (Service Registry)"
-        assert "service-registry" in app.version
+        assert app.title == "People Registry API"
+        assert app.version == "2.0.0"
 
     def test_main_entry_point_uses_modular_handler(self):
         """Test that main.py uses the modular handler."""

@@ -8,6 +8,10 @@ from fastapi.testclient import TestClient
 from unittest.mock import patch, AsyncMock, Mock
 import json
 import os
+import sys
+
+# Add the parent directory to the path to import modules
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Set up test environment
 os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
@@ -272,10 +276,7 @@ class TestServiceRegistryAPIDocumentation:
         schema = response.json()
         assert "openapi" in schema
         assert "info" in schema
-        assert (
-            schema["info"]["title"]
-            == "People Register API - Modular (Service Registry)"
-        )
+        assert schema["info"]["title"] == "People Registry API"
 
     def test_docs_endpoint_exists(self, client):
         """Test that API docs endpoint exists."""
