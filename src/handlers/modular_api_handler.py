@@ -7,10 +7,22 @@ Enhanced with comprehensive OpenAPI documentation and interactive features.
 import json
 from datetime import datetime
 from typing import Dict, Any, List, Optional
-from fastapi import FastAPI, HTTPException, status, Request, Depends, APIRouter
+from fastapi import (
+    FastAPI,
+    HTTPException,
+    status,
+    Request,
+    Depends,
+    APIRouter,
+    File,
+    UploadFile,
+    Query,
+    Body,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
 
 from ..models.person import PersonCreate, PersonUpdate
 from ..models.project import ProjectCreate, ProjectUpdate
@@ -1959,6 +1971,866 @@ async def get_engagement_metrics(
         raise HTTPException(
             status_code=500, detail="Failed to retrieve engagement metrics"
         )
+
+
+# ==================== PHASE 2: ADVANCED USER MANAGEMENT ENDPOINTS ====================
+
+
+class UserSearchRequest(BaseModel):
+    """Request model for advanced user search."""
+
+    query: Optional[str] = Field(None, description="Full-text search query")
+    status: Optional[List[str]] = Field(None, description="User status filter")
+    registration_date_from: Optional[str] = Field(
+        None, description="Registration date from (YYYY-MM-DD)"
+    )
+    registration_date_to: Optional[str] = Field(
+        None, description="Registration date to (YYYY-MM-DD)"
+    )
+    last_activity_from: Optional[str] = Field(
+        None, description="Last activity from (YYYY-MM-DD)"
+    )
+    last_activity_to: Optional[str] = Field(
+        None, description="Last activity to (YYYY-MM-DD)"
+    )
+    age_range: Optional[Dict[str, int]] = Field(None, description="Age range filter")
+    location: Optional[str] = Field(None, description="Location filter")
+    has_projects: Optional[bool] = Field(
+        None, description="Filter by project association"
+    )
+    sort_by: str = Field("created_at", description="Field to sort by")
+    sort_order: str = Field("desc", description="Sort order (asc/desc)")
+    page: int = Field(1, description="Page number", ge=1)
+    limit: int = Field(25, description="Results per page", ge=1, le=100)
+
+
+class BulkUserOperation(BaseModel):
+    """Request model for bulk user operations."""
+
+    operation: str = Field(..., description="Operation type")
+    user_ids: List[str] = Field(..., description="List of user IDs")
+    parameters: Optional[Dict[str, Any]] = Field(
+        None, description="Operation parameters"
+    )
+    confirmation_token: Optional[str] = Field(
+        None, description="Confirmation for destructive operations"
+    )
+
+
+class UserLifecycleAction(BaseModel):
+    """Request model for user lifecycle management."""
+
+    action: str = Field(..., description="Lifecycle action to perform")
+    parameters: Optional[Dict[str, Any]] = Field(None, description="Action parameters")
+    reason: Optional[str] = Field(None, description="Reason for the action")
+
+
+class UserExportRequest(BaseModel):
+    """Request model for user data export."""
+
+    filters: Optional[Dict[str, Any]] = Field(None, description="Export filters")
+    format: str = Field("csv", description="Export format (csv, json, xlsx)")
+    include_sensitive: bool = Field(False, description="Include sensitive data")
+
+
+class UserCommunication(BaseModel):
+    """Request model for user communication."""
+
+    type: str = Field(
+        ..., description="Communication type: email, notification, announcement, sms"
+    )
+    subject: str = Field(
+        ..., min_length=1, max_length=200, description="Communication subject"
+    )
+    content: str = Field(..., min_length=1, description="Communication content")
+    target_users: Optional[List[str]] = Field(
+        None, description="Specific user IDs to target"
+    )
+    target_criteria: Optional[Dict[str, Any]] = Field(
+        None, description="User selection criteria"
+    )
+    schedule_time: Optional[str] = Field(
+        None, description="Schedule for later sending (ISO format)"
+    )
+
+
+@app.post(
+    "/admin/people/search",
+    tags=["People Administration"],
+    summary="Advanced User Search",
+    description="""
+    Advanced user search with comprehensive filtering and sorting capabilities.
+
+    **Search Features:**
+    - Full-text search across name, email, phone, and address fields
+    - Multi-criteria filtering (status, dates, location, age, projects)
+    - Flexible sorting options with ascending/descending order
+    - Pagination support for large result sets
+    - Export-ready filtered results
+
+    **Filter Options:**
+    - **Status**: active, inactive, suspended, locked
+    - **Registration Date**: Date range filtering
+    - **Last Activity**: Activity-based filtering
+    - **Age Range**: Min/max age filtering
+    - **Location**: City-based location filtering
+    - **Projects**: Filter by project association
+
+    **Sorting Options:**
+    - name, email, created_at, last_activity
+    - Ascending or descending order
+
+    **Access:** Requires admin privileges
+    """,
+    response_model=Dict[str, Any],
+)
+async def advanced_user_search(
+    search_request: UserSearchRequest,
+    current_user: Dict[str, Any] = Depends(require_admin_access),
+):
+    """Advanced user search with filtering and pagination."""
+    try:
+        logger.info(
+            "Performing advanced user search",
+            extra={
+                "admin_user": current_user.get("id"),
+                "query": search_request.query,
+                "filters": {
+                    "status": search_request.status,
+                    "location": search_request.location,
+                    "has_projects": search_request.has_projects,
+                },
+            },
+        )
+
+        people_service = service_manager.get_service("people")
+
+        # Build filters dictionary
+        filters = {}
+        if search_request.status:
+            filters["status"] = search_request.status
+        if search_request.registration_date_from or search_request.registration_date_to:
+            filters["registration_date_range"] = (
+                search_request.registration_date_from,
+                search_request.registration_date_to,
+            )
+        if search_request.last_activity_from or search_request.last_activity_to:
+            filters["activity_date_range"] = (
+                search_request.last_activity_from,
+                search_request.last_activity_to,
+            )
+        if search_request.age_range:
+            filters["age_range"] = search_request.age_range
+        if search_request.location:
+            filters["location"] = search_request.location
+        if search_request.has_projects is not None:
+            filters["has_projects"] = search_request.has_projects
+
+        # Execute search
+        search_results = await people_service.advanced_search_users(
+            query=search_request.query,
+            filters=filters if filters else None,
+            sort_by=search_request.sort_by,
+            sort_order=search_request.sort_order,
+            page=search_request.page,
+            limit=search_request.limit,
+        )
+
+        return search_results
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to perform advanced user search: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to perform user search")
+
+
+@app.post(
+    "/admin/people/bulk-operation",
+    tags=["People Administration"],
+    summary="Bulk User Operations",
+    description="""
+    Execute bulk operations on multiple users efficiently.
+
+    **Supported Operations:**
+    - **activate**: Activate user accounts
+    - **deactivate**: Deactivate user accounts
+    - **suspend**: Suspend user accounts temporarily
+    - **delete**: Soft delete user accounts (requires confirmation)
+    - **assign_role**: Assign roles to users
+    - **remove_role**: Remove roles from users
+    - **send_notification**: Send notifications to users
+    - **export**: Export user data
+
+    **Operation Parameters:**
+    - Role operations require `role` parameter
+    - Notification operations require `message` parameter
+    - Destructive operations require `confirmation_token`
+
+    **Features:**
+    - Progress tracking for large operations
+    - Detailed success/failure reporting
+    - Rollback capability for critical failures
+    - Audit logging for all operations
+
+    **Access:** Requires admin privileges
+    """,
+    response_model=Dict[str, Any],
+)
+async def bulk_user_operation(
+    operation_request: BulkUserOperation,
+    current_user: Dict[str, Any] = Depends(require_admin_access),
+):
+    """Execute bulk operations on multiple users."""
+    try:
+        logger.info(
+            "Executing bulk user operation",
+            extra={
+                "admin_user": current_user.get("id"),
+                "operation": operation_request.operation,
+                "user_count": len(operation_request.user_ids),
+            },
+        )
+
+        # Validate destructive operations
+        destructive_operations = ["delete", "suspend"]
+        if (
+            operation_request.operation in destructive_operations
+            and not operation_request.confirmation_token
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail="Confirmation token required for destructive operations",
+            )
+
+        people_service = service_manager.get_service("people")
+
+        # Execute bulk operation
+        results = await people_service.execute_bulk_operation(
+            operation=operation_request.operation,
+            user_ids=operation_request.user_ids,
+            parameters=operation_request.parameters,
+            admin_user=current_user,
+        )
+
+        return results
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to execute bulk user operation: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to execute bulk operation")
+
+
+@app.post(
+    "/admin/people/{user_id}/lifecycle",
+    tags=["People Administration"],
+    summary="User Lifecycle Management",
+    description="""
+    Manage user lifecycle operations with comprehensive state management.
+
+    **Lifecycle Actions:**
+    - **activate**: Activate user account
+    - **deactivate**: Deactivate user account
+    - **suspend**: Temporarily suspend account
+    - **unsuspend**: Remove suspension
+    - **lock**: Lock account (24-hour default)
+    - **unlock**: Unlock account
+    - **reset_password**: Trigger password reset
+    - **force_password_change**: Require password change on next login
+    - **archive**: Archive inactive account
+    - **restore**: Restore archived account
+
+    **Features:**
+    - State transition validation
+    - Audit trail for all actions
+    - Configurable action parameters
+    - Rollback capabilities
+    - Notification triggers
+
+    **Access:** Requires admin privileges
+    """,
+    response_model=Dict[str, Any],
+)
+async def manage_user_lifecycle(
+    user_id: str,
+    lifecycle_request: UserLifecycleAction,
+    current_user: Dict[str, Any] = Depends(require_admin_access),
+):
+    """Manage user lifecycle operations."""
+    try:
+        logger.info(
+            "Managing user lifecycle",
+            extra={
+                "admin_user": current_user.get("id"),
+                "target_user": user_id,
+                "action": lifecycle_request.action,
+            },
+        )
+
+        people_service = service_manager.get_service("people")
+
+        # Execute lifecycle action
+        result = await people_service.manage_user_lifecycle(
+            user_id=user_id,
+            action=lifecycle_request.action,
+            parameters=lifecycle_request.parameters,
+            admin_user=current_user,
+        )
+
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to manage user lifecycle: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to manage user lifecycle")
+
+
+@app.post(
+    "/admin/people/export",
+    tags=["People Administration"],
+    summary="Export User Data",
+    description="""
+    Export user data with flexible filtering and format options.
+
+    **Export Formats:**
+    - **csv**: Comma-separated values (default)
+    - **json**: JSON format
+    - **xlsx**: Excel spreadsheet (future enhancement)
+
+    **Export Features:**
+    - Apply search filters before export
+    - Choose data sensitivity level
+    - Automatic filename generation
+    - Export metadata and statistics
+    - Download progress tracking
+
+    **Filter Options:**
+    - Same filtering capabilities as advanced search
+    - Custom field selection
+    - Date range exports
+    - Status-based exports
+
+    **Security:**
+    - Sensitive data requires explicit permission
+    - Audit logging for all exports
+    - Data anonymization options
+
+    **Access:** Requires admin privileges
+    """,
+    response_model=Dict[str, Any],
+)
+async def export_user_data(
+    export_request: UserExportRequest,
+    current_user: Dict[str, Any] = Depends(require_admin_access),
+):
+    """Export user data based on filters."""
+    try:
+        logger.info(
+            "Exporting user data",
+            extra={
+                "admin_user": current_user.get("id"),
+                "format": export_request.format,
+                "include_sensitive": export_request.include_sensitive,
+            },
+        )
+
+        people_service = service_manager.get_service("people")
+
+        # Execute export
+        export_result = await people_service.export_users(
+            filters=export_request.filters,
+            format=export_request.format,
+            admin_user=current_user,
+        )
+
+        return export_result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to export user data: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to export user data")
+
+
+@app.get(
+    "/admin/people/search-saved",
+    tags=["People Administration"],
+    summary="Saved Searches",
+    description="""
+    Manage saved search queries for efficient user management.
+
+    **Features:**
+    - Save frequently used search criteria
+    - Quick access to common filters
+    - Share searches with other admins
+    - Search history and usage analytics
+
+    **Access:** Requires admin privileges
+    """,
+    response_model=Dict[str, Any],
+)
+async def get_saved_searches(
+    current_user: Dict[str, Any] = Depends(require_admin_access),
+):
+    """Get saved search queries for the current admin."""
+    try:
+        # Mock implementation - in real system would fetch from database
+        saved_searches = [
+            {
+                "id": "search_1",
+                "name": "Active Users This Month",
+                "criteria": {
+                    "status": ["active"],
+                    "registration_date_from": "2024-01-01",
+                },
+                "created_by": current_user.get("id"),
+                "usage_count": 15,
+            },
+            {
+                "id": "search_2",
+                "name": "Inactive Users for Cleanup",
+                "criteria": {"status": ["inactive"], "last_activity_to": "2023-12-31"},
+                "created_by": current_user.get("id"),
+                "usage_count": 8,
+            },
+        ]
+
+        return create_v2_response(
+            saved_searches,
+            metadata={
+                "service": "people_service",
+                "version": "saved_searches",
+                "user_id": current_user.get("id"),
+            },
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to get saved searches: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve saved searches")
+
+
+# ==================== PHASE 2: ADVANCED USER MANAGEMENT ENDPOINTS ====================
+
+
+@app.post(
+    "/admin/people/import",
+    tags=["People Administration"],
+    summary="Import Users from File",
+    description="""
+    Import users from CSV or Excel files with comprehensive validation and error reporting.
+
+    **Features:**
+    - Support for CSV and Excel formats (.csv, .xlsx, .xls)
+    - Data validation and error reporting
+    - Preview mode for validation without import
+    - Batch processing with progress tracking
+    - Duplicate detection and handling
+    - Field mapping and transformation
+
+    **Import Process:**
+    1. File upload and format validation
+    2. Data parsing and structure validation
+    3. Business rule validation (email format, required fields)
+    4. Duplicate detection and resolution
+    5. Batch import with error handling
+    6. Comprehensive reporting of results
+
+    **Supported Fields:**
+    - name (required)
+    - email (required, must be unique)
+    - phone, address, city, country
+    - date_of_birth, occupation
+    - Custom fields as defined in system
+
+    **Access:** Requires super admin privileges for security
+    """,
+    response_model=Dict[str, Any],
+)
+async def import_users(
+    file: UploadFile = File(..., description="CSV or Excel file containing user data"),
+    validate_only: bool = Query(
+        False, description="Only validate data without importing"
+    ),
+    skip_duplicates: bool = Query(
+        True, description="Skip duplicate entries instead of failing"
+    ),
+    update_existing: bool = Query(False, description="Update existing users if found"),
+    current_user: Dict[str, Any] = Depends(require_super_admin_access),
+):
+    """Import users from uploaded CSV/Excel file with comprehensive validation."""
+    try:
+        logger.info(
+            "Starting user import",
+            extra={
+                "admin_user": current_user.get("id"),
+                "filename": file.filename,
+                "validate_only": validate_only,
+                "skip_duplicates": skip_duplicates,
+                "update_existing": update_existing,
+            },
+        )
+
+        # Validate file format
+        if not file.filename or not file.filename.lower().endswith(
+            (".csv", ".xlsx", ".xls")
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail="Only CSV and Excel files are supported (.csv, .xlsx, .xls)",
+            )
+
+        # Check file size (limit to 10MB)
+        file_content = await file.read()
+        if len(file_content) > 10 * 1024 * 1024:  # 10MB limit
+            raise HTTPException(status_code=400, detail="File size exceeds 10MB limit")
+
+        # Reset file pointer
+        await file.seek(0)
+
+        people_service = service_manager.get_service("people")
+
+        # Perform import with comprehensive validation
+        import_result = await people_service.import_users_from_file(
+            file=file,
+            validate_only=validate_only,
+            skip_duplicates=skip_duplicates,
+            update_existing=update_existing,
+            imported_by=current_user.get("id"),
+        )
+
+        # Log import results
+        logger.info(
+            "User import completed",
+            extra={
+                "admin_user": current_user.get("id"),
+                "filename": file.filename,
+                "processed_count": import_result.get("processed_count", 0),
+                "success_count": import_result.get("success_count", 0),
+                "error_count": import_result.get("error_count", 0),
+                "duplicate_count": import_result.get("duplicate_count", 0),
+                "validate_only": validate_only,
+            },
+        )
+
+        return create_v2_response(
+            data=import_result,
+            message=f"User import {'validation' if validate_only else 'operation'} completed successfully",
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            f"Failed to import users: {str(e)}",
+            extra={
+                "admin_user": current_user.get("id"),
+                "filename": file.filename if file else "unknown",
+            },
+        )
+        raise HTTPException(status_code=500, detail=f"Failed to import users: {str(e)}")
+
+
+@app.post(
+    "/admin/people/communicate",
+    tags=["People Administration"],
+    summary="Send Communication to Users",
+    description="""
+    Send communications (emails, notifications, announcements) to users or user segments.
+
+    **Communication Types:**
+    - **email**: Direct email messages to users
+    - **notification**: In-app notifications
+    - **announcement**: System-wide announcements
+    - **sms**: SMS messages (if configured)
+
+    **Targeting Options:**
+    - **Specific Users**: Target by user IDs
+    - **User Segments**: Target by criteria (status, location, registration date, etc.)
+    - **All Users**: Broadcast to entire user base
+
+    **Features:**
+    - Rich text content with HTML support
+    - Template variables and personalization
+    - Scheduled sending for optimal timing
+    - Delivery tracking and analytics
+    - Unsubscribe management
+    - A/B testing capabilities
+
+    **Security & Compliance:**
+    - Audit logging for all communications
+    - Rate limiting to prevent spam
+    - Content validation and filtering
+    - GDPR compliance features
+
+    **Access:** Requires super admin privileges for security
+    """,
+    response_model=Dict[str, Any],
+)
+async def send_user_communication(
+    communication: UserCommunication,
+    current_user: Dict[str, Any] = Depends(require_super_admin_access),
+):
+    """Send communication to users with comprehensive targeting and tracking."""
+    try:
+        logger.info(
+            "Initiating user communication",
+            extra={
+                "admin_user": current_user.get("id"),
+                "type": communication.type,
+                "subject": (
+                    communication.subject[:50] + "..."
+                    if len(communication.subject) > 50
+                    else communication.subject
+                ),
+                "has_target_users": bool(communication.target_users),
+                "has_target_criteria": bool(communication.target_criteria),
+                "scheduled": bool(communication.schedule_time),
+            },
+        )
+
+        # Validate communication type
+        valid_types = ["email", "notification", "announcement", "sms"]
+        if communication.type not in valid_types:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid communication type. Must be one of: {', '.join(valid_types)}",
+            )
+
+        # Validate targeting
+        if not communication.target_users and not communication.target_criteria:
+            raise HTTPException(
+                status_code=400,
+                detail="Must specify either target_users or target_criteria",
+            )
+
+        # Validate content length
+        if len(communication.content) > 50000:  # 50KB limit
+            raise HTTPException(
+                status_code=400,
+                detail="Content exceeds maximum length of 50,000 characters",
+            )
+
+        people_service = service_manager.get_service("people")
+
+        # Determine target users
+        target_users = []
+        if communication.target_users:
+            target_users = communication.target_users
+        elif communication.target_criteria:
+            # Get users matching criteria
+            search_result = await people_service.advanced_search(
+                query=communication.target_criteria.get("query"),
+                filters=communication.target_criteria,
+                sort_by="created_at",
+                sort_order="desc",
+                page=1,
+                limit=10000,  # Large limit for bulk communication
+            )
+            target_users = [user["id"] for user in search_result.get("users", [])]
+
+        if not target_users:
+            raise HTTPException(
+                status_code=400,
+                detail="No target users found matching the specified criteria",
+            )
+
+        # Limit bulk communications to prevent abuse
+        if len(target_users) > 5000:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot send to more than 5,000 users in a single operation",
+            )
+
+        # Send communication
+        result = await people_service.send_communication(
+            communication_type=communication.type,
+            subject=communication.subject,
+            content=communication.content,
+            target_users=target_users,
+            sender=current_user,
+            schedule_time=communication.schedule_time,
+            metadata={
+                "admin_id": current_user.get("id"),
+                "target_count": len(target_users),
+                "communication_id": f"comm_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}",
+            },
+        )
+
+        logger.info(
+            "User communication sent successfully",
+            extra={
+                "admin_user": current_user.get("id"),
+                "type": communication.type,
+                "target_count": len(target_users),
+                "communication_id": result.get("communication_id"),
+                "scheduled": bool(communication.schedule_time),
+            },
+        )
+
+        return create_v2_response(
+            data=result,
+            message=f"Communication {'scheduled' if communication.schedule_time else 'sent'} successfully to {len(target_users)} users",
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            f"Failed to send user communication: {str(e)}",
+            extra={
+                "admin_user": current_user.get("id"),
+                "type": communication.type if communication else "unknown",
+            },
+        )
+        raise HTTPException(
+            status_code=500, detail=f"Failed to send communication: {str(e)}"
+        )
+
+
+@app.get(
+    "/admin/people/communication-history",
+    tags=["People Administration"],
+    summary="Communication History",
+    description="""
+    Get history of all communications sent to users with detailed analytics.
+
+    **History Data Includes:**
+    - Communication details (type, subject, content preview)
+    - Targeting information (user count, criteria used)
+    - Delivery statistics (sent, delivered, opened, clicked)
+    - Performance metrics (open rates, click rates, bounce rates)
+    - Timeline and scheduling information
+    - Admin user who sent the communication
+
+    **Filtering Options:**
+    - Communication type (email, notification, announcement, sms)
+    - Date range for sent communications
+    - Admin user who sent the communication
+    - Delivery status and performance metrics
+
+    **Analytics Features:**
+    - Engagement metrics and trends
+    - Performance comparisons
+    - Best practices recommendations
+    - ROI and effectiveness analysis
+
+    **Access:** Requires admin privileges
+    """,
+    response_model=Dict[str, Any],
+)
+async def get_communication_history(
+    communication_type: Optional[str] = Query(
+        None, description="Filter by communication type"
+    ),
+    date_from: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
+    date_to: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
+    admin_user_id: Optional[str] = Query(None, description="Filter by admin user"),
+    page: int = Query(1, ge=1, description="Page number"),
+    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    current_user: Dict[str, Any] = Depends(require_admin_access),
+):
+    """Get communication history with analytics and filtering."""
+    try:
+        logger.info(
+            "Getting communication history",
+            extra={
+                "admin_user": current_user.get("id"),
+                "filters": {
+                    "type": communication_type,
+                    "date_from": date_from,
+                    "date_to": date_to,
+                    "admin_user_id": admin_user_id,
+                },
+                "pagination": {"page": page, "limit": limit},
+            },
+        )
+
+        people_service = service_manager.get_service("people")
+
+        history_result = await people_service.get_communication_history(
+            communication_type=communication_type,
+            date_from=date_from,
+            date_to=date_to,
+            admin_user_id=admin_user_id,
+            page=page,
+            limit=limit,
+        )
+
+        return create_v2_response(
+            data=history_result, message="Communication history retrieved successfully"
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to get communication history: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve communication history"
+        )
+
+
+@app.post(
+    "/admin/people/save-search",
+    tags=["People Administration"],
+    summary="Save Search Query",
+    description="""
+    Save frequently used search queries for quick access and reuse.
+
+    **Features:**
+    - Save complex search criteria with custom names
+    - Share saved searches with other admins
+    - Quick access to frequently used filters
+    - Search usage analytics and optimization
+    - Version control for search modifications
+
+    **Use Cases:**
+    - Frequently used user segments
+    - Complex filtering criteria
+    - Recurring administrative tasks
+    - Team collaboration on user management
+
+    **Access:** Requires admin privileges
+    """,
+    response_model=Dict[str, Any],
+)
+async def save_search_query(
+    search_name: str = Query(
+        ..., min_length=1, max_length=100, description="Name for the saved search"
+    ),
+    search_criteria: UserSearchRequest = Body(
+        ..., description="Search criteria to save"
+    ),
+    is_shared: bool = Query(False, description="Make search available to other admins"),
+    current_user: Dict[str, Any] = Depends(require_admin_access),
+):
+    """Save a search query for future use."""
+    try:
+        logger.info(
+            "Saving search query",
+            extra={
+                "admin_user": current_user.get("id"),
+                "search_name": search_name,
+                "is_shared": is_shared,
+            },
+        )
+
+        people_service = service_manager.get_service("people")
+
+        saved_search = await people_service.save_search_query(
+            name=search_name,
+            criteria=search_criteria.dict(),
+            admin_user_id=current_user.get("id"),
+            is_shared=is_shared,
+        )
+
+        return create_v2_response(
+            data=saved_search,
+            message=f"Search query '{search_name}' saved successfully",
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to save search query: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to save search query")
 
 
 # ==================== AUTH ENDPOINTS ====================
