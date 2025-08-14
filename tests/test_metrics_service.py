@@ -188,10 +188,11 @@ class TestMetricsService:
     @pytest.mark.asyncio
     async def test_check_alerts_high_response_time(self):
         """Test alert checking with high response time."""
-        # Add metrics with high response time
-        self.metrics_service.collector.record_request(
-            "/test", "GET", 200, 2000.0
-        )  # 2 seconds
+        # Add multiple metrics with high response time to ensure average is high
+        for i in range(5):
+            self.metrics_service.collector.record_request(
+                "/test", "GET", 200, 2000.0
+            )  # 2 seconds each
 
         alerts = await self.metrics_service.check_alerts()
 
