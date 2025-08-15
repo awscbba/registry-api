@@ -22,9 +22,18 @@ class EmailService(BaseService):
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__("email_service", config)
-        self.ses_client = None
-        self.from_email = None
-        self.frontend_url = None
+
+        # Initialize SES client immediately
+        self.ses_client = boto3.client(
+            "ses", region_name=os.getenv("AWS_REGION", "us-east-1")
+        )
+
+        # Set configuration
+        self.from_email = os.getenv("SES_FROM_EMAIL", "noreply@cbba.cloud.org.bo")
+        self.frontend_url = os.getenv(
+            "FRONTEND_URL", "https://d28z2il3z2vmpc.cloudfront.net"
+        )
+
         self.logging_service = (
             LoggingService()
         )  # Initialize immediately - FIXED for deployment
@@ -32,22 +41,10 @@ class EmailService(BaseService):
     async def initialize(self) -> bool:
         """Initialize the email service."""
         try:
-            self.logger.info("Initializing EmailService...")
+            self.logger.info("EmailService initialization check...")
 
-            # Initialize SES client
-            self.ses_client = boto3.client(
-                "ses", region_name=os.getenv("AWS_REGION", "us-east-1")
-            )
-
-            # Set configuration
-            self.from_email = os.getenv(
-                "SES_FROM_EMAIL", "noreply@people-register.local"
-            )
-            self.frontend_url = os.getenv(
-                "FRONTEND_URL", "https://d28z2il3z2vmpc.cloudfront.net"
-            )
-
-            # Test SES connectivity
+            # SES client and configuration already initialized in constructor
+            # Just test SES connectivity
             await self._test_ses_connection()
 
             self._initialized = True
