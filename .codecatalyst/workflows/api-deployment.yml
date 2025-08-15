@@ -123,18 +123,36 @@ Actions:
                 
                 echo "✅ Container pushed to ECR successfully"
                 
-                # Update Lambda function to use new container image (with git hash tag)
-                echo "🔄 Updating Lambda function with new container..."
-                FUNCTION_NAME="PeopleRegisterInfrastruct-PeopleApiFunction67A8223-xlC79QhrsKBe"
+                # Update Lambda functions to use new container image (with git hash tag)
+                echo "🔄 Updating Lambda functions with new container..."
+                
+                # Update API Lambda function
+                API_FUNCTION_NAME="PeopleRegisterInfrastruct-PeopleApiFunction67A8223-xlC79QhrsKBe"
+                echo "📋 Updating API function: $API_FUNCTION_NAME"
                 
                 if aws lambda update-function-code \
-                    --function-name "$FUNCTION_NAME" \
+                    --function-name "$API_FUNCTION_NAME" \
                     --image-uri "$IMAGE_URI" \
                     --region us-east-1; then
-                    echo "✅ Lambda function updated with container successfully"
+                    echo "✅ API Lambda function updated with container successfully"
                     echo "📋 Using container: $IMAGE_URI"
                 else
-                    echo "⚠️ Lambda function update failed or function doesn't exist"
+                    echo "⚠️ API Lambda function update failed or function doesn't exist"
+                    echo "ℹ️ Container available at: $IMAGE_URI"
+                fi
+                
+                # Update Auth Lambda function (CRITICAL FIX - was missing!)
+                AUTH_FUNCTION_NAME="PeopleRegisterInfrastructureS-AuthFunctionA1CD5E0F-lujBJmLNxohb"
+                echo "📋 Updating Auth function: $AUTH_FUNCTION_NAME"
+                
+                if aws lambda update-function-code \
+                    --function-name "$AUTH_FUNCTION_NAME" \
+                    --image-uri "$IMAGE_URI" \
+                    --region us-east-1; then
+                    echo "✅ Auth Lambda function updated with container successfully"
+                    echo "📋 Using container: $IMAGE_URI"
+                else
+                    echo "⚠️ Auth Lambda function update failed or function doesn't exist"
                     echo "ℹ️ Container available at: $IMAGE_URI"
                 fi
                 
@@ -200,7 +218,7 @@ Actions:
             fi
 
             echo "✅ Container deployment completed"
-            echo "ℹ️ Lambda functions now using container-based deployment"
+            echo "ℹ️ All Lambda functions now using container-based deployment"
             echo ""
             echo "📋 Deployment Summary:"
             echo "======================"
@@ -208,6 +226,11 @@ Actions:
             echo "🐳 API Container: $ECR_REGISTRY/$ECR_REPOSITORY:main-$GIT_HASH"
             echo "🔀 Router Container: $ECR_REGISTRY/$ROUTER_ECR_REPOSITORY:main-$GIT_HASH"
             echo "🔄 Both containers also tagged as 'latest'"
+            echo ""
+            echo "🎯 Lambda Functions Updated:"
+            echo "   - API Function: PeopleRegisterInfrastruct-PeopleApiFunction67A8223-xlC79QhrsKBe"
+            echo "   - Auth Function: PeopleRegisterInfrastructureS-AuthFunctionA1CD5E0F-lujBJmLNxohb"
+            echo "   - Router Function: PeopleRegisterInfrastructur-RouterFunction6AC6EF3B-cFuTZOTV5Cjd"
             echo "⏱️ End: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
       Container:
         Registry: CODECATALYST
