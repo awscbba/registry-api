@@ -1,0 +1,145 @@
+{
+  "migration_timestamp": "2025-08-15T12:51:05.748219",
+  "dry_run": true,
+  "pre_migration_analysis": {
+    "records_analyzed": 6,
+    "field_usage": {
+      "requirePasswordChange": 3,
+      "lastLoginAt": 2,
+      "lastName": 6,
+      "createdAt": 6,
+      "address": 6,
+      "isAdmin": 3,
+      "email": 6,
+      "firstName": 6,
+      "emailVerified": 3,
+      "failedLoginAttempts": 3,
+      "isActive": 3,
+      "password_hash": 2,
+      "updatedAt": 6,
+      "dateOfBirth": 6,
+      "is_active": 2,
+      "id": 6,
+      "phone": 6,
+      "password_salt": 2,
+      "passwordHash": 1
+    },
+    "duplicate_fields": {
+      "isActive+is_active": 2
+    },
+    "fields_needing_migration": [
+      {
+        "camel_field": "firstName",
+        "snake_field": "first_name",
+        "camel_count": 6,
+        "snake_count": 0,
+        "has_duplicates": false
+      },
+      {
+        "camel_field": "lastName",
+        "snake_field": "last_name",
+        "camel_count": 6,
+        "snake_count": 0,
+        "has_duplicates": false
+      },
+      {
+        "camel_field": "dateOfBirth",
+        "snake_field": "date_of_birth",
+        "camel_count": 6,
+        "snake_count": 0,
+        "has_duplicates": false
+      },
+      {
+        "camel_field": "isAdmin",
+        "snake_field": "is_admin",
+        "camel_count": 3,
+        "snake_count": 0,
+        "has_duplicates": false
+      },
+      {
+        "camel_field": "isActive",
+        "snake_field": "is_active",
+        "camel_count": 3,
+        "snake_count": 2,
+        "has_duplicates": true
+      },
+      {
+        "camel_field": "createdAt",
+        "snake_field": "created_at",
+        "camel_count": 6,
+        "snake_count": 0,
+        "has_duplicates": false
+      },
+      {
+        "camel_field": "updatedAt",
+        "snake_field": "updated_at",
+        "camel_count": 6,
+        "snake_count": 0,
+        "has_duplicates": false
+      },
+      {
+        "camel_field": "passwordHash",
+        "snake_field": "password_hash",
+        "camel_count": 1,
+        "snake_count": 2,
+        "has_duplicates": true
+      },
+      {
+        "camel_field": "requirePasswordChange",
+        "snake_field": "require_password_change",
+        "camel_count": 3,
+        "snake_count": 0,
+        "has_duplicates": false
+      },
+      {
+        "camel_field": "failedLoginAttempts",
+        "snake_field": "failed_login_attempts",
+        "camel_count": 3,
+        "snake_count": 0,
+        "has_duplicates": false
+      },
+      {
+        "camel_field": "lastLoginAt",
+        "snake_field": "last_login_at",
+        "camel_count": 2,
+        "snake_count": 0,
+        "has_duplicates": false
+      },
+      {
+        "camel_field": "emailVerified",
+        "snake_field": "email_verified",
+        "camel_count": 3,
+        "snake_count": 0,
+        "has_duplicates": false
+      }
+    ]
+  },
+  "migration_statistics": {
+    "records_processed": 6,
+    "records_updated": 6,
+    "fields_migrated": 49,
+    "errors": 0,
+    "warnings": 1
+  },
+  "field_mappings_applied": {
+    "firstName": "first_name",
+    "lastName": "last_name",
+    "dateOfBirth": "date_of_birth",
+    "isAdmin": "is_admin",
+    "isActive": "is_active",
+    "createdAt": "created_at",
+    "updatedAt": "updated_at",
+    "passwordHash": "password_hash",
+    "passwordSalt": "password_salt",
+    "lastPasswordChange": "last_password_change",
+    "requirePasswordChange": "require_password_change",
+    "failedLoginAttempts": "failed_login_attempts",
+    "accountLockedUntil": "account_locked_until",
+    "lastLoginAt": "last_login_at",
+    "emailVerified": "email_verified"
+  },
+  "fields_removed": [
+    "passwordHash",
+    "passwordSalt"
+  ]
+}

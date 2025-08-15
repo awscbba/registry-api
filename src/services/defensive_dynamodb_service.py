@@ -155,16 +155,17 @@ class DefensiveDynamoDBService:
     def _safe_person_to_item(self, person: Person) -> Dict[str, Any]:
         """Safely convert Person model to DynamoDB item"""
         try:
+            # Use snake_case field names for consistent database storage
             item = {
                 "id": person.id,
-                "firstName": safe_field_access(person, "first_name", ""),
-                "lastName": safe_field_access(person, "last_name", ""),
+                "first_name": safe_field_access(person, "first_name", ""),
+                "last_name": safe_field_access(person, "last_name", ""),
                 "email": safe_field_access(person, "email", ""),
                 "phone": safe_field_access(person, "phone", ""),
-                "dateOfBirth": safe_field_access(person, "date_of_birth", ""),
-                "isAdmin": safe_field_access(person, "is_admin", False),
-                "createdAt": safe_isoformat(safe_field_access(person, "created_at")),
-                "updatedAt": safe_isoformat(safe_field_access(person, "updated_at")),
+                "date_of_birth": safe_field_access(person, "date_of_birth", ""),
+                "is_admin": safe_field_access(person, "is_admin", False),
+                "created_at": safe_isoformat(safe_field_access(person, "created_at")),
+                "updated_at": safe_isoformat(safe_field_access(person, "updated_at")),
             }
 
             # Handle address safely
@@ -178,34 +179,34 @@ class DefensiveDynamoDBService:
             # Handle optional datetime fields safely
             last_password_change = safe_field_access(person, "last_password_change")
             if last_password_change:
-                item["lastPasswordChange"] = safe_isoformat(last_password_change)
+                item["last_password_change"] = safe_isoformat(last_password_change)
 
             account_locked_until = safe_field_access(person, "account_locked_until")
             if account_locked_until:
-                item["accountLockedUntil"] = safe_isoformat(account_locked_until)
+                item["account_locked_until"] = safe_isoformat(account_locked_until)
 
             last_login_at = safe_field_access(person, "last_login_at")
             if last_login_at:
-                item["lastLoginAt"] = safe_isoformat(last_login_at)
+                item["last_login_at"] = safe_isoformat(last_login_at)
 
             # Handle other optional fields
-            item["isActive"] = safe_field_access(person, "is_active", True)
-            item["requirePasswordChange"] = safe_field_access(
+            item["is_active"] = safe_field_access(person, "is_active", True)
+            item["require_password_change"] = safe_field_access(
                 person, "require_password_change", False
             )
-            item["failedLoginAttempts"] = safe_field_access(
+            item["failed_login_attempts"] = safe_field_access(
                 person, "failed_login_attempts", 0
             )
-            item["emailVerified"] = safe_field_access(person, "email_verified", False)
+            item["email_verified"] = safe_field_access(person, "email_verified", False)
 
-            # Handle password fields for authentication
+            # Handle password fields for authentication - use snake_case
             password_hash = safe_field_access(person, "password_hash")
             if password_hash:
-                item["passwordHash"] = password_hash
+                item["password_hash"] = password_hash
 
             password_salt = safe_field_access(person, "password_salt")
             if password_salt:
-                item["passwordSalt"] = password_salt
+                item["password_salt"] = password_salt
 
             return item
 
@@ -239,54 +240,77 @@ class DefensiveDynamoDBService:
                 # Convert .local emails to .com for validation
                 email = email.replace(".local", ".com")
 
-            # Build person data with safe field access
+            # Helper function to get field value with fallback to both naming conventions
+            def get_field_value(snake_name: str, camel_name: str, default=None):
+                """Get field value, preferring snake_case but falling back to camelCase"""
+                return item.get(snake_name, item.get(camel_name, default))
+
+            # Build person data with safe field access - handle both naming conventions
             person_data = {
                 "id": item.get("id", ""),
-                "firstName": item.get("firstName", ""),
-                "lastName": item.get("lastName", ""),
+                "firstName": get_field_value("first_name", "firstName", ""),
+                "lastName": get_field_value("last_name", "lastName", ""),
                 "email": email,
                 "phone": item.get("phone", ""),
-                "dateOfBirth": item.get("dateOfBirth", ""),
+                "dateOfBirth": get_field_value("date_of_birth", "dateOfBirth", ""),
                 "address": address_data,
-                "isAdmin": item.get("isAdmin", False),
-                "createdAt": safe_datetime_parse(item.get("createdAt"))
+                "isAdmin": get_field_value("is_admin", "isAdmin", False),
+                "createdAt": safe_datetime_parse(
+                    get_field_value("created_at", "createdAt")
+                )
                 or datetime.utcnow(),
-                "updatedAt": safe_datetime_parse(item.get("updatedAt"))
+                "updatedAt": safe_datetime_parse(
+                    get_field_value("updated_at", "updatedAt")
+                )
                 or datetime.utcnow(),
-                # Include password fields for authentication
-                "password_hash": item.get("passwordHash"),
-                "password_salt": item.get("passwordSalt"),
+                # Include password fields for authentication - handle both naming conventions
+                "password_hash": get_field_value("password_hash", "passwordHash"),
+                "password_salt": get_field_value("password_salt", "passwordSalt"),
             }
 
             person = Person(**person_data)
 
-            # Handle optional datetime fields safely
-            if item.get("lastPasswordChange"):
-                person.last_password_change = safe_datetime_parse(
-                    item["lastPasswordChange"]
-                )
+            # Handle optional datetime fields safely - support both naming conventions
+            last_password_change = get_field_value(
+                "last_password_change", "lastPasswordChange"
+            )
+            if last_password_change:
+                person.last_password_change = safe_datetime_parse(last_password_change)
 
-            if item.get("accountLockedUntil"):
-                person.account_locked_until = safe_datetime_parse(
-                    item["accountLockedUntil"]
-                )
+            account_locked_until = get_field_value(
+                "account_locked_until", "accountLockedUntil"
+            )
+            if account_locked_until:
+                person.account_locked_until = safe_datetime_parse(account_locked_until)
 
-            if item.get("lastLoginAt"):
-                person.last_login_at = safe_datetime_parse(item["lastLoginAt"])
+            last_login_at = get_field_value("last_login_at", "lastLoginAt")
+            if last_login_at:
+                person.last_login_at = safe_datetime_parse(last_login_at)
 
-            # Handle other optional fields
-            person.is_active = item.get("isActive", True)
-            person.require_password_change = item.get("requirePasswordChange", False)
-            person.failed_login_attempts = item.get("failedLoginAttempts", 0)
-            person.email_verified = item.get("emailVerified", False)
+            # Handle other optional fields - support both naming conventions
+            person.is_active = get_field_value("is_active", "isActive", True)
+            person.require_password_change = get_field_value(
+                "require_password_change", "requirePasswordChange", False
+            )
+            person.failed_login_attempts = get_field_value(
+                "failed_login_attempts", "failedLoginAttempts", 0
+            )
+            person.email_verified = get_field_value(
+                "email_verified", "emailVerified", False
+            )
 
-            # Handle password-related fields for authentication
-            if item.get("password_hash"):
-                person.password_hash = item["password_hash"]
-            if item.get("password_salt"):
-                person.password_salt = item["password_salt"]
-            if item.get("password_history"):
-                person.password_history = item["password_history"]
+            # Handle password-related fields for authentication - support both naming conventions
+            password_hash = get_field_value("password_hash", "passwordHash")
+            if password_hash:
+                person.password_hash = password_hash
+
+            password_salt = get_field_value("password_salt", "passwordSalt")
+            if password_salt:
+                person.password_salt = password_salt
+
+            password_history = item.get("password_history")
+            if password_history:
+                person.password_history = password_history
 
             return person
 
@@ -421,17 +445,21 @@ class DefensiveDynamoDBService:
                 return existing_person
 
             # Build update expression safely (exclude address as it's handled separately)
+            # Use snake_case field names for consistent database storage
             field_mappings = {
-                "first_name": "firstName",
-                "last_name": "lastName",
-                "date_of_birth": "dateOfBirth",
-                "is_admin": "isAdmin",
-                "is_active": "isActive",
-                "failed_login_attempts": "failedLoginAttempts",
-                "account_locked_until": "accountLockedUntil",
-                "require_password_change": "requirePasswordChange",
-                "last_password_change": "lastPasswordChange",
-                "last_login_at": "lastLoginAt",
+                "first_name": "first_name",
+                "last_name": "last_name",
+                "date_of_birth": "date_of_birth",
+                "is_admin": "is_admin",
+                "is_active": "is_active",
+                "failed_login_attempts": "failed_login_attempts",
+                "account_locked_until": "account_locked_until",
+                "require_password_change": "require_password_change",
+                "last_password_change": "last_password_change",
+                "last_login_at": "last_login_at",
+                "password_hash": "password_hash",
+                "password_salt": "password_salt",
+                "email_verified": "email_verified",
             }
 
             # Exclude address from update_data for safe_update_expression_builder
@@ -686,7 +714,8 @@ class DefensiveDynamoDBService:
             expression_values = {}
 
             if password_hash is not None:
-                update_expression_parts.append("passwordHash = :password_hash")
+                # Use snake_case field name for consistency
+                update_expression_parts.append("password_hash = :password_hash")
                 expression_values[":password_hash"] = password_hash
 
             if failed_attempts is not None:

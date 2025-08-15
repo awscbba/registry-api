@@ -1,0 +1,132 @@
+{
+  "timestamp": "2025-08-15T12:58:30.773062",
+  "table_name": "PeopleTable",
+  "items": [
+    {
+      "requirePasswordChange": false,
+      "lastLoginAt": "2025-08-15T02:18:27.364674+00:00",
+      "lastName": "Admin",
+      "createdAt": "2025-08-05T23:58:39.324929",
+      "address": {
+        "country": "Bolivia",
+        "state": "Cochabamba",
+        "postal_code": "",
+        "city": "Cochabamba",
+        "street": ""
+      },
+      "isAdmin": true,
+      "email": "sergio.rodriguez@cbba.cloud.org.bo",
+      "firstName": "AWS UG",
+      "emailVerified": true,
+      "failedLoginAttempts": "0",
+      "isActive": true,
+      "password_hash": "$2b$12$84BFxWbF4FSl9Y/MBuEHze6VByruwM1Hn6TjA7tZLyXqRHQDiZ7l2",
+      "updatedAt": "2025-08-15T03:11:11.621Z",
+      "dateOfBirth": "1990-01-01",
+      "is_active": true,
+      "id": "e3cb7dad-82e8-46d2-8927-1397e03f59a9",
+      "phone": "",
+      "password_salt": ""
+    },
+    {
+      "passwordHash": "$2b$12$mqKFIDvZmlH1fvaLSz6tw.YVCxkdfsaM/3doVIoyVWac6VBaa1a52",
+      "requirePasswordChange": false,
+      "lastLoginAt": "2025-08-13T03:41:16.192215+00:00",
+      "lastName": "Salinas",
+      "createdAt": "2025-08-10T03:26:18.581380",
+      "address": {
+        "country": "",
+        "state": "",
+        "postal_code": "",
+        "city": "",
+        "street": ""
+      },
+      "isAdmin": false,
+      "email": "srinclan+test001@gmail.com",
+      "firstName": "Nico",
+      "emailVerified": false,
+      "failedLoginAttempts": "0",
+      "isActive": true,
+      "updatedAt": "2025-08-13T03:41:16.192239",
+      "dateOfBirth": "1990-01-01",
+      "id": "c5378259-7b78-4150-9227-1f3580ebf334",
+      "phone": ""
+    },
+    {
+      "lastName": "Beraza\u00edn",
+      "updatedAt": "2025-08-13T12:31:50.633706",
+      "createdAt": "2025-07-19T15:51:30.535010",
+      "address": {
+        "country": "Bolivia",
+        "state": "Cochabamba",
+        "postal_code": "00000",
+        "city": "Cochabamba",
+        "street": "Acha #3"
+      },
+      "dateOfBirth": "1987-04-05T00:00:00",
+      "email": "zinclan@gmail.com",
+      "id": "d4205211-548d-4971-a850-c20d9790a0b3",
+      "phone": "+591 79302244",
+      "firstName": "Jos\u00e9"
+    },
+    {
+      "lastName": "Tse",
+      "updatedAt": "2025-06-22T22:51:45.278519",
+      "createdAt": "2025-06-22T22:51:45.278519",
+      "address": {
+        "country": "Bolivia",
+        "state": "Santa Cruz",
+        "city": "Santa Cruz de la Sierra",
+        "street": "Pisaso 19",
+        "postalCode": "0000"
+      },
+      "dateOfBirth": "1985-12-27",
+      "id": "900a89c1-b2bd-4c11-a659-89434f78680b",
+      "email": "solapa@gmail.com",
+      "phone": "51925819322",
+      "firstName": "Afu"
+    },
+    {
+      "lastName": "Quito",
+      "updatedAt": "2025-07-01T02:45:06.960588",
+      "createdAt": "2025-06-24T15:01:33.938973",
+      "address": {
+        "country": "Afganist\u00e1n",
+        "state": "Oruro",
+        "city": "Oruro",
+        "street": "Calle los Lirios",
+        "postalCode": "233A"
+      },
+      "dateOfBirth": "2007-09-09",
+      "id": "2cefa393-c180-4663-aca8-a247aaecc03d",
+      "email": "estebanquito@gmail.com",
+      "phone": "591 76767676",
+      "firstName": "Esteban "
+    },
+    {
+      "requirePasswordChange": false,
+      "lastName": "Admin",
+      "createdAt": "2025-08-12T12:57:00.000Z",
+      "address": {
+        "country": "Bolivia",
+        "state": "Cochabamba",
+        "postal_code": "",
+        "city": "Cochabamba",
+        "street": ""
+      },
+      "isAdmin": true,
+      "email": "testadmin@awsugcbba.org",
+      "firstName": "Test",
+      "emailVerified": true,
+      "isActive": true,
+      "failedLoginAttempts": "0",
+      "password_hash": "$2b$12$LQv3c1yqBwlVHpPjrCyeNOGTcBEHEUJYOzOvfnkUKK5dxjfcMBqaq",
+      "updatedAt": "2025-08-12T12:57:00.000Z",
+      "is_active": true,
+      "dateOfBirth": "1990-01-01",
+      "id": "test-admin-123",
+      "phone": "",
+      "password_salt": ""
+    }
+  ]
+}

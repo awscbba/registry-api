@@ -329,6 +329,14 @@ help:
     @echo "  fix-cascade-deletion        - Fix cascade deletion issues (cleanup + solution)"
     @echo "  check-subscription-integrity - Check subscription data integrity (read-only)"
     @echo ""
+    @echo "🔧 Field Standardization:"
+    @echo "  field-validate              - Validate field standardization implementation"
+    @echo "  field-test                  - Run field standardization tests"
+    @echo "  field-analyze               - Analyze current database field naming"
+    @echo "  field-preview               - Preview field standardization changes (dry-run)"
+    @echo "  field-migrate               - Execute field standardization (MODIFIES DATA)"
+    @echo "  field-standardize-complete  - Complete field standardization workflow"
+    @echo ""
     @echo "💡 Key Features:"
     @echo "  - Critical tests that would have caught production bugs"
     @echo "  - Method name mismatch detection"
@@ -342,12 +350,14 @@ help:
     @echo "  db-full-setup              - Complete database setup & maintenance"
     @echo "  admin-create <email>       - Create admin user"
     @echo "  production-ready-check     - Complete production readiness check"
+    @echo "  field-standardize-complete - Complete field standardization workflow"
     @echo "  help-all-scripts           - Show all script tasks (detailed)"
     @echo ""
     @echo "💡 Quick Start Examples:"
     @echo "  just rbac-full-implementation          # Complete RBAC setup"
     @echo "  just admin-create admin@example.com    # Create admin user"
     @echo "  just db-full-setup                     # Database maintenance"
+    @echo "  just field-standardize-complete        # Fix field naming issues"
     @echo "  just production-ready-check            # Check production readiness"
     @echo ""
     @echo "ℹ️ Frontend tests are handled in the registry-frontend repo"
@@ -438,6 +448,112 @@ rbac-setup-complete:
     @just rbac-verify-simple
     @just rbac-update-imports
     @just print-success "🎉 Complete RBAC setup finished!"
+
+# ============================================================================
+# Field Standardization & Database Migration Scripts
+# ============================================================================
+
+# Validate field standardization implementation (dry-run)
+field-validate:
+    @just print-info "Validating field standardization implementation..."
+    @echo ""
+    @echo "🔍 This validates that field standardization is working correctly:"
+    @echo "   • Person to DynamoDB item conversion uses snake_case"
+    @echo "   • DynamoDB item to Person conversion handles both naming conventions"
+    @echo "   • Field mappings are consistent throughout the system"
+    @echo "   • Password reset service integration works properly"
+    @echo "   • Address normalization handles all variants"
+    @echo ""
+    @uv run python scripts/validate_field_standardization.py
+    @just print-success "Field standardization validation completed"
+
+# Run field standardization tests
+field-test:
+    @just print-info "Running field standardization tests..."
+    @echo ""
+    @echo "🧪 Running comprehensive field standardization test suite..."
+    @echo ""
+    @uv run python -m pytest tests/test_field_standardization.py -v
+    @just print-success "Field standardization tests completed"
+
+# Analyze current database field naming (dry-run)
+field-analyze:
+    @just print-info "Analyzing current database field naming..."
+    @echo ""
+    @echo "🔍 This performs a read-only analysis of database field naming:"
+    @echo "   • Identifies mixed camelCase/snake_case fields"
+    @echo "   • Shows field usage statistics"
+    @echo "   • Detects duplicate field patterns"
+    @echo "   • Generates recommendations for standardization"
+    @echo ""
+    @uv run python scripts/diagnose_password_field_consistency.py
+    @just print-success "Database field analysis completed"
+
+# Preview database field standardization (dry-run)
+field-preview:
+    @just print-info "Previewing database field standardization changes..."
+    @echo ""
+    @echo "🔍 DRY RUN MODE - No data will be modified"
+    @echo "📊 This will show what changes would be made:"
+    @echo "   • Field name migrations (camelCase → snake_case)"
+    @echo "   • Records that would be updated"
+    @echo "   • Duplicate fields that would be removed"
+    @echo "   • Migration statistics and impact analysis"
+    @echo ""
+    @uv run python scripts/standardize_database_fields.py --dry-run
+    @just print-success "Field standardization preview completed"
+
+# Execute database field standardization (MODIFIES DATA)
+field-migrate:
+    @just print-warning "⚠️  WARNING: This will modify production data!"
+    @echo ""
+    @echo "🚨 CRITICAL: This operation will:"
+    @echo "   • Migrate camelCase fields to snake_case in DynamoDB"
+    @echo "   • Remove duplicate fields (passwordHash → password_hash)"
+    @echo "   • Update all affected records in the database"
+    @echo "   • Create automatic backup before migration"
+    @echo ""
+    @echo "✅ Safety measures:"
+    @echo "   • Automatic backup creation"
+    @echo "   • Comprehensive error handling"
+    @echo "   • Detailed migration report"
+    @echo "   • Rollback instructions provided"
+    @echo ""
+    @echo "💡 Recommended workflow:"
+    @echo "   1. Run 'just field-preview' first to see changes"
+    @echo "   2. Run 'just field-validate' to verify implementation"
+    @echo "   3. Run 'just field-test' to ensure tests pass"
+    @echo "   4. Then run this command to execute migration"
+    @echo ""
+    @uv run python scripts/standardize_database_fields.py --execute
+    @just print-success "Database field standardization completed!"
+
+# Complete field standardization workflow (recommended)
+field-standardize-complete:
+    @just print-info "🚀 Starting complete field standardization workflow..."
+    @echo ""
+    @echo "📋 This workflow will:"
+    @echo "   1. Validate current implementation"
+    @echo "   2. Run comprehensive tests"
+    @echo "   3. Analyze current database state"
+    @echo "   4. Preview migration changes"
+    @echo ""
+    @echo "ℹ️  Note: Migration execution requires separate confirmation"
+    @echo ""
+    @just field-validate
+    @echo ""
+    @just field-test
+    @echo ""
+    @just field-analyze
+    @echo ""
+    @just field-preview
+    @echo ""
+    @echo "🎯 Analysis complete! Next steps:"
+    @echo "   • Review the analysis and preview results above"
+    @echo "   • If everything looks good, run: just field-migrate"
+    @echo "   • Or run individual commands as needed"
+    @echo ""
+    @just print-success "🎉 Field standardization analysis completed!"
 
 # ============================================================================
 # Database Management & Health Scripts
@@ -582,6 +698,34 @@ help-rbac-scripts:
     @echo "  rbac-full-implementation   - Full RBAC implementation workflow"
     @echo ""
 
+# Show help for field standardization tasks
+help-field-scripts:
+    @echo ""
+    @echo "🔧 Field Standardization Script Tasks:"
+    @echo "  field-validate              - Validate field standardization implementation (dry-run)"
+    @echo "  field-test                  - Run comprehensive field standardization tests"
+    @echo "  field-analyze               - Analyze current database field naming (dry-run)"
+    @echo "  field-preview               - Preview field standardization changes (dry-run)"
+    @echo "  field-migrate               - Execute field standardization (MODIFIES DATA)"
+    @echo "  field-standardize-complete  - Complete field standardization workflow"
+    @echo ""
+    @echo "💡 Recommended Workflow:"
+    @echo "  1. just field-validate      # Verify implementation works"
+    @echo "  2. just field-test          # Run comprehensive tests"
+    @echo "  3. just field-analyze       # Understand current state"
+    @echo "  4. just field-preview       # See what will change"
+    @echo "  5. just field-migrate       # Execute migration"
+    @echo ""
+    @echo "🚀 Quick Start:"
+    @echo "  just field-standardize-complete  # Run complete workflow"
+    @echo ""
+    @echo "🎯 Purpose:"
+    @echo "  • Fix authentication system failures caused by mixed field naming"
+    @echo "  • Standardize database fields from camelCase to snake_case"
+    @echo "  • Resolve password reset functionality issues"
+    @echo "  • Ensure consistent field mapping throughout the system"
+    @echo ""
+
 # Show help for database script tasks
 help-db-scripts:
     @echo ""
@@ -686,6 +830,7 @@ help-git-hooks:
 help-all-scripts:
     @just help-rbac-scripts
     @just help-db-scripts
+    @just help-field-scripts
     @just help-admin-scripts
     @just help-validation-scripts
     @just help-git-hooks
@@ -695,6 +840,7 @@ help-all-scripts:
     @echo "🚀 Comprehensive Workflows:"
     @echo "  rbac-full-implementation   - Complete RBAC implementation"
     @echo "  db-full-setup              - Complete database setup"
+    @echo "  field-standardize-complete - Complete field standardization"
     @echo "  production-ready-check     - Production readiness check"
     @echo "  dev-setup                  - Complete development environment setup"
     @echo ""
@@ -703,4 +849,5 @@ help-all-scripts:
     @echo "  just rbac-full-implementation          # Complete RBAC setup"
     @echo "  just admin-create admin@example.com    # Create admin user"
     @echo "  just db-full-setup                     # Database setup & maintenance"
+    @echo "  just field-standardize-complete        # Fix field naming issues"
     @echo "  just production-ready-check            # Check production readiness"

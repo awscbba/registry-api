@@ -217,15 +217,16 @@ class PasswordResetService:
                 validation.new_password.encode("utf-8"), bcrypt.gensalt()
             ).decode("utf-8")
 
-            # Update person's password
-            await self.db_service.update_person(
-                person.id,
-                {
-                    "password_hash": password_hash,
-                    "require_password_change": False,
-                    "failed_login_attempts": 0,
-                },
+            # Update person's password using PersonUpdate object
+            from ..models.person import PersonUpdate
+
+            person_update = PersonUpdate(
+                password_hash=password_hash,
+                require_password_change=False,
+                failed_login_attempts=0,
             )
+
+            await self.db_service.update_person(person.id, person_update)
 
             # Mark token as used
             await self._mark_token_used(validation.reset_token)
