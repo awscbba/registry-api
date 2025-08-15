@@ -23,10 +23,23 @@ class EmailService(BaseService):
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__("email_service", config)
 
-        # Initialize SES client immediately
-        self.ses_client = boto3.client(
-            "ses", region_name=os.getenv("AWS_REGION", "us-east-1")
-        )
+        # Check if we're in test mode to prevent sending real emails
+        self.test_mode = os.getenv("EMAIL_TEST_MODE", "false").lower() in [
+            "true",
+            "1",
+            "yes",
+        ]
+
+        # Initialize SES client immediately (unless in test mode)
+        if not self.test_mode:
+            self.ses_client = boto3.client(
+                "ses", region_name=os.getenv("AWS_REGION", "us-east-1")
+            )
+        else:
+            self.ses_client = None
+            self.logger.info(
+                "EmailService running in TEST MODE - emails will not be sent"
+            )
 
         # Set configuration
         self.from_email = os.getenv("SES_FROM_EMAIL", "noreply@cbba.cloud.org.bo")
@@ -42,6 +55,13 @@ class EmailService(BaseService):
         """Initialize the email service."""
         try:
             self.logger.info("EmailService initialization check...")
+
+            if self.test_mode:
+                self.logger.info(
+                    "EmailService running in TEST MODE - skipping SES initialization"
+                )
+                self._initialized = True
+                return True
 
             # SES client and configuration already initialized in constructor
             # Just test SES connectivity
@@ -60,6 +80,23 @@ class EmailService(BaseService):
         start_time = time.time()
 
         try:
+            if self.test_mode:
+                # In test mode, always return healthy
+                response_time = (time.time() - start_time) * 1000
+                return HealthCheck(
+                    service_name=self.service_name,
+                    status=ServiceStatus.HEALTHY,
+                    message="Email service is healthy (TEST MODE - emails disabled)",
+                    details={
+                        "test_mode": True,
+                        "ses_connected": False,
+                        "from_email": self.from_email,
+                        "frontend_url": self.frontend_url,
+                        "region": os.getenv("AWS_REGION", "us-east-1"),
+                    },
+                    response_time_ms=response_time,
+                )
+
             if not self._initialized:
                 return HealthCheck(
                     service_name=self.service_name,
@@ -78,6 +115,7 @@ class EmailService(BaseService):
                 status=ServiceStatus.HEALTHY,
                 message="Email service is healthy",
                 details={
+                    "test_mode": False,
                     "ses_connected": True,
                     "from_email": self.from_email,
                     "frontend_url": self.frontend_url,
@@ -99,6 +137,10 @@ class EmailService(BaseService):
 
     async def _test_ses_connection(self):
         """Test SES connectivity."""
+        if self.test_mode:
+            # Skip SES connection test in test mode
+            return
+
         if not self.ses_client:
             raise Exception("SES client not initialized")
 
@@ -340,6 +382,19 @@ AWS User Group Cochabamba - Sistema de Registro de Personas
         """Send email via AWS SES."""
 
         try:
+            # Check if we're in test mode
+            if self.test_mode:
+                self.logger.info(
+                    f"TEST MODE: Would send email to {to_email} with subject: {subject}"
+                )
+                return EmailResponse(
+                    success=True,
+                    message="Email would be sent (TEST MODE)",
+                    email_type=email_type,
+                    recipient=to_email,
+                    message_id="test-mode-message-id",
+                )
+
             # Prepare the email
             source = f"{from_name} <{self.from_email}>"
 
@@ -404,6 +459,19 @@ AWS User Group Cochabamba - Sistema de Registro de Personas
         self, email: str, first_name: str, reset_token: str, expires_at: datetime
     ) -> EmailResponse:
         """Send password reset email."""
+
+        # Check if we're in test mode
+        if self.test_mode:
+            self.logger.info(
+                f"TEST MODE: Would send password reset email to {email} (token: {reset_token[:8]}...)"
+            )
+            return EmailResponse(
+                success=True,
+                message="Email would be sent (TEST MODE)",
+                email_type=EmailType.PASSWORD_RESET,
+                recipient=email,
+                message_id="test-mode-message-id",
+            )
 
         reset_url = f"{self.frontend_url}/reset-password/?token={reset_token}"
         expires_formatted = expires_at.strftime("%d/%m/%Y a las %H:%M")

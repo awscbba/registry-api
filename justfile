@@ -64,6 +64,24 @@ test-async:
     @uv run python -m pytest tests/test_modernized_async_validation.py -v
     @just print-success "Async/sync validation tests completed"
 
+# Run tests with email sending disabled (prevents spam during testing)
+test-no-emails:
+    @just print-info "Running tests with EMAIL_TEST_MODE enabled (no real emails will be sent)..."
+    @EMAIL_TEST_MODE=true uv run python -m pytest -v
+    @just print-success "Tests completed with email sending disabled"
+
+# Run critical tests with email sending disabled
+test-critical-no-emails:
+    @just print-info "Running critical tests with EMAIL_TEST_MODE enabled (no real emails will be sent)..."
+    @EMAIL_TEST_MODE=true uv run python -m pytest tests/test_critical_integration.py::TestCriticalIntegration::test_api_service_method_consistency tests/test_critical_integration.py::TestCriticalIntegration::test_async_sync_consistency tests/test_critical_integration.py::TestProductionHealthChecks::test_production_api_health -v
+    @just print-success "Critical tests completed with email sending disabled"
+
+# Run password-related tests with email sending disabled
+test-password-no-emails:
+    @just print-info "Running password tests with EMAIL_TEST_MODE enabled (no real emails will be sent)..."
+    @EMAIL_TEST_MODE=true uv run python -m pytest tests/test_password_reset_service.py tests/test_forgot_password_live.py -v
+    @just print-success "Password tests completed with email sending disabled"
+
 # Run all tests
 test-all:
     @just print-info "Running all tests..."
@@ -313,6 +331,11 @@ help:
     @echo "  test-coverage          - Run tests with coverage report"
     @echo "  test-comprehensive     - Comprehensive test suite for CI/CD"
     @echo "  test-api-comprehensive - Comprehensive API-only tests"
+    @echo ""
+    @echo "🚫 Testing Commands (No Emails):"
+    @echo "  test-no-emails         - Run all tests with email sending disabled"
+    @echo "  test-critical-no-emails - Run critical tests with email sending disabled"
+    @echo "  test-password-no-emails - Run password tests with email sending disabled"
     @echo ""
     @echo "🔍 Code Quality:"
     @echo "  lint                   - Run code quality checks"
