@@ -31,7 +31,7 @@ from ..services.defensive_dynamodb_service import (
 )
 from ..services.auth_service import AuthService
 from ..services.roles_service import RolesService
-from ..services.email_service import email_service
+from ..services.email_service import EmailService
 from ..services.password_reset_service import PasswordResetService
 from ..middleware.admin_middleware_v2 import (
     require_admin_access,
@@ -55,6 +55,8 @@ logger = get_handler_logger("versioned_api")
 # Initialize services
 db_service = DynamoDBService()
 auth_service = AuthService()
+email_service = EmailService()
+# Note: EmailService initialization is async and will be handled during first use
 password_reset_service = PasswordResetService(db_service, email_service)
 
 # Create FastAPI app
