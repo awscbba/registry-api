@@ -25,7 +25,7 @@ class EmailService(BaseService):
         self.ses_client = None
         self.from_email = None
         self.frontend_url = None
-        self.logging_service = None
+        self.logging_service = LoggingService()  # Initialize immediately
 
     async def initialize(self) -> bool:
         """Initialize the email service."""
@@ -44,9 +44,6 @@ class EmailService(BaseService):
             self.frontend_url = os.getenv(
                 "FRONTEND_URL", "https://d28z2il3z2vmpc.cloudfront.net"
             )
-
-            # Initialize logging service
-            self.logging_service = LoggingService()
 
             # Test SES connectivity
             await self._test_ses_connection()
