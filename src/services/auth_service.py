@@ -217,7 +217,19 @@ class AuthService(BaseService):
             await self._update_last_login(person.id)
 
             # Check admin status using the new RBAC system
-            is_admin = await self.roles_service.user_is_admin(person.id)
+            # Check admin status using RBAC system with database fallback
+            try:
+                is_admin = await self.roles_service.user_is_admin(person.id)
+                self.logger.info(f"RBAC admin check for {person.id}: {is_admin}")
+            except Exception as e:
+                self.logger.warning(
+                    f"RBAC admin check failed for {person.id}: {str(e)}, falling back to database field"
+                )
+                # Fallback to database is_admin field
+                is_admin = getattr(person, "is_admin", False) or getattr(
+                    person, "isAdmin", False
+                )
+                self.logger.info(f"Database admin fallback for {person.id}: {is_admin}")
 
             # Create JWT tokens with admin role information
             user_data = {
