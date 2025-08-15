@@ -405,7 +405,7 @@ AWS User Group Cochabamba - Sistema de Registro de Personas
     ) -> EmailResponse:
         """Send password reset email."""
 
-        reset_url = f"{self.frontend_url}/reset-password?token={reset_token}"
+        reset_url = f"{self.frontend_url}/reset-password/?token={reset_token}"
         expires_formatted = expires_at.strftime("%d/%m/%Y a las %H:%M")
 
         variables = {
