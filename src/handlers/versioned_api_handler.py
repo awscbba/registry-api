@@ -21,12 +21,18 @@ from ..models.person import (
 from ..models.project import ProjectCreate, ProjectUpdate
 from ..models.subscription import SubscriptionCreate, SubscriptionUpdate
 from ..models.auth import LoginRequest, LoginResponse
+from ..models.password_reset import (
+    PasswordResetRequest,
+    PasswordResetValidation,
+    PasswordResetResponse,
+)
 from ..services.defensive_dynamodb_service import (
     DefensiveDynamoDBService as DynamoDBService,
 )
 from ..services.auth_service import AuthService
 from ..services.roles_service import RolesService
 from ..services.email_service import email_service
+from ..services.password_reset_service import PasswordResetService
 from ..middleware.admin_middleware_v2 import (
     require_admin_access,
     require_super_admin_access,
@@ -49,6 +55,7 @@ logger = get_handler_logger("versioned_api")
 # Initialize services
 db_service = DynamoDBService()
 auth_service = AuthService()
+password_reset_service = PasswordResetService(db_service, email_service)
 
 # Create FastAPI app
 app = FastAPI(
@@ -587,6 +594,129 @@ async def login(login_request: LoginRequest, request: Request):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Authentication service error",
         )
+
+
+@auth_router.post("/forgot-password", response_model=PasswordResetResponse)
+async def forgot_password(request_data: PasswordResetRequest, request: Request):
+    """
+    Initiate password reset process by sending reset email.
+
+    This endpoint accepts an email address and sends a password reset link
+    if the email exists in the system. For security, it always returns success
+    regardless of whether the email exists.
+    """
+    try:
+        logger.log_api_request(
+            "POST", "/auth/forgot-password", {"email": request_data.email}
+        )
+
+        # Get client metadata for security logging
+        client_ip = request.client.host if request.client else None
+        user_agent = request.headers.get("user-agent")
+
+        # Add client metadata to request
+        request_data.ip_address = client_ip
+        request_data.user_agent = user_agent
+
+        # Initiate password reset
+        result = await password_reset_service.initiate_password_reset(request_data)
+
+        logger.log_api_response(
+            "POST", "/auth/forgot-password", 200, {"success": result.success}
+        )
+        return result
+
+    except Exception as e:
+        logger.error(
+            "Password reset initiation error",
+            operation="forgot_password",
+            error_type=type(e).__name__,
+            error_message=str(e),
+        )
+        # Always return success for security - don't reveal system errors
+        return PasswordResetResponse(
+            success=True,
+            message="If the email exists in our system, you will receive a password reset link.",
+        )
+
+
+@auth_router.post("/reset-password", response_model=PasswordResetResponse)
+async def reset_password(validation_data: PasswordResetValidation, request: Request):
+    """
+    Complete password reset using reset token and new password.
+
+    This endpoint validates the reset token and updates the user's password
+    if the token is valid and not expired.
+    """
+    try:
+        logger.log_api_request(
+            "POST",
+            "/auth/reset-password",
+            {"token_provided": bool(validation_data.reset_token)},
+        )
+
+        # Complete password reset
+        result = await password_reset_service.complete_password_reset(validation_data)
+
+        status_code = 200 if result.success else 400
+        logger.log_api_response(
+            "POST", "/auth/reset-password", status_code, {"success": result.success}
+        )
+
+        if not result.success:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=result.message
+            )
+
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            "Password reset completion error",
+            operation="reset_password",
+            error_type=type(e).__name__,
+            error_message=str(e),
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Password reset service error",
+        )
+
+
+@auth_router.get("/validate-reset-token/{token}")
+async def validate_reset_token(token: str):
+    """
+    Validate a password reset token without consuming it.
+
+    This endpoint allows the frontend to check if a reset token is valid
+    before showing the password reset form.
+    """
+    try:
+        logger.log_api_request("GET", f"/auth/validate-reset-token/{token[:8]}...", {})
+
+        # Validate token
+        is_valid, token_record = await password_reset_service.validate_reset_token(
+            token
+        )
+
+        response_data = {
+            "valid": is_valid,
+            "expires_at": token_record.expires_at.isoformat() if token_record else None,
+        }
+
+        logger.log_api_response("GET", "/auth/validate-reset-token", 200, response_data)
+        return response_data
+
+    except Exception as e:
+        logger.error(
+            "Token validation error",
+            operation="validate_reset_token",
+            error_type=type(e).__name__,
+            error_message=str(e),
+        )
+        return {"valid": False, "expires_at": None}
 
 
 @auth_router.post("/user/login")

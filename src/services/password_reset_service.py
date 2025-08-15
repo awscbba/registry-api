@@ -1,0 +1,324 @@
+"""
+Password Reset Service
+
+Handles password reset functionality including token generation,
+validation, and password updates with security measures.
+"""
+
+import logging
+from datetime import datetime, timezone, timedelta
+from typing import Optional, Tuple
+import uuid
+import bcrypt
+
+from ..models.password_reset import (
+    PasswordResetToken,
+    PasswordResetRequest,
+    PasswordResetValidation,
+    PasswordResetResponse,
+)
+from ..models.person import Person
+from ..services.defensive_dynamodb_service import DefensiveDynamoDBService
+from ..services.email_service import EmailService
+from ..services.rate_limiting_service import check_password_reset_rate_limit
+from ..core.config import get_config
+
+logger = logging.getLogger(__name__)
+
+
+class PasswordResetService:
+    """Service for handling password reset operations."""
+
+    def __init__(
+        self,
+        db_service: DefensiveDynamoDBService,
+        email_service: EmailService,
+    ):
+        self.db_service = db_service
+        self.email_service = email_service
+        self.config = get_config()
+
+    async def initiate_password_reset(
+        self, request: PasswordResetRequest
+    ) -> PasswordResetResponse:
+        """
+        Initiate password reset process by generating token and sending email.
+
+        Args:
+            request: Password reset request with email and metadata
+
+        Returns:
+            PasswordResetResponse with success status and message
+        """
+        try:
+            # Check rate limiting
+            rate_limit_result = await check_password_reset_rate_limit(
+                request.email, request.ip_address
+            )
+            if not rate_limit_result.allowed:
+                return PasswordResetResponse(
+                    success=False,
+                    message=f"Too many password reset attempts. Try again in {rate_limit_result.retry_after} seconds.",
+                )
+
+            # Find user by email
+            person = await self.db_service.get_person_by_email(request.email)
+            if not person:
+                # Don't reveal if email exists - always return success for security
+                logger.warning(
+                    f"Password reset requested for non-existent email: {request.email}"
+                )
+                return PasswordResetResponse(
+                    success=True,
+                    message="If the email exists in our system, you will receive a password reset link.",
+                )
+
+            # Check if account is active
+            if not getattr(person, "is_active", True):
+                logger.warning(
+                    f"Password reset requested for inactive account: {request.email}"
+                )
+                return PasswordResetResponse(
+                    success=False,
+                    message="Account is deactivated. Please contact support.",
+                )
+
+            # Generate reset token
+            reset_token = str(uuid.uuid4())
+            expires_at = datetime.now(timezone.utc) + timedelta(
+                hours=1
+            )  # 1 hour expiry
+
+            # Create reset token record
+            token_record = PasswordResetToken(
+                reset_token=reset_token,
+                person_id=person.id,
+                email=person.email,
+                expires_at=expires_at,
+                ip_address=request.ip_address,
+                user_agent=request.user_agent,
+            )
+
+            # Save token to database
+            await self._save_reset_token(token_record)
+
+            # Send reset email
+            email_result = await self.email_service.send_password_reset_email(
+                email=person.email,
+                first_name=person.first_name,
+                reset_token=reset_token,
+                expires_at=expires_at,
+            )
+
+            if not email_result.success:
+                logger.error(
+                    f"Failed to send password reset email to {person.email}: {email_result.message}"
+                )
+                return PasswordResetResponse(
+                    success=False,
+                    message="Failed to send reset email. Please try again later.",
+                )
+
+            logger.info(f"Password reset initiated for {person.email}")
+            return PasswordResetResponse(
+                success=True,
+                message="If the email exists in our system, you will receive a password reset link.",
+            )
+
+        except Exception as e:
+            logger.error(f"Error initiating password reset: {str(e)}")
+            return PasswordResetResponse(
+                success=False,
+                message="An error occurred. Please try again later.",
+            )
+
+    async def validate_reset_token(
+        self, reset_token: str
+    ) -> Tuple[bool, Optional[PasswordResetToken]]:
+        """
+        Validate a password reset token.
+
+        Args:
+            reset_token: Token to validate
+
+        Returns:
+            Tuple of (is_valid, token_record)
+        """
+        try:
+            # Get token from database
+            token_record = await self._get_reset_token(reset_token)
+            if not token_record:
+                return False, None
+
+            # Check if token is already used
+            if token_record.is_used:
+                logger.warning(
+                    f"Attempt to use already used reset token: {reset_token}"
+                )
+                return False, None
+
+            # Check if token is expired
+            if datetime.now(timezone.utc) > token_record.expires_at:
+                logger.warning(f"Attempt to use expired reset token: {reset_token}")
+                return False, None
+
+            return True, token_record
+
+        except Exception as e:
+            logger.error(f"Error validating reset token: {str(e)}")
+            return False, None
+
+    async def complete_password_reset(
+        self, validation: PasswordResetValidation
+    ) -> PasswordResetResponse:
+        """
+        Complete password reset by updating password and marking token as used.
+
+        Args:
+            validation: Reset validation with token and new password
+
+        Returns:
+            PasswordResetResponse with success status
+        """
+        try:
+            # Validate token
+            is_valid, token_record = await self.validate_reset_token(
+                validation.reset_token
+            )
+            if not is_valid or not token_record:
+                return PasswordResetResponse(
+                    success=False,
+                    message="Invalid or expired reset token.",
+                    token_valid=False,
+                )
+
+            # Get person
+            person = await self.db_service.get_person(token_record.person_id)
+            if not person:
+                logger.error(
+                    f"Person not found for reset token: {token_record.person_id}"
+                )
+                return PasswordResetResponse(
+                    success=False,
+                    message="Invalid reset request.",
+                    token_valid=False,
+                )
+
+            # Validate new password strength
+            if len(validation.new_password) < 8:
+                return PasswordResetResponse(
+                    success=False,
+                    message="Password must be at least 8 characters long.",
+                    token_valid=True,
+                )
+
+            # Hash new password
+            password_hash = bcrypt.hashpw(
+                validation.new_password.encode("utf-8"), bcrypt.gensalt()
+            ).decode("utf-8")
+
+            # Update person's password
+            await self.db_service.update_person(
+                person.id,
+                {
+                    "password_hash": password_hash,
+                    "require_password_change": False,
+                    "failed_login_attempts": 0,
+                },
+            )
+
+            # Mark token as used
+            await self._mark_token_used(validation.reset_token)
+
+            logger.info(f"Password reset completed for person: {person.id}")
+            return PasswordResetResponse(
+                success=True,
+                message="Password has been reset successfully. You can now log in with your new password.",
+                token_valid=True,
+            )
+
+        except Exception as e:
+            logger.error(f"Error completing password reset: {str(e)}")
+            return PasswordResetResponse(
+                success=False,
+                message="An error occurred while resetting password. Please try again.",
+            )
+
+    async def _save_reset_token(self, token_record: PasswordResetToken) -> None:
+        """Save password reset token to database."""
+        # Use the password_reset_tokens table from config
+        table_name = self.config.database.password_reset_tokens_table
+
+        # Convert to DynamoDB item format
+        item = {
+            "reset_token": token_record.reset_token,
+            "person_id": token_record.person_id,
+            "email": token_record.email,
+            "expires_at": token_record.expires_at.isoformat(),
+            "is_used": token_record.is_used,
+            "created_at": token_record.created_at.isoformat(),
+        }
+
+        if token_record.ip_address:
+            item["ip_address"] = token_record.ip_address
+        if token_record.user_agent:
+            item["user_agent"] = token_record.user_agent
+
+        # Save to DynamoDB
+        import boto3
+
+        dynamodb = boto3.resource("dynamodb")
+        table = dynamodb.Table(table_name)
+        table.put_item(Item=item)
+
+    async def _get_reset_token(self, reset_token: str) -> Optional[PasswordResetToken]:
+        """Get password reset token from database."""
+        try:
+            table_name = self.config.database.password_reset_tokens_table
+
+            import boto3
+
+            dynamodb = boto3.resource("dynamodb")
+            table = dynamodb.Table(table_name)
+
+            response = table.get_item(Key={"reset_token": reset_token})
+
+            if "Item" not in response:
+                return None
+
+            item = response["Item"]
+
+            return PasswordResetToken(
+                reset_token=item["reset_token"],
+                person_id=item["person_id"],
+                email=item["email"],
+                expires_at=datetime.fromisoformat(item["expires_at"]),
+                is_used=item.get("is_used", False),
+                created_at=datetime.fromisoformat(item["created_at"]),
+                ip_address=item.get("ip_address"),
+                user_agent=item.get("user_agent"),
+            )
+
+        except Exception as e:
+            logger.error(f"Error getting reset token: {str(e)}")
+            return None
+
+    async def _mark_token_used(self, reset_token: str) -> None:
+        """Mark password reset token as used."""
+        try:
+            table_name = self.config.database.password_reset_tokens_table
+
+            import boto3
+
+            dynamodb = boto3.resource("dynamodb")
+            table = dynamodb.Table(table_name)
+
+            table.update_item(
+                Key={"reset_token": reset_token},
+                UpdateExpression="SET is_used = :used",
+                ExpressionAttributeValues={":used": True},
+            )
+
+        except Exception as e:
+            logger.error(f"Error marking token as used: {str(e)}")
+            raise
