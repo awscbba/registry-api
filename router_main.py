@@ -27,7 +27,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
     Routing rules:
     - /auth/* -> AuthFunction
-    - /v2/auth/* -> AuthFunction  
+    - /v2/auth/* -> AuthFunction
     - Everything else -> PeopleApiFunction
     """
 
@@ -42,9 +42,21 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
     # Determine target function based on path
     if path.startswith("/auth") or path.startswith("/v2/auth"):
-        # Route auth requests to AuthFunction (both /auth/* and /v2/auth/* paths)
-        target_function = AUTH_FUNCTION_NAME
-        logger.info(f"Routing auth request to AuthFunction: {path}")
+        # Special routing for password reset endpoints - route to API function (has required permissions)
+        if any(
+            endpoint in path
+            for endpoint in [
+                "/forgot-password",
+                "/reset-password",
+                "/validate-reset-token",
+            ]
+        ):
+            target_function = API_FUNCTION_NAME
+            logger.info(f"Routing password reset request to API function: {path}")
+        else:
+            # Route other auth requests to AuthFunction
+            target_function = AUTH_FUNCTION_NAME
+            logger.info(f"Routing auth request to AuthFunction: {path}")
     else:
         # Route all other requests to API function
         target_function = API_FUNCTION_NAME
