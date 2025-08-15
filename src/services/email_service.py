@@ -25,7 +25,9 @@ class EmailService(BaseService):
         self.ses_client = None
         self.from_email = None
         self.frontend_url = None
-        self.logging_service = LoggingService()  # Initialize immediately
+        self.logging_service = (
+            LoggingService()
+        )  # Initialize immediately - FIXED for deployment
 
     async def initialize(self) -> bool:
         """Initialize the email service."""
