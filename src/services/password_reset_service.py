@@ -249,20 +249,20 @@ class PasswordResetService:
         # Use the password_reset_tokens table from config
         table_name = self.config.database.password_reset_tokens_table
 
-        # Convert to DynamoDB item format
+        # Convert to DynamoDB item format - use camelCase to match table schema
         item = {
-            "reset_token": token_record.reset_token,
-            "person_id": token_record.person_id,
+            "resetToken": token_record.reset_token,  # Primary key - must match table schema
+            "personId": token_record.person_id,
             "email": token_record.email,
-            "expires_at": token_record.expires_at.isoformat(),
-            "is_used": token_record.is_used,
-            "created_at": token_record.created_at.isoformat(),
+            "expiresAt": token_record.expires_at.isoformat(),
+            "isUsed": token_record.is_used,
+            "createdAt": token_record.created_at.isoformat(),
         }
 
         if token_record.ip_address:
-            item["ip_address"] = token_record.ip_address
+            item["ipAddress"] = token_record.ip_address
         if token_record.user_agent:
-            item["user_agent"] = token_record.user_agent
+            item["userAgent"] = token_record.user_agent
 
         # Save to DynamoDB
         import boto3
@@ -281,7 +281,9 @@ class PasswordResetService:
             dynamodb = boto3.resource("dynamodb")
             table = dynamodb.Table(table_name)
 
-            response = table.get_item(Key={"reset_token": reset_token})
+            response = table.get_item(
+                Key={"resetToken": reset_token}
+            )  # Use camelCase key
 
             if "Item" not in response:
                 return None
@@ -289,14 +291,14 @@ class PasswordResetService:
             item = response["Item"]
 
             return PasswordResetToken(
-                reset_token=item["reset_token"],
-                person_id=item["person_id"],
+                reset_token=item["resetToken"],  # Use camelCase field names
+                person_id=item["personId"],
                 email=item["email"],
-                expires_at=datetime.fromisoformat(item["expires_at"]),
-                is_used=item.get("is_used", False),
-                created_at=datetime.fromisoformat(item["created_at"]),
-                ip_address=item.get("ip_address"),
-                user_agent=item.get("user_agent"),
+                expires_at=datetime.fromisoformat(item["expiresAt"]),
+                is_used=item.get("isUsed", False),
+                created_at=datetime.fromisoformat(item["createdAt"]),
+                ip_address=item.get("ipAddress"),
+                user_agent=item.get("userAgent"),
             )
 
         except Exception as e:
@@ -314,8 +316,8 @@ class PasswordResetService:
             table = dynamodb.Table(table_name)
 
             table.update_item(
-                Key={"reset_token": reset_token},
-                UpdateExpression="SET is_used = :used",
+                Key={"resetToken": reset_token},  # Use camelCase key
+                UpdateExpression="SET isUsed = :used",  # Use camelCase field name
                 ExpressionAttributeValues={":used": True},
             )
 
