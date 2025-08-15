@@ -16,13 +16,13 @@ from datetime import datetime, timezone
 from unittest.mock import Mock, patch, AsyncMock
 import bcrypt
 
-from registry_api.src.models.person import Person, PersonCreate, PersonUpdate
-from registry_api.src.services.defensive_dynamodb_service import (
+from src.models.person import Person, PersonCreate, PersonUpdate
+from src.services.defensive_dynamodb_service import (
     DefensiveDynamoDBService,
 )
-from registry_api.src.services.password_reset_service import PasswordResetService
-from registry_api.src.services.email_service import EmailService
-from registry_api.src.models.password_reset import (
+from src.services.password_reset_service import PasswordResetService
+from src.services.email_service import EmailService
+from src.models.password_reset import (
     PasswordResetRequest,
     PasswordResetValidation,
 )
