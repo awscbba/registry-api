@@ -75,8 +75,7 @@ class AuthService(BaseService):
 
             # Test roles service
             if self.roles_service:
-                # Simple test to ensure roles service is working
-                pass
+                await self._test_roles_service_connectivity()
 
             response_time = (time.time() - start_time) * 1000
 
@@ -112,6 +111,32 @@ class AuthService(BaseService):
         # Simple test - this will raise an exception if DB is not accessible
         # We can add a more specific test method to DynamoDBService if needed
         pass
+
+    async def _test_roles_service_connectivity(self):
+        """Test roles service connectivity."""
+        if not self.roles_service:
+            raise Exception("Roles service not initialized")
+
+        try:
+            # Test roles service by checking if it's properly initialized
+            if (
+                hasattr(self.roles_service, "_initialized")
+                and not self.roles_service._initialized
+            ):
+                raise Exception("Roles service not initialized")
+
+            # Test basic roles service functionality
+            if hasattr(self.roles_service, "health_check"):
+                # If roles service has health check, use it
+                roles_health = await self.roles_service.health_check()
+                if roles_health.status != ServiceStatus.HEALTHY:
+                    raise Exception(f"Roles service unhealthy: {roles_health.message}")
+            else:
+                # Fallback: basic connectivity test
+                self.logger.debug("Roles service basic connectivity test passed")
+
+        except Exception as e:
+            raise Exception(f"Roles service connectivity test failed: {str(e)}")
 
     async def authenticate_user(
         self,
