@@ -53,6 +53,7 @@ class TestForgotPasswordIntegration:
             user_agent="Test User Agent",
         )
 
+    @pytest.mark.asyncio
     @patch("src.handlers.versioned_api_handler.password_reset_service")
     async def test_forgot_password_endpoint_success(self, mock_service, client):
         """Test successful forgot password request."""
@@ -82,6 +83,7 @@ class TestForgotPasswordIntegration:
         assert call_args.ip_address is not None  # Should be set by endpoint
         assert call_args.user_agent is not None  # Should be set by endpoint
 
+    @pytest.mark.asyncio
     @patch("src.handlers.versioned_api_handler.password_reset_service")
     async def test_forgot_password_endpoint_invalid_email(self, mock_service, client):
         """Test forgot password with invalid email format."""
@@ -97,6 +99,7 @@ class TestForgotPasswordIntegration:
         assert "detail" in data
         assert any("email" in str(error).lower() for error in data["detail"])
 
+    @pytest.mark.asyncio
     @patch("src.handlers.versioned_api_handler.password_reset_service")
     async def test_forgot_password_endpoint_missing_email(self, mock_service, client):
         """Test forgot password without email field."""
@@ -111,6 +114,7 @@ class TestForgotPasswordIntegration:
         data = response.json()
         assert "detail" in data
 
+    @pytest.mark.asyncio
     @patch("src.handlers.versioned_api_handler.password_reset_service")
     async def test_forgot_password_endpoint_service_error(self, mock_service, client):
         """Test forgot password when service raises an exception."""
@@ -129,6 +133,7 @@ class TestForgotPasswordIntegration:
         assert data["success"] is False
         assert "error occurred" in data["message"].lower()
 
+    @pytest.mark.asyncio
     @patch("src.handlers.versioned_api_handler.password_reset_service")
     async def test_reset_password_endpoint_success(self, mock_service, client):
         """Test successful password reset completion."""
@@ -156,6 +161,7 @@ class TestForgotPasswordIntegration:
         # Verify service was called
         mock_service.complete_password_reset.assert_called_once()
 
+    @pytest.mark.asyncio
     @patch("src.handlers.versioned_api_handler.password_reset_service")
     async def test_reset_password_endpoint_invalid_token(self, mock_service, client):
         """Test password reset with invalid token."""
@@ -181,6 +187,7 @@ class TestForgotPasswordIntegration:
             "invalid" in data["message"].lower() or "expired" in data["message"].lower()
         )
 
+    @pytest.mark.asyncio
     @patch("src.handlers.versioned_api_handler.password_reset_service")
     async def test_validate_reset_token_endpoint_valid(self, mock_service, client):
         """Test reset token validation with valid token."""
@@ -197,6 +204,7 @@ class TestForgotPasswordIntegration:
         assert data["valid"] is True
         assert "expires_at" in data
 
+    @pytest.mark.asyncio
     @patch("src.handlers.versioned_api_handler.password_reset_service")
     async def test_validate_reset_token_endpoint_invalid(self, mock_service, client):
         """Test reset token validation with invalid token."""
@@ -210,6 +218,7 @@ class TestForgotPasswordIntegration:
         assert data["valid"] is False
         assert data["expires_at"] is None
 
+    @pytest.mark.asyncio
     async def test_forgot_password_endpoint_headers_and_metadata(self, client):
         """Test that forgot password endpoint properly captures client metadata."""
         with patch(
@@ -240,6 +249,7 @@ class TestForgotPasswordIntegration:
             # Note: TestClient doesn't perfectly simulate real client metadata,
             # but in production these would be properly captured
 
+    @pytest.mark.asyncio
     @patch("src.services.rate_limiting_service.check_password_reset_rate_limit")
     @patch("src.handlers.versioned_api_handler.password_reset_service")
     async def test_forgot_password_rate_limiting_integration(
@@ -263,6 +273,7 @@ class TestForgotPasswordIntegration:
         # Rate limiting should be checked within the service
         # (This is handled by the password reset service internally)
 
+    @pytest.mark.asyncio
     async def test_forgot_password_endpoint_content_type_validation(self, client):
         """Test that endpoint requires proper content type."""
         # Test without Content-Type header
@@ -274,6 +285,7 @@ class TestForgotPasswordIntegration:
         # Should handle gracefully or return appropriate error
         assert response.status_code in [400, 422]  # Bad request or validation error
 
+    @pytest.mark.asyncio
     async def test_forgot_password_endpoint_large_payload(self, client):
         """Test endpoint with unusually large payload."""
         large_email = "a" * 1000 + "@example.com"
@@ -287,6 +299,7 @@ class TestForgotPasswordIntegration:
         # Should handle gracefully (either validation error or process normally)
         assert response.status_code in [200, 422]
 
+    @pytest.mark.asyncio
     @patch("src.handlers.versioned_api_handler.password_reset_service")
     async def test_forgot_password_endpoint_sql_injection_attempt(
         self, mock_service, client
@@ -324,6 +337,7 @@ class TestForgotPasswordEndToEnd:
         """Create test client for API testing."""
         return TestClient(app)
 
+    @pytest.mark.asyncio
     @patch("boto3.resource")
     @patch("src.services.email_service.EmailService.send_password_reset_email")
     async def test_complete_forgot_password_flow_mocked_aws(
@@ -386,6 +400,7 @@ class TestForgotPasswordPerformance:
         """Create test client for API testing."""
         return TestClient(app)
 
+    @pytest.mark.asyncio
     @patch("src.handlers.versioned_api_handler.password_reset_service")
     async def test_forgot_password_response_time(self, mock_service, client):
         """Test that forgot password endpoint responds within acceptable time."""
@@ -410,6 +425,7 @@ class TestForgotPasswordPerformance:
         assert response.status_code == 200
         assert response_time < 5.0  # Should respond within 5 seconds
 
+    @pytest.mark.asyncio
     @patch("src.handlers.versioned_api_handler.password_reset_service")
     async def test_forgot_password_concurrent_requests(self, mock_service, client):
         """Test forgot password endpoint under concurrent load."""
