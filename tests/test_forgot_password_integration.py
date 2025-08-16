@@ -148,6 +148,8 @@ class TestForgotPasswordIntegration:
             return_value=Mock(
                 success=True,
                 message="Password has been successfully reset.",
+                token_valid=None,
+                expires_at=None,
             )
         )
 
@@ -178,6 +180,8 @@ class TestForgotPasswordIntegration:
             return_value=Mock(
                 success=False,
                 message="Invalid or expired reset token.",
+                token_valid=None,
+                expires_at=None,
             )
         )
 
@@ -329,6 +333,8 @@ class TestForgotPasswordIntegration:
             return_value=Mock(
                 success=True,
                 message="Reset link sent.",
+                token_valid=None,
+                expires_at=None,
             )
         )
 
@@ -432,6 +438,8 @@ class TestForgotPasswordPerformance:
             return_value=Mock(
                 success=True,
                 message="Reset link sent.",
+                token_valid=None,
+                expires_at=None,
             )
         )
 
@@ -460,6 +468,8 @@ class TestForgotPasswordPerformance:
             return_value=Mock(
                 success=True,
                 message="Reset link sent.",
+                token_valid=None,
+                expires_at=None,
             )
         )
 
