@@ -4199,10 +4199,16 @@ async def startup_event():
     logger.info(
         f"📋 Registered services: {list(service_manager.registry.services.keys())}"
     )
+
+    # Initialize async services
+    logger.info("🔧 Initializing async services...")
+    await service_manager.initialize_async_services()
+
     logger.info("✅ Service Registry initialization complete")
 
     # Perform initial health check
     try:
+        logger.info("🩺 Performing startup health checks...")
         for service_name in service_manager.registry.services.keys():
             service = service_manager.registry.get_service(service_name)
             health = await service.health_check()

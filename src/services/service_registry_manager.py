@@ -110,9 +110,56 @@ class ServiceRegistryManager:
                 f"All services registered successfully: {list(self.registry.services.keys())}"
             )
 
+            # Store services that need async initialization
+            self._services_needing_initialization = [
+                ("auth", auth_service),
+                ("roles", roles_service),
+                ("email", email_service),
+                ("password_reset", password_reset_service),
+                ("logging", logging_service),
+                ("rate_limiting", rate_limiting_service),
+                ("cache", cache_service),
+                ("performance_metrics", performance_metrics_service),
+                ("database_optimization", database_optimization_service),
+            ]
+
         except Exception as e:
             self.logger.error(f"Failed to initialize services: {str(e)}")
             raise
+
+    async def initialize_async_services(self):
+        """Initialize services that require async initialization."""
+        try:
+            self.logger.info("Starting async service initialization...")
+
+            for service_name, service in self._services_needing_initialization:
+                try:
+                    if hasattr(service, "initialize"):
+                        self.logger.info(f"Initializing {service_name} service...")
+                        success = await service.initialize()
+                        if success:
+                            self.logger.info(
+                                f"✅ {service_name} service initialized successfully"
+                            )
+                        else:
+                            self.logger.warning(
+                                f"⚠️ {service_name} service initialization returned False"
+                            )
+                    else:
+                        self.logger.info(
+                            f"ℹ️ {service_name} service does not require async initialization"
+                        )
+                except Exception as e:
+                    self.logger.error(
+                        f"❌ Failed to initialize {service_name} service: {str(e)}"
+                    )
+                    # Continue with other services even if one fails
+
+            self.logger.info("Async service initialization completed")
+
+        except Exception as e:
+            self.logger.error(f"Failed during async service initialization: {str(e)}")
+            # Don't raise - allow system to continue with partially initialized services
 
     def get_service(self, service_name: str):
         """Get a registered service by name."""
