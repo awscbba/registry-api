@@ -112,15 +112,21 @@ class ServiceRegistryManager:
 
             # Store services that need async initialization
             self._services_needing_initialization = [
+                ("people", people_service),
+                ("projects", projects_service),
+                ("subscriptions", subscriptions_service),
                 ("auth", auth_service),
                 ("roles", roles_service),
                 ("email", email_service),
                 ("password_reset", password_reset_service),
+                ("audit", audit_service),
                 ("logging", logging_service),
                 ("rate_limiting", rate_limiting_service),
+                ("metrics", metrics_service),
                 ("cache", cache_service),
                 ("performance_metrics", performance_metrics_service),
                 ("database_optimization", database_optimization_service),
+                ("project_administration", project_admin_service),
             ]
 
         except Exception as e:
