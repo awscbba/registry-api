@@ -10,8 +10,8 @@ COPY pyproject.toml ./
 RUN uv pip install --system --python-version 3.9 fastapi mangum boto3 pydantic PyJWT "passlib[bcrypt]" python-multipart email-validator cryptography
 
 # Copy application code
-COPY main_versioned.py ./
+COPY main.py ./
 COPY src/ ./src/
 
-# Set the CMD to the versioned handler with password reset endpoints
-CMD ["main_versioned.lambda_handler"]
+# Set the CMD to the Service Registry handler with complete functionality
+CMD ["main.lambda_handler"]

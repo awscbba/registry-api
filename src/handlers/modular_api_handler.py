@@ -29,6 +29,11 @@ from ..models.person import PersonCreate, PersonUpdate
 from ..models.project import ProjectCreate, ProjectUpdate
 from ..models.subscription import SubscriptionCreate, SubscriptionUpdate
 from ..models.auth import LoginRequest, LoginResponse
+from ..models.password_reset import (
+    PasswordResetRequest,
+    PasswordResetValidation,
+    PasswordResetResponse,
+)
 from ..services.service_registry_manager import service_manager
 from ..middleware.admin_middleware_v2 import (
     require_admin_access,
@@ -3736,6 +3741,132 @@ async def login(login_request: LoginRequest):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication failed",
         )
+
+
+@auth_router.post("/forgot-password", response_model=PasswordResetResponse)
+async def forgot_password(request_data: PasswordResetRequest, request: Request):
+    """
+    Initiate password reset process by sending reset email.
+
+    This endpoint accepts an email address and sends a password reset link
+    if the email exists in the system. For security, it always returns success
+    regardless of whether the email exists.
+    """
+    try:
+        logger.info(f"Password reset requested for email: {request_data.email}")
+
+        # Get client metadata for security logging
+        client_ip = request.client.host if request.client else None
+        user_agent = request.headers.get("user-agent")
+
+        # Add client metadata to request
+        request_data.ip_address = client_ip
+        request_data.user_agent = user_agent
+
+        # Get password reset service from service manager
+        password_reset_service = service_manager.get_service("password_reset")
+
+        # Set the db_service dependency if not already set
+        if (
+            not hasattr(password_reset_service, "db_service")
+            or password_reset_service.db_service is None
+        ):
+            password_reset_service.db_service = service_manager.get_service("people")
+
+        # Initiate password reset
+        result = await password_reset_service.initiate_password_reset(request_data)
+
+        logger.info(f"Password reset initiated successfully: {result.success}")
+        return result
+
+    except Exception as e:
+        logger.error(f"Password reset initiation error: {str(e)}")
+        # Always return success for security - don't reveal system errors
+        return PasswordResetResponse(
+            success=True,
+            message="If the email exists in our system, you will receive a password reset link.",
+        )
+
+
+@auth_router.post("/reset-password", response_model=PasswordResetResponse)
+async def reset_password(validation_data: PasswordResetValidation, request: Request):
+    """
+    Complete password reset using reset token and new password.
+
+    This endpoint validates the reset token and updates the user's password
+    if the token is valid and not expired.
+    """
+    try:
+        logger.info("Password reset completion requested")
+
+        # Get password reset service from service manager
+        password_reset_service = service_manager.get_service("password_reset")
+
+        # Set the db_service dependency if not already set
+        if (
+            not hasattr(password_reset_service, "db_service")
+            or password_reset_service.db_service is None
+        ):
+            password_reset_service.db_service = service_manager.get_service("people")
+
+        # Complete password reset
+        result = await password_reset_service.complete_password_reset(validation_data)
+
+        if not result.success:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=result.message
+            )
+
+        logger.info("Password reset completed successfully")
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Password reset completion error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Password reset service error",
+        )
+
+
+@auth_router.get("/validate-reset-token/{token}")
+async def validate_reset_token(token: str):
+    """
+    Validate a password reset token without consuming it.
+
+    This endpoint allows the frontend to check if a reset token is valid
+    before showing the password reset form.
+    """
+    try:
+        logger.info(f"Token validation requested for token: {token[:8]}...")
+
+        # Get password reset service from service manager
+        password_reset_service = service_manager.get_service("password_reset")
+
+        # Set the db_service dependency if not already set
+        if (
+            not hasattr(password_reset_service, "db_service")
+            or password_reset_service.db_service is None
+        ):
+            password_reset_service.db_service = service_manager.get_service("people")
+
+        # Validate token
+        is_valid, token_record = await password_reset_service.validate_reset_token(
+            token
+        )
+
+        response_data = {
+            "valid": is_valid,
+            "expires_at": token_record.expires_at.isoformat() if token_record else None,
+        }
+
+        logger.info(f"Token validation result: {is_valid}")
+        return response_data
+
+    except Exception as e:
+        logger.error(f"Token validation error: {str(e)}")
+        return {"valid": False, "expires_at": None}
 
 
 # ==================== CRITICAL PHASE 1 ADMIN ENDPOINTS ====================

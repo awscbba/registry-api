@@ -14,6 +14,7 @@ from .subscriptions_service import SubscriptionsService
 from .auth_service import AuthService
 from .roles_service import RolesService
 from .email_service import EmailService
+from .password_reset_service import PasswordResetService
 from .audit_service import AuditService
 from .logging_service import LoggingService
 from .rate_limiting_service import RateLimitingService
@@ -63,6 +64,13 @@ class ServiceRegistryManager:
 
             email_service = EmailService()
             self.registry.register_service("email", email_service)
+
+            # Register password reset service (depends on email service)
+            password_reset_service = PasswordResetService(
+                db_service=None,  # Will be injected when needed
+                email_service=email_service,
+            )
+            self.registry.register_service("password_reset", password_reset_service)
 
             audit_service = AuditService()
             self.registry.register_service("audit", audit_service)
