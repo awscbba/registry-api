@@ -35,6 +35,7 @@ from ..models.password_reset import (
     PasswordResetResponse,
 )
 from ..services.service_registry_manager import service_manager
+from ..core.base_service import ServiceStatus
 from ..middleware.admin_middleware_v2 import (
     require_admin_access,
     require_super_admin_access,
@@ -657,15 +658,27 @@ async def health_check():
             try:
                 service = service_manager.registry.get_service(service_name)
                 service_health = await service.health_check()
-                health_data["services"][service_name] = service_health
 
-                if not service_health.get("healthy", False):
+                # Convert HealthCheck object to dictionary format
+                health_dict = {
+                    "service_name": service_health.service_name,
+                    "status": service_health.status.value,
+                    "healthy": service_health.status == ServiceStatus.HEALTHY,
+                    "message": service_health.message,
+                    "details": service_health.details,
+                    "response_time_ms": service_health.response_time_ms,
+                    "last_check": datetime.utcnow().isoformat(),
+                }
+                health_data["services"][service_name] = health_dict
+
+                if service_health.status != ServiceStatus.HEALTHY:
                     overall_healthy = False
 
             except Exception as e:
                 logger.error(f"Health check failed for {service_name}: {str(e)}")
                 health_data["services"][service_name] = {
                     "status": "unhealthy",
+                    "healthy": False,
                     "error": str(e),
                     "last_check": datetime.utcnow().isoformat(),
                 }
@@ -4102,15 +4115,27 @@ async def get_admin_performance_health(
             try:
                 service = service_manager.registry.get_service(service_name)
                 service_health = await service.health_check()
-                health_data["services"][service_name] = service_health
 
-                if not service_health.get("healthy", False):
+                # Convert HealthCheck object to dictionary format
+                health_dict = {
+                    "service_name": service_health.service_name,
+                    "status": service_health.status.value,
+                    "healthy": service_health.status == ServiceStatus.HEALTHY,
+                    "message": service_health.message,
+                    "details": service_health.details,
+                    "response_time_ms": service_health.response_time_ms,
+                    "last_check": datetime.utcnow().isoformat(),
+                }
+                health_data["services"][service_name] = health_dict
+
+                if service_health.status != ServiceStatus.HEALTHY:
                     overall_healthy = False
 
             except Exception as e:
                 logger.error(f"Health check failed for {service_name}: {str(e)}")
                 health_data["services"][service_name] = {
                     "status": "unhealthy",
+                    "healthy": False,
                     "error": str(e),
                     "last_check": datetime.utcnow().isoformat(),
                 }
@@ -4181,8 +4206,8 @@ async def startup_event():
         for service_name in service_manager.registry.services.keys():
             service = service_manager.registry.get_service(service_name)
             health = await service.health_check()
-            status = "✅" if health.get("healthy") else "❌"
-            logger.info(f"{status} {service_name}: {health.get('status', 'unknown')}")
+            status = "✅" if health.status == ServiceStatus.HEALTHY else "❌"
+            logger.info(f"{status} {service_name}: {health.status.value}")
     except Exception as e:
         logger.warning(f"⚠️ Startup health check failed: {str(e)}")
 
