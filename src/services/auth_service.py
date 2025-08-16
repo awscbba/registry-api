@@ -115,25 +115,25 @@ class AuthService(BaseService):
     async def _test_roles_service_connectivity(self):
         """Test roles service connectivity."""
         if not self.roles_service:
-            raise Exception("Roles service not initialized")
+            raise Exception("Roles service not available")
 
         try:
-            # Test roles service by checking if it's properly initialized
-            if (
-                hasattr(self.roles_service, "_initialized")
-                and not self.roles_service._initialized
-            ):
-                raise Exception("Roles service not initialized")
-
-            # Test basic roles service functionality
+            # Use health check instead of _initialized flag to avoid timing issues
             if hasattr(self.roles_service, "health_check"):
-                # If roles service has health check, use it
                 roles_health = await self.roles_service.health_check()
                 if roles_health.status != ServiceStatus.HEALTHY:
                     raise Exception(f"Roles service unhealthy: {roles_health.message}")
+                self.logger.debug(
+                    "Roles service connectivity test passed via health check"
+                )
             else:
-                # Fallback: basic connectivity test
-                self.logger.debug("Roles service basic connectivity test passed")
+                # Fallback: check if roles service has basic functionality
+                if hasattr(self.roles_service, "table") and self.roles_service.table:
+                    self.logger.debug(
+                        "Roles service connectivity test passed via table check"
+                    )
+                else:
+                    raise Exception("Roles service table not available")
 
         except Exception as e:
             raise Exception(f"Roles service connectivity test failed: {str(e)}")

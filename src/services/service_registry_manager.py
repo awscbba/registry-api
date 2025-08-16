@@ -66,9 +66,9 @@ class ServiceRegistryManager:
             email_service = EmailService()
             self.registry.register_service("email", email_service)
 
-            # Register password reset service (depends on email service)
+            # Register password reset service (depends on email service and people service for DB operations)
             password_reset_service = PasswordResetService(
-                db_service=None,  # Will be injected when needed
+                db_service=people_service,  # Use people service for database operations
                 email_service=email_service,
             )
             self.registry.register_service("password_reset", password_reset_service)
