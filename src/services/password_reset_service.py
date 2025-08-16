@@ -11,6 +11,7 @@ from typing import Optional, Tuple
 import uuid
 import bcrypt
 
+from ..core.base_service import BaseService, ServiceResponse, HealthCheck, ServiceStatus
 from ..models.password_reset import (
     PasswordResetToken,
     PasswordResetRequest,
@@ -26,17 +27,63 @@ from ..core.config import get_config
 logger = logging.getLogger(__name__)
 
 
-class PasswordResetService:
+class PasswordResetService(BaseService):
     """Service for handling password reset operations."""
 
     def __init__(
         self,
-        db_service: DefensiveDynamoDBService,
-        email_service: EmailService,
+        db_service: DefensiveDynamoDBService = None,
+        email_service: EmailService = None,
     ):
+        super().__init__("password_reset")
         self.db_service = db_service
         self.email_service = email_service
         self.config = get_config()
+        self._initialized = True
+
+    async def initialize(self) -> bool:
+        """Initialize the password reset service"""
+        try:
+            # Verify configuration is available
+            if not self.config:
+                self.logger.error("Configuration not available")
+                return False
+
+            self.logger.info("Password reset service initialized successfully")
+            return True
+        except Exception as e:
+            self.logger.error(f"Failed to initialize password reset service: {str(e)}")
+            return False
+
+    async def health_check(self) -> HealthCheck:
+        """Check service health"""
+        try:
+            # Basic health check - verify dependencies are available
+            if not self.email_service:
+                return HealthCheck(
+                    service_name=self.service_name,
+                    status=ServiceStatus.UNHEALTHY,
+                    message="Email service not available",
+                )
+
+            if not self.db_service:
+                return HealthCheck(
+                    service_name=self.service_name,
+                    status=ServiceStatus.UNHEALTHY,
+                    message="Database service not available",
+                )
+
+            return HealthCheck(
+                service_name=self.service_name,
+                status=ServiceStatus.HEALTHY,
+                message="Password reset service is operational",
+            )
+        except Exception as e:
+            return HealthCheck(
+                service_name=self.service_name,
+                status=ServiceStatus.UNHEALTHY,
+                message=f"Health check failed: {str(e)}",
+            )
 
     async def initiate_password_reset(
         self, request: PasswordResetRequest
