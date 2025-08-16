@@ -108,16 +108,30 @@ class PasswordResetService(BaseService):
                     message=f"Too many password reset attempts. Try again in {rate_limit_result.retry_after} seconds.",
                 )
 
-            # Find user by email using people service instead of broken db_service
-            from .people_service import PeopleService
+            # Find user by email - use people service repository for production, fallback to db_service for tests
+            person = None
+            if self.db_service:
+                # Legacy path for tests
+                try:
+                    person = await self.db_service.get_person_by_email(request.email)
+                except Exception:
+                    # If db_service fails, fall back to people service
+                    person = None
 
-            people_service = PeopleService()
+            if not person:
+                # Production path using people service repository
+                from .people_service import PeopleService
 
-            # Use the people service repository to get user by email
-            person_result = await people_service.user_repository.get_by_email(
-                request.email
-            )
-            if not person_result.success or not person_result.data:
+                people_service = PeopleService()
+
+                # Use the people service repository to get user by email
+                person_result = await people_service.user_repository.get_by_email(
+                    request.email
+                )
+                if person_result.success and person_result.data:
+                    person = person_result.data
+
+            if not person:
                 # Don't reveal if email exists - always return success for security
                 logger.warning(
                     f"Password reset requested for non-existent email: {request.email}"
@@ -126,8 +140,6 @@ class PasswordResetService(BaseService):
                     success=True,
                     message="If the email exists in our system, you will receive a password reset link.",
                 )
-
-            person = person_result.data
 
             # Check if account is active
             if not getattr(person, "is_active", True):
