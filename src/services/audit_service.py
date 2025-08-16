@@ -3,6 +3,7 @@ Audit Service - Domain service for audit trail operations.
 Implements the Service Registry pattern with Repository pattern integration.
 """
 
+import os
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 import uuid
@@ -19,8 +20,10 @@ class AuditService(BaseService):
 
     def __init__(self):
         super().__init__("audit_service")
+        # Use environment variable for table name
+        table_name = os.getenv("AUDIT_LOGS_TABLE_NAME", "AuditLogsTable")
         # Initialize repository for clean data access
-        self.audit_repository = AuditRepository(table_name="audit_logs")
+        self.audit_repository = AuditRepository(table_name=table_name)
         self.logger = get_handler_logger("audit_service")
 
     async def initialize(self):

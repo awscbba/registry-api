@@ -3,6 +3,7 @@ People Service - Domain service for person-related operations.
 Implements the Service Registry pattern with Repository pattern integration.
 """
 
+import os
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 import uuid
@@ -21,8 +22,10 @@ class PeopleService(BaseService):
 
     def __init__(self):
         super().__init__("people_service")
+        # Use environment variable for table name
+        table_name = os.getenv("PEOPLE_TABLE_NAME", "PeopleTable")
         # Initialize repository for clean data access
-        self.user_repository = UserRepository(table_name="people")
+        self.user_repository = UserRepository(table_name=table_name)
         # Keep legacy db_service for backward compatibility during transition
         self.db_service = DefensiveDynamoDBService()
         self.logger = get_handler_logger("people_service")

@@ -9,6 +9,7 @@ Provides advanced project management capabilities including:
 - Enhanced project dashboard data
 """
 
+import os
 from typing import Dict, Any, List, Optional, Union
 from datetime import datetime, timedelta
 from enum import Enum
@@ -105,7 +106,9 @@ class ProjectAdministrationService(BaseService):
 
     def __init__(self):
         super().__init__("project_administration")
-        self.project_repository = ProjectRepository(table_name="projects")
+        # Use environment variable for table name
+        table_name = os.getenv("PROJECTS_TABLE_NAME", "ProjectsTable")
+        self.project_repository = ProjectRepository(table_name=table_name)
         self.templates: Dict[str, ProjectTemplate] = {}
         self._initialize_default_templates()
 

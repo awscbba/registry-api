@@ -3,6 +3,7 @@ Projects Service - Domain service for project-related operations.
 Implements the Service Registry pattern with Repository pattern integration.
 """
 
+import os
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 import uuid
@@ -21,8 +22,10 @@ class ProjectsService(BaseService):
 
     def __init__(self):
         super().__init__("projects_service")
+        # Use environment variable for table name
+        table_name = os.getenv("PROJECTS_TABLE_NAME", "ProjectsTable")
         # Initialize repository for clean data access
-        self.project_repository = ProjectRepository(table_name="projects")
+        self.project_repository = ProjectRepository(table_name=table_name)
         # Keep legacy db_service for backward compatibility during transition
         self.db_service = DefensiveDynamoDBService()
         self.logger = get_handler_logger("projects_service")
