@@ -16,6 +16,7 @@ sys.path.insert(0, project_root)
 
 from src.core.simple_registry import SimpleServiceRegistry
 from src.core.config import ServiceConfig
+from src.core.base_service import ServiceStatus
 from src.services.people_service import PeopleService
 from src.services.projects_service import ProjectsService
 from src.services.subscriptions_service import SubscriptionsService
@@ -90,7 +91,11 @@ class TestServiceRegistryManager:
 
             # Determine overall health
             all_healthy = all(
-                service_health.get("status") == "healthy"
+                (
+                    service_health.get("healthy", False)
+                    if isinstance(service_health, dict)
+                    else service_health.status == ServiceStatus.HEALTHY
+                )
                 for service_health in health_status["services"].values()
             )
 
@@ -123,7 +128,7 @@ async def test_service_registry():
         logger.info("Test 1: Service Registry Health Check")
         health = await test_service_manager.health_check()
 
-        if health.get("overall_status") == "healthy":
+        if health.status == ServiceStatus.HEALTHY:
             logger.info("✅ Service Registry health check passed")
         else:
             logger.error("❌ Service Registry health check failed")
@@ -149,7 +154,7 @@ async def test_service_registry():
             service = test_service_manager.get_service(service_name)
             service_health = await service.health_check()
 
-            if service_health.get("status") == "healthy":
+            if service_health.status == ServiceStatus.HEALTHY:
                 logger.info(f"✅ {service_name} service healthy")
             else:
                 logger.warning(f"⚠️ {service_name} service status: {service_health}")
@@ -174,7 +179,7 @@ async def test_service_methods():
 
         # Test health check
         people_health = await people_service.health_check()
-        logger.info(f"People service health: {people_health.get('status', 'unknown')}")
+        logger.info(f"People service health: {people_health.status.value}")
 
         # Test Projects Service
         logger.info("Testing Projects Service methods...")
@@ -182,9 +187,7 @@ async def test_service_methods():
 
         # Test health check
         projects_health = await projects_service.health_check()
-        logger.info(
-            f"Projects service health: {projects_health.get('status', 'unknown')}"
-        )
+        logger.info(f"Projects service health: {projects_health.status.value}")
 
         # Test Subscriptions Service
         logger.info("Testing Subscriptions Service methods...")
@@ -193,7 +196,7 @@ async def test_service_methods():
         # Test health check
         subscriptions_health = await subscriptions_service.health_check()
         logger.info(
-            f"Subscriptions service health: {subscriptions_health.get('status', 'unknown')}"
+            f"Subscriptions service health: {subscriptions_health.status.value}"
         )
 
         logger.info("✅ Service methods accessible")

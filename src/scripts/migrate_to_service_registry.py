@@ -16,6 +16,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils.logging_config import get_handler_logger
+from core.base_service import ServiceStatus
 
 logger = get_handler_logger("migration_script")
 
@@ -175,7 +176,7 @@ async def test_service_registry():
         logger.info("Test 1: Service Registry Health Check")
         health = await service_manager.health_check()
 
-        if health.get("overall_status") == "healthy":
+        if health.status == ServiceStatus.HEALTHY:
             logger.info("✅ Service Registry health check passed")
         else:
             logger.error("❌ Service Registry health check failed")
@@ -198,7 +199,7 @@ async def test_service_registry():
             service = service_manager.get_service(service_name)
             service_health = await service.health_check()
 
-            if service_health.get("status") == "healthy":
+            if service_health.status == ServiceStatus.HEALTHY:
                 logger.info(f"✅ {service_name} service healthy")
             else:
                 logger.error(f"❌ {service_name} service unhealthy: {service_health}")

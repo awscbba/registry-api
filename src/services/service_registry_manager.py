@@ -8,6 +8,7 @@ from datetime import datetime
 
 from ..core.simple_registry import SimpleServiceRegistry
 from ..core.config import ServiceConfig
+from ..core.base_service import ServiceStatus
 from .people_service import PeopleService
 from .projects_service import ProjectsService
 from .subscriptions_service import SubscriptionsService
@@ -135,7 +136,27 @@ class ServiceRegistryManager:
                 try:
                     service = self.registry.get_service(service_name)
                     service_health = await service.health_check()
-                    health_status["services"][service_name] = service_health
+
+                    # Convert HealthCheck object to dictionary format
+                    if hasattr(service_health, "status"):
+                        # It's a HealthCheck object
+                        health_dict = {
+                            "service_name": service_health.service_name,
+                            "status": (
+                                "healthy"
+                                if service_health.status == ServiceStatus.HEALTHY
+                                else "unhealthy"
+                            ),
+                            "message": service_health.message,
+                            "details": service_health.details,
+                            "response_time_ms": service_health.response_time_ms,
+                            "timestamp": datetime.now().isoformat(),
+                        }
+                        health_status["services"][service_name] = health_dict
+                    else:
+                        # It's already a dictionary
+                        health_status["services"][service_name] = service_health
+
                 except Exception as e:
                     health_status["services"][service_name] = {
                         "status": "unhealthy",
