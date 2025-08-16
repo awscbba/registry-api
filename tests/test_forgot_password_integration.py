@@ -57,10 +57,14 @@ class TestForgotPasswordIntegration:
     @patch("src.handlers.versioned_api_handler.password_reset_service")
     async def test_forgot_password_endpoint_success(self, mock_service, client):
         """Test successful forgot password request."""
-        # Mock successful password reset initiation
-        mock_service.initiate_password_reset.return_value = Mock(
-            success=True,
-            message="If the email exists in our system, you will receive a password reset link.",
+        # Mock successful password reset initiation with AsyncMock
+        mock_service.initiate_password_reset = AsyncMock(
+            return_value=Mock(
+                success=True,
+                message="If the email exists in our system, you will receive a password reset link.",
+                token_valid=None,  # Should be None for forgot password response
+                expires_at=None,  # Should be None for forgot password response
+            )
         )
 
         # Make request to forgot password endpoint
@@ -118,8 +122,10 @@ class TestForgotPasswordIntegration:
     @patch("src.handlers.versioned_api_handler.password_reset_service")
     async def test_forgot_password_endpoint_service_error(self, mock_service, client):
         """Test forgot password when service raises an exception."""
-        # Mock service to raise an exception
-        mock_service.initiate_password_reset.side_effect = Exception("Database error")
+        # Mock service to raise an exception with AsyncMock
+        mock_service.initiate_password_reset = AsyncMock(
+            side_effect=Exception("Database error")
+        )
 
         response = client.post(
             "/auth/forgot-password",
@@ -137,10 +143,12 @@ class TestForgotPasswordIntegration:
     @patch("src.handlers.versioned_api_handler.password_reset_service")
     async def test_reset_password_endpoint_success(self, mock_service, client):
         """Test successful password reset completion."""
-        # Mock successful password reset completion
-        mock_service.complete_password_reset.return_value = Mock(
-            success=True,
-            message="Password has been successfully reset.",
+        # Mock successful password reset completion with AsyncMock
+        mock_service.complete_password_reset = AsyncMock(
+            return_value=Mock(
+                success=True,
+                message="Password has been successfully reset.",
+            )
         )
 
         response = client.post(
@@ -165,10 +173,12 @@ class TestForgotPasswordIntegration:
     @patch("src.handlers.versioned_api_handler.password_reset_service")
     async def test_reset_password_endpoint_invalid_token(self, mock_service, client):
         """Test password reset with invalid token."""
-        # Mock invalid token response
-        mock_service.complete_password_reset.return_value = Mock(
-            success=False,
-            message="Invalid or expired reset token.",
+        # Mock invalid token response with AsyncMock
+        mock_service.complete_password_reset = AsyncMock(
+            return_value=Mock(
+                success=False,
+                message="Invalid or expired reset token.",
+            )
         )
 
         response = client.post(
@@ -191,10 +201,12 @@ class TestForgotPasswordIntegration:
     @patch("src.handlers.versioned_api_handler.password_reset_service")
     async def test_validate_reset_token_endpoint_valid(self, mock_service, client):
         """Test reset token validation with valid token."""
-        # Mock valid token response
-        mock_service.validate_reset_token.return_value = (
-            True,
-            Mock(expires_at=datetime.now(timezone.utc) + timedelta(hours=1)),
+        # Mock valid token response with AsyncMock
+        mock_service.validate_reset_token = AsyncMock(
+            return_value=(
+                True,
+                Mock(expires_at=datetime.now(timezone.utc) + timedelta(hours=1)),
+            )
         )
 
         response = client.get("/auth/validate-reset-token/test-valid-token")
@@ -208,8 +220,8 @@ class TestForgotPasswordIntegration:
     @patch("src.handlers.versioned_api_handler.password_reset_service")
     async def test_validate_reset_token_endpoint_invalid(self, mock_service, client):
         """Test reset token validation with invalid token."""
-        # Mock invalid token response
-        mock_service.validate_reset_token.return_value = (False, None)
+        # Mock invalid token response with AsyncMock
+        mock_service.validate_reset_token = AsyncMock(return_value=(False, None))
 
         response = client.get("/auth/validate-reset-token/invalid-token")
 
@@ -224,9 +236,13 @@ class TestForgotPasswordIntegration:
         with patch(
             "src.handlers.versioned_api_handler.password_reset_service"
         ) as mock_service:
-            mock_service.initiate_password_reset.return_value = Mock(
-                success=True,
-                message="Reset link sent.",
+            mock_service.initiate_password_reset = AsyncMock(
+                return_value=Mock(
+                    success=True,
+                    message="Reset link sent.",
+                    token_valid=None,
+                    expires_at=None,
+                )
             )
 
             # Make request with custom headers
@@ -258,9 +274,13 @@ class TestForgotPasswordIntegration:
         """Test that rate limiting is properly integrated."""
         # Mock rate limiting to allow request
         mock_rate_limit.return_value = Mock(allowed=True)
-        mock_service.initiate_password_reset.return_value = Mock(
-            success=True,
-            message="Reset link sent.",
+        mock_service.initiate_password_reset = AsyncMock(
+            return_value=Mock(
+                success=True,
+                message="Reset link sent.",
+                token_valid=None,
+                expires_at=None,
+            )
         )
 
         response = client.post(
@@ -305,9 +325,11 @@ class TestForgotPasswordIntegration:
         self, mock_service, client
     ):
         """Test endpoint security against SQL injection attempts."""
-        mock_service.initiate_password_reset.return_value = Mock(
-            success=True,
-            message="Reset link sent.",
+        mock_service.initiate_password_reset = AsyncMock(
+            return_value=Mock(
+                success=True,
+                message="Reset link sent.",
+            )
         )
 
         # Attempt SQL injection in email field
@@ -406,9 +428,11 @@ class TestForgotPasswordPerformance:
         """Test that forgot password endpoint responds within acceptable time."""
         import time
 
-        mock_service.initiate_password_reset.return_value = Mock(
-            success=True,
-            message="Reset link sent.",
+        mock_service.initiate_password_reset = AsyncMock(
+            return_value=Mock(
+                success=True,
+                message="Reset link sent.",
+            )
         )
 
         start_time = time.time()
@@ -432,9 +456,11 @@ class TestForgotPasswordPerformance:
         import asyncio
         import aiohttp
 
-        mock_service.initiate_password_reset.return_value = Mock(
-            success=True,
-            message="Reset link sent.",
+        mock_service.initiate_password_reset = AsyncMock(
+            return_value=Mock(
+                success=True,
+                message="Reset link sent.",
+            )
         )
 
         async def make_request():
