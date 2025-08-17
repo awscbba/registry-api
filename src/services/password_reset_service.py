@@ -108,28 +108,65 @@ class PasswordResetService(BaseService):
                     message=f"Too many password reset attempts. Try again in {rate_limit_result.retry_after} seconds.",
                 )
 
-            # Find user by email - use people service repository for production, fallback to db_service for tests
+            # Find user by email - use people service from service registry
             person = None
-            if self.db_service:
-                # Legacy path for tests
+
+            # First try using the injected db_service (people service)
+            if self.db_service and hasattr(self.db_service, "get_person_by_email"):
                 try:
-                    person = await self.db_service.get_person_by_email(request.email)
-                except Exception:
-                    # If db_service fails, fall back to people service
+                    person_result = await self.db_service.get_person_by_email(
+                        request.email
+                    )
+                    # The people service returns a dict, extract the person data
+                    if isinstance(person_result, dict) and person_result.get("success"):
+                        person_data = person_result.get("data")
+                        if person_data:
+                            # Convert dict to object-like structure for compatibility
+                            class PersonObj:
+                                def __init__(self, data):
+                                    for key, value in data.items():
+                                        setattr(self, key, value)
+                                    # Ensure required attributes exist
+                                    if not hasattr(self, "is_active"):
+                                        self.is_active = True
+                                    if not hasattr(self, "first_name") and hasattr(
+                                        self, "firstName"
+                                    ):
+                                        self.first_name = self.firstName
+                                    if not hasattr(self, "email") and hasattr(
+                                        self, "email"
+                                    ):
+                                        self.email = self.email
+
+                            person = PersonObj(person_data)
+                            logger.info(
+                                f"Found user via people service: {person.email}"
+                            )
+                except Exception as e:
+                    logger.warning(f"Failed to get person via db_service: {str(e)}")
                     person = None
 
             if not person:
-                # Production path using people service repository
-                from .people_service import PeopleService
+                # Fallback: try direct repository access (legacy path)
+                try:
+                    from .people_service import PeopleService
 
-                people_service = PeopleService()
+                    people_service = PeopleService()
 
-                # Use the people service repository to get user by email
-                person_result = await people_service.user_repository.get_by_email(
-                    request.email
-                )
-                if person_result.success and person_result.data:
-                    person = person_result.data
+                    # Initialize the people service if needed
+                    if hasattr(people_service, "initialize"):
+                        await people_service.initialize()
+
+                    # Use the people service repository to get user by email
+                    person_result = await people_service.user_repository.get_by_email(
+                        request.email
+                    )
+                    if person_result.success and person_result.data:
+                        person = person_result.data
+                        logger.info(f"Found user via repository: {person.email}")
+                except Exception as e:
+                    logger.warning(f"Failed to get person via repository: {str(e)}")
+                    person = None
 
             if not person:
                 # Don't reveal if email exists - always return success for security
