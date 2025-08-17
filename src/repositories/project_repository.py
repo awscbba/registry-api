@@ -25,46 +25,81 @@ class ProjectRepository(BaseRepository[Project]):
 
     def _to_entity(self, item: Dict[str, Any]) -> Project:
         """Convert DynamoDB item to Project entity"""
+        from datetime import datetime
+
+        def safe_datetime_parse(date_str):
+            """Safely parse datetime string to datetime object"""
+            if not date_str:
+                return None
+            if isinstance(date_str, datetime):
+                return date_str
+            try:
+                # Handle ISO format strings
+                if isinstance(date_str, str):
+                    if date_str.endswith("Z"):
+                        date_str = date_str[:-1] + "+00:00"
+                    return datetime.fromisoformat(date_str)
+                return date_str
+            except (ValueError, TypeError):
+                return None
+
+        # Use camelCase field names to match DefensiveDynamoDBService storage pattern
         project_data = {
             "id": item.get("id"),
             "name": item.get("name"),
             "description": item.get("description"),
+            "startDate": item.get("startDate"),  # ✅ Fixed: was start_date
+            "endDate": item.get("endDate"),  # ✅ Fixed: was end_date
+            "maxParticipants": item.get("maxParticipants"),  # ✅ Added: was missing!
             "status": item.get("status", "active"),
-            "created_by": item.get("created_by"),
-            "created_at": item.get("created_at"),
-            "updated_at": item.get("updated_at"),
-            "start_date": item.get("start_date"),
-            "end_date": item.get("end_date"),
-            "budget": item.get("budget"),
-            "tags": item.get("tags", []),
+            "category": item.get("category"),
+            "location": item.get("location"),
+            "requirements": item.get("requirements"),
+            "createdBy": item.get("createdBy"),  # ✅ Fixed: was created_by
+            "createdAt": safe_datetime_parse(
+                item.get("createdAt")
+            ),  # ✅ Fixed: was created_at + datetime conversion
+            "updatedAt": safe_datetime_parse(
+                item.get("updatedAt")
+            ),  # ✅ Fixed: was updated_at + datetime conversion
         }
 
         return Project(**{k: v for k, v in project_data.items() if v is not None})
 
     def _to_item(self, entity: Project) -> Dict[str, Any]:
         """Convert Project entity to DynamoDB item"""
+
+        def safe_datetime_format(dt):
+            """Safely format datetime to ISO string"""
+            if dt is None:
+                return None
+            if isinstance(dt, str):
+                return dt
+            try:
+                return dt.isoformat()
+            except (AttributeError, TypeError):
+                return str(dt)
+
+        # Use camelCase field names to match DefensiveDynamoDBService storage pattern
         item = {
             "id": entity.id,
             "name": entity.name,
             "description": entity.description,
+            "startDate": entity.startDate,  # ✅ Fixed: was start_date
+            "endDate": entity.endDate,  # ✅ Fixed: was end_date
+            "maxParticipants": entity.maxParticipants,  # ✅ Added: was missing!
             "status": getattr(entity, "status", "active"),
-            "created_by": entity.created_by,
+            "category": getattr(entity, "category", ""),
+            "location": getattr(entity, "location", ""),
+            "requirements": getattr(entity, "requirements", ""),
+            "createdBy": entity.createdBy,  # ✅ Fixed: was created_by
+            "createdAt": safe_datetime_format(
+                entity.createdAt
+            ),  # ✅ Fixed: was created_at + datetime conversion
+            "updatedAt": safe_datetime_format(
+                entity.updatedAt
+            ),  # ✅ Fixed: was updated_at + datetime conversion
         }
-
-        # Handle optional fields
-        optional_fields = [
-            "created_at",
-            "updated_at",
-            "start_date",
-            "end_date",
-            "budget",
-            "tags",
-        ]
-
-        for field in optional_fields:
-            value = getattr(entity, field, None)
-            if value is not None:
-                item[field] = value
 
         return item
 
