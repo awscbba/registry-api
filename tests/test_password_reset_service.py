@@ -85,6 +85,18 @@ class TestPasswordResetService:
 
             # Mock token saving
             with patch.object(password_reset_service, "_save_reset_token") as mock_save:
+                # Mock the db_service to return a successful response with person data
+                mock_db_service.get_person_by_email.return_value = {
+                    "success": True,
+                    "data": {
+                        "id": "test-id",
+                        "email": "john.doe@example.com",
+                        "firstName": "John",
+                        "first_name": "John",
+                        "is_active": True,
+                    },
+                }
+
                 # Execute
                 result = await password_reset_service.initiate_password_reset(request)
 
