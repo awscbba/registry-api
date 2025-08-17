@@ -31,18 +31,24 @@ class UserRepository(BaseRepository[Person]):
             if address_data and isinstance(address_data, dict):
                 from ..models.person import Address
 
-                # Handle field name mapping for postal_code/postalCode
-                # Use the alias name that Pydantic expects
-                normalized_address_data = {
-                    "street": address_data.get("street", ""),
-                    "city": address_data.get("city", ""),
-                    "state": address_data.get("state", ""),
-                    "postalCode": address_data.get(
-                        "postal_code", address_data.get("postalCode", "")
-                    ),  # Use camelCase
-                    "country": address_data.get("country", ""),
-                }
-                address = Address(**normalized_address_data)
+                # Follow the same pattern as DefensiveDynamoDBService
+                # Normalize postal code field - handle ALL variants
+                address_data_copy = address_data.copy()
+
+                if "postal_code" in address_data_copy:
+                    address_data_copy["postalCode"] = address_data_copy.pop(
+                        "postal_code"
+                    )
+                elif "zip_code" in address_data_copy:
+                    address_data_copy["postalCode"] = address_data_copy.pop("zip_code")
+                elif "zipCode" in address_data_copy:
+                    address_data_copy["postalCode"] = address_data_copy.pop("zipCode")
+
+                # Ensure postalCode exists - provide default if missing
+                if "postalCode" not in address_data_copy:
+                    address_data_copy["postalCode"] = ""
+
+                address = Address(**address_data_copy)
             else:
                 address = None
 
