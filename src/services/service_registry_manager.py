@@ -57,11 +57,12 @@ class ServiceRegistryManager:
             self.registry.register_service("subscriptions", subscriptions_service)
 
             # Register Core Services
-            auth_service = AuthService()
-            self.registry.register_service("auth", auth_service)
-
             roles_service = RolesService()
             self.registry.register_service("roles", roles_service)
+
+            # Auth service depends on roles service
+            auth_service = AuthService(roles_service=roles_service)
+            self.registry.register_service("auth", auth_service)
 
             email_service = EmailService()
             self.registry.register_service("email", email_service)

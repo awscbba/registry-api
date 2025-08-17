@@ -34,19 +34,27 @@ class AuthService(BaseService):
     MAX_FAILED_ATTEMPTS = 5
     LOCKOUT_DURATION_MINUTES = 15
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(
+        self,
+        config: Optional[Dict[str, Any]] = None,
+        roles_service: Optional[RolesService] = None,
+    ):
         super().__init__("auth_service", config)
         # Initialize dependencies immediately to avoid NoneType errors
         self.db_service = DynamoDBService()
-        self.roles_service = RolesService()
+        # Use provided roles_service or create new one (will be initialized later)
+        self.roles_service = roles_service or RolesService()
 
     async def initialize(self) -> bool:
         """Initialize the authentication service."""
         try:
             self.logger.info("Initializing AuthService...")
 
-            # Dependencies are already initialized in constructor
-            # Just test database connectivity
+            # Initialize roles service if not already initialized
+            if not self.roles_service._initialized:
+                await self.roles_service.initialize()
+
+            # Test database connectivity
             await self._test_database_connection()
 
             self._initialized = True
