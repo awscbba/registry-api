@@ -43,6 +43,7 @@ from ..middleware.admin_middleware_v2 import (
 from ..middleware.auth_middleware import get_current_user
 from ..utils.logging_config import get_handler_logger
 from ..utils.response_models import create_v2_response
+from ..utils.health_check_utils import convert_health_check, is_healthy
 
 # Configure standardized logging
 logger = get_handler_logger("modular_api")
@@ -4213,20 +4214,12 @@ async def startup_event():
             service = service_manager.registry.get_service(service_name)
             health = await service.health_check()
 
-            # Handle both dict and object responses
-            if isinstance(health, dict):
-                health_status = health.get("status", "unknown")
-                is_healthy = health_status == "healthy" or health.get("healthy", False)
-            else:
-                # Object with .status attribute
-                is_healthy = health.status == ServiceStatus.HEALTHY
-                health_status = (
-                    health.status.value
-                    if hasattr(health.status, "value")
-                    else str(health.status)
-                )
+            # Use safe health check converter to handle both dict and object responses
+            health_dict = convert_health_check(health)
+            service_is_healthy = is_healthy(health)
+            health_status = health_dict.get("status", "unknown")
 
-            status = "✅" if is_healthy else "❌"
+            status = "✅" if service_is_healthy else "❌"
             logger.info(f"{status} {service_name}: {health_status}")
     except Exception as e:
         logger.warning(f"⚠️ Startup health check failed: {str(e)}")
