@@ -4212,10 +4212,26 @@ async def startup_event():
         for service_name in service_manager.registry.services.keys():
             service = service_manager.registry.get_service(service_name)
             health = await service.health_check()
-            status = "✅" if health.status == ServiceStatus.HEALTHY else "❌"
-            logger.info(f"{status} {service_name}: {health.status.value}")
+
+            # Handle both dict and object responses
+            if isinstance(health, dict):
+                health_status = health.get("status", "unknown")
+                is_healthy = health_status == "healthy" or health.get("healthy", False)
+            else:
+                # Object with .status attribute
+                is_healthy = health.status == ServiceStatus.HEALTHY
+                health_status = (
+                    health.status.value
+                    if hasattr(health.status, "value")
+                    else str(health.status)
+                )
+
+            status = "✅" if is_healthy else "❌"
+            logger.info(f"{status} {service_name}: {health_status}")
     except Exception as e:
         logger.warning(f"⚠️ Startup health check failed: {str(e)}")
+        # Don't shut down on health check failure - continue processing requests
+        logger.info("🔄 Continuing with service startup despite health check issues")
 
 
 @app.on_event("shutdown")
