@@ -25,37 +25,58 @@ class UserRepository(BaseRepository[Person]):
 
     def _to_entity(self, item: Dict[str, Any]) -> Person:
         """Convert DynamoDB item to Person entity"""
-        # Handle address conversion
-        address_data = item.get("address", {})
-        if address_data and isinstance(address_data, dict):
-            from ..models.person import Address
+        try:
+            # Handle address conversion
+            address_data = item.get("address", {})
+            if address_data and isinstance(address_data, dict):
+                from ..models.person import Address
 
-            address = Address(**address_data)
-        else:
-            address = None
+                # Handle field name mapping for postal_code/postalCode
+                # Use the alias name that Pydantic expects
+                normalized_address_data = {
+                    "street": address_data.get("street", ""),
+                    "city": address_data.get("city", ""),
+                    "state": address_data.get("state", ""),
+                    "postalCode": address_data.get(
+                        "postal_code", address_data.get("postalCode", "")
+                    ),  # Use camelCase
+                    "country": address_data.get("country", ""),
+                }
+                address = Address(**normalized_address_data)
+            else:
+                address = None
 
-        # Convert DynamoDB item to Person
-        person_data = {
-            "id": item.get("id"),
-            "first_name": item.get("firstName", item.get("first_name")),
-            "last_name": item.get("lastName", item.get("last_name")),
-            "email": item.get("email"),
-            "phone": item.get("phone"),
-            "date_of_birth": item.get("dateOfBirth", item.get("date_of_birth")),
-            "address": address,
-            "created_at": item.get("created_at"),
-            "updated_at": item.get("updated_at"),
-            "last_login_at": item.get("last_login_at"),
-            "is_active": item.get("is_active", True),
-            "email_verified": item.get("email_verified", False),
-            "email_verification_token": item.get("email_verification_token"),
-            "pending_email_change": item.get("pending_email_change"),
-            "password_hash": item.get("password_hash"),
-            "password_salt": item.get("password_salt"),
-            "require_password_change": item.get("require_password_change", False),
-        }
+            # Convert DynamoDB item to Person
+            person_data = {
+                "id": item.get("id"),
+                "first_name": item.get("firstName", item.get("first_name")),
+                "last_name": item.get("lastName", item.get("last_name")),
+                "email": item.get("email"),
+                "phone": item.get("phone"),
+                "date_of_birth": item.get("dateOfBirth", item.get("date_of_birth")),
+                "address": address,
+                "created_at": item.get("created_at"),
+                "updated_at": item.get("updated_at"),
+                "last_login_at": item.get("last_login_at"),
+                "is_active": item.get("is_active", True),
+                "email_verified": item.get("email_verified", False),
+                "email_verification_token": item.get("email_verification_token"),
+                "pending_email_change": item.get("pending_email_change"),
+                "password_hash": item.get("password_hash"),
+                "password_salt": item.get("password_salt"),
+                "require_password_change": item.get("require_password_change", False),
+            }
 
-        return Person(**{k: v for k, v in person_data.items() if v is not None})
+            return Person(**{k: v for k, v in person_data.items() if v is not None})
+
+        except Exception as e:
+            # Log the validation error but don't fail the entire operation
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to convert DynamoDB item to Person entity: {str(e)}")
+            logger.error(f"Item data: {item}")
+            raise e  # Re-raise for now to debug, but we could handle this more gracefully
 
     def _to_item(self, entity: Person) -> Dict[str, Any]:
         """Convert Person entity to DynamoDB item"""
