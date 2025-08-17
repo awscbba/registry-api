@@ -143,8 +143,16 @@ class PasswordResetService(BaseService):
                                 f"Found user via people service: {person.email}"
                             )
                 except Exception as e:
-                    logger.warning(f"Failed to get person via db_service: {str(e)}")
-                    person = None
+                    # get_person_by_email raises HTTPException for not found, but that's expected
+                    # We need to check if it's a 404 (not found) vs other errors
+                    if hasattr(e, "status_code") and e.status_code == 404:
+                        logger.info(
+                            f"User not found via people service: {request.email}"
+                        )
+                        person = None
+                    else:
+                        logger.warning(f"Failed to get person via db_service: {str(e)}")
+                        person = None
 
             if not person:
                 # Fallback: try direct repository access (legacy path)
