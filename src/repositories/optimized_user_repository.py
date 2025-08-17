@@ -21,6 +21,11 @@ class OptimizedUserRepository(BaseRepository):
         super().__init__()
         self.logger = get_handler_logger("optimized_user_repository")
 
+        # Override the table name with the correct one from environment
+        import os
+
+        self.table_name = os.environ.get("PEOPLE_TABLE_NAME", "PeopleTable")
+
         # Connection pooling configuration
         self.connection_pool_size = 10
         self.connection_pool = []

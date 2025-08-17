@@ -15,7 +15,20 @@ class BaseRepository(ABC):
 
     def __init__(self):
         self.logger = get_handler_logger(self.__class__.__name__.lower())
-        self.table_name = "people"  # Default table name
+        # Import here to avoid circular imports
+        from .config import get_config
+
+        config = get_config()
+
+        # Determine table name based on repository class name
+        class_name = self.__class__.__name__.lower()
+        if "people" in class_name or "user" in class_name:
+            self.table_name = config.get_table_name("people")
+        elif "project" in class_name:
+            self.table_name = config.get_table_name("projects")
+        else:
+            # Default fallback - this should be overridden by subclasses
+            self.table_name = "people"  # Default table name
 
         # Performance tracking
         self.operation_stats = {

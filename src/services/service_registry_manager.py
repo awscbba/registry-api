@@ -190,25 +190,12 @@ class ServiceRegistryManager:
                     service = self.registry.get_service(service_name)
                     service_health = await service.health_check()
 
-                    # Convert HealthCheck object to dictionary format
-                    if hasattr(service_health, "status"):
-                        # It's a HealthCheck object
-                        health_dict = {
-                            "service_name": service_health.service_name,
-                            "status": (
-                                "healthy"
-                                if service_health.status == ServiceStatus.HEALTHY
-                                else "unhealthy"
-                            ),
-                            "message": service_health.message,
-                            "details": service_health.details,
-                            "response_time_ms": service_health.response_time_ms,
-                            "timestamp": datetime.now().isoformat(),
-                        }
-                        health_status["services"][service_name] = health_dict
-                    else:
-                        # It's already a dictionary
-                        health_status["services"][service_name] = service_health
+                    # Import here to avoid circular imports
+                    from ..utils.health_check_utils import HealthCheckConverter
+
+                    # Use safe converter to handle both HealthCheck objects and dictionaries
+                    health_dict = HealthCheckConverter.to_dict_safe(service_health)
+                    health_status["services"][service_name] = health_dict
 
                 except Exception as e:
                     health_status["services"][service_name] = {
@@ -217,7 +204,7 @@ class ServiceRegistryManager:
                         "timestamp": datetime.now().isoformat(),
                     }
 
-            # Determine overall health
+            # Determine overall health - all values are now guaranteed to be dictionaries
             all_healthy = all(
                 service_health.get("status") == "healthy"
                 for service_health in health_status["services"].values()
