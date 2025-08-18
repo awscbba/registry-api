@@ -1,7 +1,16 @@
 FROM public.ecr.aws/lambda/python:3.9
 
-# Install minimal dependencies for router (just boto3 which is already included in Lambda runtime)
-# Router function only needs boto3 for Lambda invocation, which is included in the base image
+# Install uv for dependency management (for consistency with main Lambda)
+RUN pip install uv
+
+# Copy uv project files for dependency resolution
+COPY pyproject.toml ./
+COPY uv.lock ./
+
+# Install only production dependencies (router uses minimal deps)
+# --frozen ensures exact versions from uv.lock are used
+# --no-dev excludes development dependencies
+RUN uv sync --frozen --no-dev
 
 # Copy router code
 COPY router_main.py ./
