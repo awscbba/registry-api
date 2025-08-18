@@ -486,9 +486,6 @@ class TestCriticalIntegration:
         assert response.status_code == 200
 
 
-@pytest.mark.skip(
-    reason="CRITICAL: Temporarily skipped to allow emergency deployment - production API broken due to missing dependencies"
-)
 class TestProductionHealthChecks:
     """Tests that monitor production-like scenarios"""
 
