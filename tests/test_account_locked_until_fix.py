@@ -10,7 +10,7 @@ from datetime import datetime
 from unittest.mock import patch, MagicMock
 
 # Add the src directory to the path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../src"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from src.models.person import Person, PersonCreate, PersonUpdate, Address
 from src.models.project import ProjectBase, ProjectCreate, ProjectUpdate, ProjectStatus
