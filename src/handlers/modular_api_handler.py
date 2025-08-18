@@ -645,7 +645,6 @@ from ..models.api_responses import (
     },
 )
 # Duplicate health_check function removed - using the first one defined above
-
 @app.get(
     "/health/detailed",
     tags=["Health"],
