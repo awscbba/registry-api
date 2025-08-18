@@ -7,10 +7,9 @@ RUN pip install uv
 COPY pyproject.toml ./
 COPY uv.lock ./
 
-# Install dependencies using uv sync for production
-# --frozen ensures exact versions from uv.lock are used
-# --no-dev excludes development dependencies
-RUN uv sync --frozen --no-dev
+# Install dependencies using uv pip install to install globally
+# This installs packages directly to the system Python path that Lambda can find
+RUN uv pip install --system -r pyproject.toml
 
 # Copy application code
 COPY main.py ./
