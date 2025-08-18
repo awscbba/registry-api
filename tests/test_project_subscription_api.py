@@ -10,9 +10,6 @@ import subprocess
 import pytest
 
 
-@pytest.mark.skip(
-    reason="CloudFormation API URL resolution failing - infrastructure issue unrelated to dependency fixes"
-)
 def test_project_subscription_apis():
     """Test the actual API endpoints for projects and subscriptions"""
 

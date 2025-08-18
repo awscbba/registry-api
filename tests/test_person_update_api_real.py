@@ -9,9 +9,6 @@ import sys
 import pytest
 
 
-@pytest.mark.skip(
-    reason="CloudFormation API URL resolution failing - infrastructure issue unrelated to dependency fixes"
-)
 def test_person_update_api():
     """Test the actual API endpoint with real data"""
 
