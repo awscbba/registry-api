@@ -3,12 +3,14 @@ FROM public.ecr.aws/lambda/python:3.9
 # Install uv for dependency management
 RUN pip install uv
 
-# Copy dependency files
-COPY requirements-lambda.txt ./
+# Copy uv project files for dependency resolution
 COPY pyproject.toml ./
+COPY uv.lock ./
 
-# Install dependencies using the Lambda-specific requirements file
-RUN uv pip install --system --python-version 3.9 -r requirements-lambda.txt
+# Install dependencies using uv sync for production
+# --frozen ensures exact versions from uv.lock are used
+# --no-dev excludes development dependencies
+RUN uv sync --frozen --no-dev
 
 # Copy application code
 COPY main.py ./
