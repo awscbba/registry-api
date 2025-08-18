@@ -24,7 +24,7 @@ dependencies = [
     "python-dateutil==2.9.0.post0",
     "starlette==0.37.2",
     "typing-extensions==4.14.1",
-    "urllib3==2.5.0",
+    "urllib3>=1.25.4,<2.0.0",
     "wrapt==1.17.2",
     
     # Testing dependencies (production needed)
