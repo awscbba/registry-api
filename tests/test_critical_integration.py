@@ -486,10 +486,6 @@ class TestCriticalIntegration:
         assert response.status_code == 200
 
 
-@pytest.mark.skip(
-    reason="Production API still returning 502 errors - investigating deployment status and remaining issues"
-)
-# TODO: Re-enable once production API is confirmed working
 class TestProductionHealthChecks:
     """Tests that monitor production-like scenarios"""
 
