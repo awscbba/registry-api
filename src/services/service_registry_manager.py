@@ -400,6 +400,15 @@ class ServiceRegistryManager:
         subscriptions_service = self.get_service("subscriptions")
         return await subscriptions_service.get_project_subscriptions_v2(project_id)
 
+    async def create_project_subscription_v2(
+        self, project_id: str, subscription_data: dict
+    ) -> Dict[str, Any]:
+        """Create a new subscription for a project (v2 format)."""
+        subscriptions_service = self.get_service("subscriptions")
+        return await subscriptions_service.create_project_subscription_v2(
+            project_id, subscription_data
+        )
+
 
 # Global instance for use in FastAPI endpoints
 service_manager = ServiceRegistryManager()

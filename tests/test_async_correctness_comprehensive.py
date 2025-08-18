@@ -54,7 +54,7 @@ class TestAsyncCorrectness:
             "..",
             "src",
             "handlers",
-            "versioned_api_handler.py",
+            "modular_api_handler.py",
         )
 
         if not os.path.exists(source_file):
@@ -77,9 +77,7 @@ class TestAsyncCorrectness:
         # We should find some async functions
         assert len(async_functions) > 0, "No async functions found in handler"
 
-    @pytest.mark.skip(
-        reason="Test infrastructure issue - skipped to allow critical authentication fix deployment"
-    )
+    # Test infrastructure issue resolved - now enabled
     def test_database_calls_are_awaited(self):
         """Test that all database service calls are properly awaited"""
         # This test validates that database calls in the source code are properly awaited
@@ -88,7 +86,7 @@ class TestAsyncCorrectness:
             "..",
             "src",
             "handlers",
-            "versioned_api_handler.py",
+            "modular_api_handler.py",
         )
 
         if not os.path.exists(source_file):
@@ -149,21 +147,22 @@ class TestAsyncCorrectness:
             len(visitor.async_functions) > 0
         ), "Should find async functions in the module"
 
-        # Check that key functions are async
+        # Check that key functions are async (updated for modular API handler)
         expected_async_functions = [
-            "get_subscriptions_v1",
-            "get_projects_v1",
-            "create_subscription_v1",
-            "get_subscriptions_v2",
-            "get_projects_v2",
-            "check_person_exists_v2",
-            "check_subscription_exists_v2",
-            "create_subscription_v2",
-            "login",
-            "login_v2",
+            "health_check",
+            "services_health",
+            "get_people_v1",
+            "get_person_v1",
+            "create_person_v1",
+            "update_person_v1",
             "get_people_v2",
-            "update_admin_status",
-            "test_admin_system",
+            "get_person_v2",
+            "create_person_v2",
+            "update_person_v2",
+            "get_projects_v1",
+            "get_projects_v2",
+            "create_project_v2",
+            "login",  # Fixed: login not login_v2
         ]
 
         for func_name in expected_async_functions:
@@ -171,9 +170,7 @@ class TestAsyncCorrectness:
                 func_name in visitor.async_functions
             ), f"Function {func_name} should be async"
 
-    @pytest.mark.skip(
-        reason="Test infrastructure issue - skipped to allow critical authentication fix deployment"
-    )
+    # Test infrastructure issue resolved - now enabled
     def test_no_blocking_calls_in_async_functions(self):
         """Test that async functions don't contain obvious blocking calls"""
         # This test validates that we can parse source code for async patterns
@@ -182,7 +179,7 @@ class TestAsyncCorrectness:
             "..",
             "src",
             "handlers",
-            "versioned_api_handler.py",
+            "modular_api_handler.py",
         )
 
         if not os.path.exists(source_file):
@@ -219,11 +216,9 @@ class TestAsyncCorrectness:
             # If there are any issues with parsing, skip the test
             pytest.skip(f"Could not parse source file: {e}")
 
-    @pytest.mark.skip(
-        reason="Test infrastructure issue - skipped to allow critical authentication fix deployment"
-    )
-    @patch("handlers.versioned_api_handler.db_service")
-    def test_async_mock_behavior(self, mock_db_service):
+    # Test infrastructure issue resolved - now enabled
+    @patch("src.handlers.modular_api_handler.service_manager")
+    def test_async_mock_behavior(self, mock_service_manager):
         """Test that AsyncMock is used correctly for async database methods"""
         # Configure specific methods as AsyncMock
         async_methods = [
@@ -239,14 +234,14 @@ class TestAsyncCorrectness:
         ]
 
         for method_name in async_methods:
-            setattr(mock_db_service, method_name, AsyncMock())
+            setattr(mock_service_manager, method_name, AsyncMock())
 
         # Non-async methods
-        mock_db_service.get_project_by_id = MagicMock(return_value={"id": "test"})
+        mock_service_manager.get_project_by_id = MagicMock(return_value={"id": "test"})
 
         # Test that async methods can be awaited
         async def test_async_call():
-            result = await mock_db_service.get_all_subscriptions()
+            result = await mock_service_manager.get_all_subscriptions()
             return result
 
         # This should not raise an exception
@@ -274,9 +269,7 @@ class TestAsyncCorrectness:
             sample_async_function
         )  # This is not actually async
 
-    @pytest.mark.skip(
-        reason="Test infrastructure issue - skipped to allow critical authentication fix deployment"
-    )
+    # Test infrastructure issue resolved - now enabled
     def test_import_correctness(self):
         """Test that imports work correctly in the test environment"""
         # Test that we can import basic modules
@@ -297,7 +290,7 @@ class TestAsyncCorrectness:
             "..",
             "src",
             "handlers",
-            "versioned_api_handler.py",
+            "modular_api_handler.py",
         )
 
         if not os.path.exists(source_file):
@@ -325,15 +318,13 @@ class TestAsyncCorrectness:
             len(duplicates) == 0
         ), f"Duplicate function definitions found: {duplicates}"
 
-    @pytest.mark.skip(
-        reason="Test infrastructure issue - skipped to allow critical authentication fix deployment"
-    )
-    @patch("handlers.versioned_api_handler.db_service")
-    def test_error_handling_in_async_functions(self, mock_db_service):
+    # Test infrastructure issue resolved - now enabled
+    @patch("src.handlers.modular_api_handler.service_manager")
+    def test_error_handling_in_async_functions(self, mock_service_manager):
         """Test that async functions properly handle exceptions"""
         # Configure mock to raise exceptions
-        mock_db_service.get_all_subscriptions = AsyncMock(
-            side_effect=Exception("Database error")
+        mock_service_manager.get_all_subscriptions_v2 = AsyncMock(
+            side_effect=Exception("Service error")
         )
 
         # Test async error handling patterns

@@ -86,3 +86,23 @@ class SubscriptionWithDetails(SubscriptionResponse):
     projectEndDate: Optional[str] = Field(
         None, description="End date of the subscribed project"
     )
+
+
+class Subscription(BaseModel):
+    """Subscription entity for repository operations"""
+
+    id: str = Field(..., description="Subscription unique identifier")
+    person_id: Optional[str] = Field(None, description="ID of the person subscribing")
+    project_id: str = Field(..., description="ID of the project being subscribed to")
+    person_name: str = Field(..., description="Name of the person subscribing")
+    person_email: str = Field(..., description="Email of the person subscribing")
+    status: str = Field(default="active", description="Subscription status")
+    notes: Optional[str] = Field(None, description="Additional notes")
+    email_sent: bool = Field(
+        default=False, description="Whether welcome email was sent"
+    )
+    created_at: Optional[str] = Field(None, description="Creation timestamp")
+    updated_at: Optional[str] = Field(None, description="Last update timestamp")
+
+    class Config:
+        from_attributes = True

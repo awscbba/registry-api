@@ -7,23 +7,23 @@ import requests
 import json
 import time
 import pytest
-
-# API endpoint
-API_BASE_URL = "https://api.people-register.awsugcbba.org"
+from src.utils.api_config import get_api_url
 
 
-@pytest.mark.skip(
-    reason="Integration test - skipped during pre-push validation to allow deployment of fixes"
-)
+# Integration test - now enabled after deployment fixes
 def test_subscription_creation():
     """Test creating a new subscription directly via API."""
 
     print("🧪 Testing Subscription Creation API...")
 
+    # Get API URL using proper configuration
+    api_base_url = get_api_url()
+    print(f"📡 Using API URL: {api_base_url}")
+
     # First, get available projects
     print("📋 Getting available projects...")
     try:
-        projects_response = requests.get(f"{API_BASE_URL}/v2/projects")
+        projects_response = requests.get(f"{api_base_url}/v2/projects")
         projects_response.raise_for_status()
         projects = projects_response.json()
 
@@ -56,12 +56,12 @@ def test_subscription_creation():
 
     try:
         print(
-            f"📤 Sending POST request to: {API_BASE_URL}/v2/projects/{project_id}/subscriptions"
+            f"📤 Sending POST request to: {api_base_url}/v2/projects/{project_id}/subscriptions"
         )
         print(f"📋 Data: {json.dumps(subscription_data, indent=2)}")
 
         response = requests.post(
-            f"{API_BASE_URL}/v2/projects/{project_id}/subscriptions",
+            f"{api_base_url}/v2/projects/{project_id}/subscriptions",
             json=subscription_data,
             headers={"Content-Type": "application/json", "Accept": "application/json"},
             timeout=30,
@@ -88,7 +88,14 @@ def test_subscription_creation():
         else:
             print(f"❌ Subscription creation failed!")
             print(f"📄 Response: {response.text}")
-            assert False
+            if response.status_code == 405:
+                print("🚨 CRITICAL: POST endpoint missing from deployed API!")
+                print(
+                    "💡 This indicates the deployed Lambda doesn't have the latest code"
+                )
+            assert (
+                False
+            ), f"Subscription creation failed with status {response.status_code}"
 
     except requests.exceptions.Timeout:
         print("❌ Request timed out after 30 seconds")

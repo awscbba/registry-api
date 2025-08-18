@@ -504,6 +504,14 @@ async def get_project_subscriptions_v2(project_id: str):
     return await service_manager.get_project_subscriptions_v2(project_id)
 
 
+@v2_router.post("/projects/{project_id}/subscriptions")
+async def create_project_subscription_v2(project_id: str, subscription_data: dict):
+    """Create a new subscription for a project (v2 - enhanced version)."""
+    return await service_manager.create_project_subscription_v2(
+        project_id, subscription_data
+    )
+
+
 # ==================== SERVICE REGISTRY ENDPOINTS ====================
 
 
@@ -636,77 +644,7 @@ from ..models.api_responses import (
         },
     },
 )
-async def health_check():
-    """
-    Comprehensive system health check endpoint.
-
-    Returns detailed health information for the entire system including
-    all registered services, response times, and system metrics.
-    """
-    try:
-        # Get health status from all registered services
-        health_data = {
-            "status": "healthy",
-            "timestamp": datetime.utcnow().isoformat(),
-            "services": {},
-            "version": "2.0.0",
-        }
-
-        overall_healthy = True
-
-        # Check each registered service
-        for service_name in service_manager.registry.services.keys():
-            try:
-                service = service_manager.registry.get_service(service_name)
-                service_health = await service.health_check()
-
-                # Convert HealthCheck object to dictionary format
-                health_dict = {
-                    "service_name": service_health.service_name,
-                    "status": service_health.status.value,
-                    "healthy": service_health.status == ServiceStatus.HEALTHY,
-                    "message": service_health.message,
-                    "details": service_health.details,
-                    "response_time_ms": service_health.response_time_ms,
-                    "last_check": datetime.utcnow().isoformat(),
-                }
-                health_data["services"][service_name] = health_dict
-
-                if service_health.status != ServiceStatus.HEALTHY:
-                    overall_healthy = False
-
-            except Exception as e:
-                logger.error(f"Health check failed for {service_name}: {str(e)}")
-                health_data["services"][service_name] = {
-                    "status": "unhealthy",
-                    "healthy": False,
-                    "error": str(e),
-                    "last_check": datetime.utcnow().isoformat(),
-                }
-                overall_healthy = False
-
-        # Set overall status
-        health_data["status"] = "healthy" if overall_healthy else "degraded"
-
-        # Add system uptime (simplified)
-        health_data["uptime"] = "Available"
-
-        # Return appropriate status code
-        status_code = 200 if overall_healthy else 503
-
-        return JSONResponse(status_code=status_code, content=health_data)
-
-    except Exception as e:
-        logger.error(f"Health check endpoint failed: {str(e)}")
-        return JSONResponse(
-            status_code=503,
-            content={
-                "status": "unhealthy",
-                "timestamp": datetime.utcnow().isoformat(),
-                "error": "Health check system failure",
-                "version": "2.0.0",
-            },
-        )
+# Duplicate health_check function removed - using the first one defined above
 
 
 @app.get(
@@ -947,43 +885,7 @@ async def get_system_alerts():
         raise HTTPException(status_code=500, detail="Failed to retrieve system alerts")
 
 
-@app.get(
-    "/metrics/endpoints",
-    tags=["Monitoring"],
-    summary="Endpoint Metrics",
-    description="""
-    Get performance metrics for API endpoints.
-
-    Provides per-endpoint analytics including:
-    - Request counts
-    - Error rates
-    - Average response times
-    - Performance trends
-    """,
-    response_model=Dict[str, Any],
-    responses=COMMON_RESPONSES,
-)
-async def get_endpoint_metrics(endpoint: Optional[str] = None):
-    """
-    Get performance metrics for specific endpoint or all endpoints.
-
-    Args:
-        endpoint: Optional specific endpoint to analyze
-    """
-    try:
-        metrics_service = service_manager.get_service("metrics")
-        endpoint_metrics = await metrics_service.get_endpoint_metrics(endpoint)
-
-        return create_v2_response(
-            data=endpoint_metrics,
-            message=f"Endpoint metrics retrieved successfully"
-            + (f" for {endpoint}" if endpoint else " for all endpoints"),
-        )
-    except Exception as e:
-        logger.error(f"Failed to get endpoint metrics: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail="Failed to retrieve endpoint metrics"
-        )
+# Duplicate get_endpoint_metrics function removed - using the more comprehensive admin version below
 
 
 @app.get(
