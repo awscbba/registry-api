@@ -9,9 +9,6 @@ import sys
 import pytest
 
 
-@pytest.mark.skip(
-    reason="Integration test - skipped during pre-push validation to allow deployment of fixes"
-)
 def test_person_update_api():
     """Test the actual API endpoint with real data"""
 
