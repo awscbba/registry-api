@@ -10,10 +10,7 @@ import pytest
 from src.utils.api_config import get_api_url
 
 
-# Integration test - temporarily skipped until fix is deployed
-@pytest.mark.skip(
-    reason="Temporarily skipping until subscription repository pattern fix is deployed"
-)
+# Integration test - re-enabled after fix deployment
 def test_subscription_creation():
     """Test creating a new subscription directly via API."""
 
