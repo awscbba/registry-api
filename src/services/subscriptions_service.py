@@ -86,7 +86,7 @@ class SubscriptionsService(BaseService):
         """Quick database connectivity check."""
         # Try to get just one subscription with limit=1 for faster response
         try:
-            result = await self.subscription_repository.find_all(limit=1)
+            result = await self.subscription_repository.list_all()
             return result.success
         except Exception:
             # If we can't connect, that's still a valid health check result
@@ -96,7 +96,7 @@ class SubscriptionsService(BaseService):
         """Get all subscriptions (v1 format)."""
         try:
             self.logger.log_api_request("GET", "/v1/subscriptions")
-            result = await self.subscription_repository.find_all()
+            result = await self.subscription_repository.list_all()
 
             if not result.success:
                 raise Exception(result.error)
@@ -118,7 +118,7 @@ class SubscriptionsService(BaseService):
         """Get all subscriptions (v2 format with enhanced metadata)."""
         try:
             self.logger.log_api_request("GET", "/v2/subscriptions")
-            result = await self.subscription_repository.find_all()
+            result = await self.subscription_repository.list_all()
 
             if not result.success:
                 raise Exception(result.error)
@@ -152,7 +152,7 @@ class SubscriptionsService(BaseService):
         """Get subscription by ID (v1 format)."""
         try:
             self.logger.log_api_request("GET", f"/v1/subscriptions/{subscription_id}")
-            result = await self.subscription_repository.find_by_id(subscription_id)
+            result = await self.subscription_repository.get_by_id(subscription_id)
 
             if not result.success or not result.data:
                 from fastapi import HTTPException, status
@@ -183,7 +183,7 @@ class SubscriptionsService(BaseService):
         """Get subscription by ID (v2 format with enhanced metadata)."""
         try:
             self.logger.log_api_request("GET", f"/v2/subscriptions/{subscription_id}")
-            result = await self.subscription_repository.find_by_id(subscription_id)
+            result = await self.subscription_repository.get_by_id(subscription_id)
 
             if not result.success or not result.data:
                 from fastapi import HTTPException, status
@@ -275,7 +275,7 @@ class SubscriptionsService(BaseService):
             self.logger.log_api_request("PUT", f"/v1/subscriptions/{subscription_id}")
 
             # Check if subscription exists
-            existing_result = await self.subscription_repository.find_by_id(
+            existing_result = await self.subscription_repository.get_by_id(
                 subscription_id
             )
             if not existing_result.success or not existing_result.data:
@@ -320,7 +320,7 @@ class SubscriptionsService(BaseService):
             self.logger.log_api_request("PUT", f"/v2/subscriptions/{subscription_id}")
 
             # Check if subscription exists
-            existing_result = await self.subscription_repository.find_by_id(
+            existing_result = await self.subscription_repository.get_by_id(
                 subscription_id
             )
             if not existing_result.success or not existing_result.data:
@@ -373,7 +373,7 @@ class SubscriptionsService(BaseService):
             )
 
             # Check if subscription exists
-            existing_result = await self.subscription_repository.find_by_id(
+            existing_result = await self.subscription_repository.get_by_id(
                 subscription_id
             )
             if not existing_result.success or not existing_result.data:
@@ -423,7 +423,7 @@ class SubscriptionsService(BaseService):
             )
 
             # Check if subscription exists
-            existing_result = await self.subscription_repository.find_by_id(
+            existing_result = await self.subscription_repository.get_by_id(
                 subscription_id
             )
             if not existing_result.success or not existing_result.data:
@@ -477,7 +477,7 @@ class SubscriptionsService(BaseService):
             self.logger.log_api_request(
                 "GET", f"/v1/projects/{project_id}/subscriptions"
             )
-            result = await self.subscription_repository.find_by_project_id(project_id)
+            result = await self.subscription_repository.get_by_project_id(project_id)
 
             if not result.success:
                 raise Exception(result.error)
@@ -504,7 +504,7 @@ class SubscriptionsService(BaseService):
             self.logger.log_api_request(
                 "GET", f"/v2/projects/{project_id}/subscriptions"
             )
-            result = await self.subscription_repository.find_by_project_id(project_id)
+            result = await self.subscription_repository.get_by_project_id(project_id)
 
             if not result.success:
                 raise Exception(result.error)
