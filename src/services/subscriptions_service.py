@@ -10,7 +10,6 @@ import uuid
 
 from ..core.base_service import BaseService
 from ..models.subscription import SubscriptionCreate, SubscriptionUpdate
-from ..services.defensive_dynamodb_service import DefensiveDynamoDBService
 from ..utils.logging_config import get_handler_logger
 from ..utils.error_handler import handle_database_error
 from ..utils.response_models import create_v1_response, create_v2_response
@@ -25,10 +24,10 @@ class SubscriptionsService(BaseService):
         table_name = os.getenv("SUBSCRIPTIONS_TABLE_NAME", "SubscriptionsTable")
         # Initialize repository for clean data access
         from ..repositories.subscription_repository import SubscriptionRepository
+        from ..repositories.user_repository import UserRepository
 
         self.subscription_repository = SubscriptionRepository(table_name=table_name)
-        # Keep legacy db_service for backward compatibility during transition
-        self.db_service = DefensiveDynamoDBService()
+        self.user_repository = UserRepository()
         self.logger = get_handler_logger("subscriptions_service")
 
     async def initialize(self):
@@ -87,8 +86,8 @@ class SubscriptionsService(BaseService):
         """Quick database connectivity check."""
         # Try to get just one subscription with limit=1 for faster response
         try:
-            subscriptions = await self.db_service.get_all_subscriptions()
-            return True
+            result = await self.subscription_repository.find_all(limit=1)
+            return result.success
         except Exception:
             # If we can't connect, that's still a valid health check result
             raise
@@ -97,7 +96,12 @@ class SubscriptionsService(BaseService):
         """Get all subscriptions (v1 format)."""
         try:
             self.logger.log_api_request("GET", "/v1/subscriptions")
-            subscriptions = await self.db_service.get_all_subscriptions()
+            result = await self.subscription_repository.find_all()
+
+            if not result.success:
+                raise Exception(result.error)
+
+            subscriptions = result.data
 
             response = create_v1_response(subscriptions)
             self.logger.log_api_response("GET", "/v1/subscriptions", 200)
@@ -114,7 +118,12 @@ class SubscriptionsService(BaseService):
         """Get all subscriptions (v2 format with enhanced metadata)."""
         try:
             self.logger.log_api_request("GET", "/v2/subscriptions")
-            subscriptions = await self.db_service.get_all_subscriptions()
+            result = await self.subscription_repository.find_all()
+
+            if not result.success:
+                raise Exception(result.error)
+
+            subscriptions = result.data
 
             response = create_v2_response(
                 subscriptions,
@@ -143,9 +152,9 @@ class SubscriptionsService(BaseService):
         """Get subscription by ID (v1 format)."""
         try:
             self.logger.log_api_request("GET", f"/v1/subscriptions/{subscription_id}")
-            subscription = await self.db_service.get_subscription_by_id(subscription_id)
+            result = await self.subscription_repository.find_by_id(subscription_id)
 
-            if not subscription:
+            if not result.success or not result.data:
                 from fastapi import HTTPException, status
 
                 raise HTTPException(
@@ -153,6 +162,7 @@ class SubscriptionsService(BaseService):
                     detail="Subscription not found",
                 )
 
+            subscription = result.data
             response = create_v1_response(subscription)
             self.logger.log_api_response(
                 "GET", f"/v1/subscriptions/{subscription_id}", 200
@@ -173,9 +183,9 @@ class SubscriptionsService(BaseService):
         """Get subscription by ID (v2 format with enhanced metadata)."""
         try:
             self.logger.log_api_request("GET", f"/v2/subscriptions/{subscription_id}")
-            subscription = await self.db_service.get_subscription_by_id(subscription_id)
+            result = await self.subscription_repository.find_by_id(subscription_id)
 
-            if not subscription:
+            if not result.success or not result.data:
                 from fastapi import HTTPException, status
 
                 raise HTTPException(
@@ -183,6 +193,7 @@ class SubscriptionsService(BaseService):
                     detail="Subscription not found",
                 )
 
+            subscription = result.data
             response = create_v2_response(
                 subscription,
                 metadata={
@@ -226,18 +237,21 @@ class SubscriptionsService(BaseService):
         try:
             self.logger.log_api_request("POST", "/v2/public/subscribe")
 
-            # Generate ID if not provided
-            subscription_id = str(uuid.uuid4())
+            # Convert dict to SubscriptionCreate model
+            subscription_create = SubscriptionCreate(**subscription_data)
 
-            # Create subscription using database service
-            created_subscription = await self.db_service.create_subscription(
-                subscription_data, subscription_id
-            )
+            # Create subscription using repository
+            result = await self.subscription_repository.create(subscription_create)
+
+            if not result.success:
+                raise Exception(result.error)
+
+            created_subscription = result.data
 
             response = create_v2_response(
                 created_subscription,
                 metadata={
-                    "subscription_id": subscription_id,
+                    "subscription_id": created_subscription.get("id"),
                     "service": "subscriptions_service",
                     "version": "v2",
                     "created_at": datetime.now().isoformat(),
@@ -261,10 +275,10 @@ class SubscriptionsService(BaseService):
             self.logger.log_api_request("PUT", f"/v1/subscriptions/{subscription_id}")
 
             # Check if subscription exists
-            existing_subscription = await self.db_service.get_subscription_by_id(
+            existing_result = await self.subscription_repository.find_by_id(
                 subscription_id
             )
-            if not existing_subscription:
+            if not existing_result.success or not existing_result.data:
                 from fastapi import HTTPException, status
 
                 raise HTTPException(
@@ -273,9 +287,14 @@ class SubscriptionsService(BaseService):
                 )
 
             # Update subscription
-            updated_subscription = await self.db_service.update_subscription(
+            result = await self.subscription_repository.update(
                 subscription_id, subscription_data
             )
+
+            if not result.success:
+                raise Exception(result.error)
+
+            updated_subscription = result.data
 
             response = create_v1_response(updated_subscription)
             self.logger.log_api_response(
@@ -301,10 +320,10 @@ class SubscriptionsService(BaseService):
             self.logger.log_api_request("PUT", f"/v2/subscriptions/{subscription_id}")
 
             # Check if subscription exists
-            existing_subscription = await self.db_service.get_subscription_by_id(
+            existing_result = await self.subscription_repository.find_by_id(
                 subscription_id
             )
-            if not existing_subscription:
+            if not existing_result.success or not existing_result.data:
                 from fastapi import HTTPException, status
 
                 raise HTTPException(
@@ -313,9 +332,14 @@ class SubscriptionsService(BaseService):
                 )
 
             # Update subscription
-            updated_subscription = await self.db_service.update_subscription(
+            result = await self.subscription_repository.update(
                 subscription_id, subscription_data
             )
+
+            if not result.success:
+                raise Exception(result.error)
+
+            updated_subscription = result.data
 
             response = create_v2_response(
                 updated_subscription,
@@ -349,10 +373,10 @@ class SubscriptionsService(BaseService):
             )
 
             # Check if subscription exists
-            existing_subscription = await self.db_service.get_subscription_by_id(
+            existing_result = await self.subscription_repository.find_by_id(
                 subscription_id
             )
-            if not existing_subscription:
+            if not existing_result.success or not existing_result.data:
                 from fastapi import HTTPException, status
 
                 raise HTTPException(
@@ -361,8 +385,8 @@ class SubscriptionsService(BaseService):
                 )
 
             # Delete subscription
-            success = await self.db_service.delete_subscription(subscription_id)
-            if not success:
+            result = await self.subscription_repository.delete(subscription_id)
+            if not result.success:
                 from fastapi import HTTPException, status
 
                 raise HTTPException(
@@ -399,10 +423,10 @@ class SubscriptionsService(BaseService):
             )
 
             # Check if subscription exists
-            existing_subscription = await self.db_service.get_subscription_by_id(
+            existing_result = await self.subscription_repository.find_by_id(
                 subscription_id
             )
-            if not existing_subscription:
+            if not existing_result.success or not existing_result.data:
                 from fastapi import HTTPException, status
 
                 raise HTTPException(
@@ -411,8 +435,8 @@ class SubscriptionsService(BaseService):
                 )
 
             # Delete subscription
-            success = await self.db_service.delete_subscription(subscription_id)
-            if not success:
+            result = await self.subscription_repository.delete(subscription_id)
+            if not result.success:
                 from fastapi import HTTPException, status
 
                 raise HTTPException(
@@ -453,9 +477,12 @@ class SubscriptionsService(BaseService):
             self.logger.log_api_request(
                 "GET", f"/v1/projects/{project_id}/subscriptions"
             )
-            subscriptions = await self.db_service.get_subscriptions_by_project(
-                project_id
-            )
+            result = await self.subscription_repository.find_by_project_id(project_id)
+
+            if not result.success:
+                raise Exception(result.error)
+
+            subscriptions = result.data
 
             response = create_v1_response(subscriptions)
             self.logger.log_api_response(
@@ -477,9 +504,12 @@ class SubscriptionsService(BaseService):
             self.logger.log_api_request(
                 "GET", f"/v2/projects/{project_id}/subscriptions"
             )
-            subscriptions = await self.db_service.get_subscriptions_by_project(
-                project_id
-            )
+            result = await self.subscription_repository.find_by_project_id(project_id)
+
+            if not result.success:
+                raise Exception(result.error)
+
+            subscriptions = result.data
 
             response = create_v2_response(
                 subscriptions,
@@ -542,16 +572,18 @@ class SubscriptionsService(BaseService):
             # Step 1: Find or create the person using repository pattern
             self.logger.info(f"Looking for person with email: {person_data['email']}")
 
-            # Check if person already exists (fallback to defensive service for person operations)
-            existing_person = await self.db_service.get_person_by_email(
+            # Check if person already exists
+            person_result = await self.user_repository.get_by_email(
                 person_data["email"]
             )
 
-            if existing_person:
-                self.logger.info(f"Found existing person: {existing_person.id}")
-                person_id = existing_person.id
+            if person_result.success and person_result.data:
+                self.logger.info(
+                    f"Found existing person: {person_result.data.get('id')}"
+                )
+                person_id = person_result.data.get("id")
             else:
-                # Create new person (fallback to defensive service for person operations)
+                # Create new person using repository
                 self.logger.info("Creating new person")
                 from ..models.person import PersonCreate, Address
 
@@ -580,44 +612,34 @@ class SubscriptionsService(BaseService):
                     isAdmin=False,  # Use alias field name
                 )
 
-                created_person = await self.db_service.create_person(new_person_data)
-                person_id = created_person.id
+                create_result = await self.user_repository.create(new_person_data)
+                if not create_result.success:
+                    raise Exception(f"Failed to create person: {create_result.error}")
+
+                person_id = create_result.data.get("id")
                 self.logger.info(f"Created new person with ID: {person_id}")
 
             # Step 2: Create the subscription using repository pattern
-            from ..models.subscription import Subscription
-            import uuid
+            from ..models.subscription import SubscriptionCreate
 
-            subscription_id = str(uuid.uuid4())
-            subscription = Subscription(
-                id=subscription_id,
-                person_id=person_id,
-                project_id=project_id,
-                person_name=person_data.get("name", ""),
-                person_email=person_data["email"],
+            subscription_create_data = SubscriptionCreate(
+                personId=person_id,
+                projectId=project_id,
                 status="active",
                 notes=subscription_data.get("notes", ""),
-                email_sent=False,  # Will be updated after email is sent
             )
 
-            self.logger.info(f"Creating subscription using repository: {subscription}")
+            self.logger.info(
+                f"Creating subscription using repository: {subscription_create_data}"
+            )
 
-            # Use repository pattern for subscription creation
-            result = await self.subscription_repository.create(subscription)
+            # Use repository for subscription creation
+            result = await self.subscription_repository.create(subscription_create_data)
 
             if not result.success:
-                self.logger.error(f"Repository create failed: {result.error}")
                 raise Exception(f"Failed to create subscription: {result.error}")
 
-            created_subscription = {
-                "id": result.data.id,
-                "personId": result.data.person_id,
-                "projectId": result.data.project_id,
-                "status": result.data.status,
-                "notes": result.data.notes,
-                "createdAt": getattr(result.data, "created_at", None),
-                "updatedAt": getattr(result.data, "updated_at", None),
-            }
+            created_subscription = result.data
 
             self.logger.info(
                 f"Subscription created successfully: {created_subscription}"
@@ -631,8 +653,8 @@ class SubscriptionsService(BaseService):
                     "project_id": project_id,
                     "person_email": person_data["email"],
                     "person_id": person_id,
+                    "message": "Subscription created successfully",
                 },
-                message="Subscription created successfully",
             )
 
             self.logger.info(
