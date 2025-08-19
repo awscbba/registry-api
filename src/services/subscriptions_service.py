@@ -553,14 +553,31 @@ class SubscriptionsService(BaseService):
             else:
                 # Create new person (fallback to defensive service for person operations)
                 self.logger.info("Creating new person")
-                from ..models.person import PersonCreate
+                from ..models.person import PersonCreate, Address
+
+                # Parse the name into first and last name
+                full_name = person_data.get("name", "").strip()
+                name_parts = full_name.split(" ", 1) if full_name else ["", ""]
+                first_name = name_parts[0] if len(name_parts) > 0 else "Unknown"
+                last_name = name_parts[1] if len(name_parts) > 1 else "User"
+
+                # Create a default address
+                default_address = Address(
+                    street="Not provided",
+                    city="Not provided",
+                    state="Not provided",
+                    postal_code="00000",
+                    country="Not provided",
+                )
 
                 new_person_data = PersonCreate(
-                    name=person_data.get("name", ""),
+                    first_name=first_name,
+                    last_name=last_name,
                     email=person_data["email"],
-                    # Add other required fields with defaults
                     phone="",  # Optional field
-                    address=None,  # Optional field
+                    date_of_birth="1900-01-01",  # Default date
+                    address=default_address,
+                    is_admin=False,
                 )
 
                 created_person = await self.db_service.create_person(new_person_data)
