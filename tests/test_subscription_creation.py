@@ -10,8 +10,7 @@ import pytest
 from src.utils.api_config import get_api_url
 
 
-# Integration test - temporarily skipped until person creation fix is deployed
-@pytest.mark.skip(reason="Temporarily skipping until person creation fix is deployed")
+# Integration test - re-enabled after person creation fix deployment
 def test_subscription_creation():
     """Test creating a new subscription directly via API."""
 

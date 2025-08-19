@@ -566,18 +566,18 @@ class SubscriptionsService(BaseService):
                     street="Not provided",
                     city="Not provided",
                     state="Not provided",
-                    postal_code="00000",
+                    postalCode="00000",  # Use the alias field name
                     country="Not provided",
                 )
 
                 new_person_data = PersonCreate(
-                    first_name=first_name,
-                    last_name=last_name,
+                    firstName=first_name,  # Use alias field name
+                    lastName=last_name,  # Use alias field name
                     email=person_data["email"],
                     phone="",  # Optional field
-                    date_of_birth="1900-01-01",  # Default date
+                    dateOfBirth="1900-01-01",  # Use alias field name
                     address=default_address,
-                    is_admin=False,
+                    isAdmin=False,  # Use alias field name
                 )
 
                 created_person = await self.db_service.create_person(new_person_data)
