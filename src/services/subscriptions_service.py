@@ -3,6 +3,7 @@ Subscriptions Service - Domain service for subscription-related operations.
 Implements the Service Registry pattern for subscription management.
 """
 
+import os
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 import uuid
@@ -20,25 +21,31 @@ class SubscriptionsService(BaseService):
 
     def __init__(self):
         super().__init__("subscriptions_service")
-        # Use repository pattern instead of direct database service
+        # Use environment variable for table name
+        table_name = os.getenv("SUBSCRIPTIONS_TABLE_NAME", "SubscriptionsTable")
+        # Initialize repository for clean data access
         from ..repositories.subscription_repository import SubscriptionRepository
-        import os
 
-        table_name = os.getenv(
-            "SUBSCRIPTIONS_TABLE_NAME", "people-registry-subscriptions"
-        )
         self.subscription_repository = SubscriptionRepository(table_name=table_name)
         # Keep legacy db_service for backward compatibility during transition
         self.db_service = DefensiveDynamoDBService()
         self.logger = get_handler_logger("subscriptions_service")
 
     async def initialize(self):
-        """Initialize the subscriptions service."""
+        """Initialize the subscriptions service with repository pattern."""
         try:
-            # Test database connectivity
-            await self.db_service.get_all_subscriptions()
-            self.logger.info("Subscriptions service initialized successfully")
-            return True
+            # Test repository connectivity with a simple count operation
+            count_result = await self.subscription_repository.count()
+            if count_result.success:
+                self.logger.info(
+                    f"Subscriptions service initialized successfully. Found {count_result.data} subscriptions."
+                )
+                return True
+            else:
+                self.logger.error(
+                    f"Repository health check failed: {count_result.error}"
+                )
+                return False
         except Exception as e:
             self.logger.error(f"Failed to initialize subscriptions service: {str(e)}")
             return False
@@ -511,11 +518,13 @@ class SubscriptionsService(BaseService):
                 "Creating project subscription",
                 operation="create_project_subscription_v2",
                 project_id=project_id,
+                subscription_data=subscription_data,
             )
 
             # Validate required fields
             if not subscription_data.get("person"):
-                from src.utils.response_formatter import ResponseFormatter
+                self.logger.error("Missing person data in subscription request")
+                from ..utils.response_formatter import ResponseFormatter
 
                 raise ResponseFormatter.validation_error_response(
                     [{"field": "person", "message": "Person information is required"}]
@@ -523,20 +532,49 @@ class SubscriptionsService(BaseService):
 
             person_data = subscription_data["person"]
             if not person_data.get("email"):
-                from src.utils.response_formatter import ResponseFormatter
+                self.logger.error("Missing person email in subscription request")
+                from ..utils.response_formatter import ResponseFormatter
 
                 raise ResponseFormatter.validation_error_response(
                     [{"field": "person.email", "message": "Person email is required"}]
                 )
 
-            # Create subscription entity
+            # Step 1: Find or create the person using repository pattern
+            self.logger.info(f"Looking for person with email: {person_data['email']}")
+
+            # Check if person already exists (fallback to defensive service for person operations)
+            existing_person = await self.db_service.get_person_by_email(
+                person_data["email"]
+            )
+
+            if existing_person:
+                self.logger.info(f"Found existing person: {existing_person.id}")
+                person_id = existing_person.id
+            else:
+                # Create new person (fallback to defensive service for person operations)
+                self.logger.info("Creating new person")
+                from ..models.person import PersonCreate
+
+                new_person_data = PersonCreate(
+                    name=person_data.get("name", ""),
+                    email=person_data["email"],
+                    # Add other required fields with defaults
+                    phone="",  # Optional field
+                    address=None,  # Optional field
+                )
+
+                created_person = await self.db_service.create_person(new_person_data)
+                person_id = created_person.id
+                self.logger.info(f"Created new person with ID: {person_id}")
+
+            # Step 2: Create the subscription using repository pattern
             from ..models.subscription import Subscription
             import uuid
 
             subscription_id = str(uuid.uuid4())
             subscription = Subscription(
                 id=subscription_id,
-                person_id=None,  # Will be created if doesn't exist
+                person_id=person_id,
                 project_id=project_id,
                 person_name=person_data.get("name", ""),
                 person_email=person_data["email"],
@@ -545,60 +583,49 @@ class SubscriptionsService(BaseService):
                 email_sent=False,  # Will be updated after email is sent
             )
 
-            # Create subscription using repository
+            self.logger.info(f"Creating subscription using repository: {subscription}")
+
+            # Use repository pattern for subscription creation
             result = await self.subscription_repository.create(subscription)
 
-            if result.success:
-                # Convert repository result to service format
-                subscription_dict = {
-                    "id": result.data.id,
-                    "person_id": result.data.person_id,
-                    "project_id": result.data.project_id,
-                    "person_name": result.data.person_name,
-                    "person_email": result.data.person_email,
-                    "status": result.data.status,
-                    "notes": result.data.notes,
-                    "email_sent": result.data.email_sent,
-                    "created_at": getattr(result.data, "created_at", None),
-                    "updated_at": getattr(result.data, "updated_at", None),
-                }
+            if not result.success:
+                self.logger.error(f"Repository create failed: {result.error}")
+                raise Exception(f"Failed to create subscription: {result.error}")
 
-                # TODO: Send welcome email here
-                # For now, just mark as email_sent = True
-                subscription_dict["email_sent"] = True
+            created_subscription = {
+                "id": result.data.id,
+                "personId": result.data.person_id,
+                "projectId": result.data.project_id,
+                "status": result.data.status,
+                "notes": result.data.notes,
+                "createdAt": getattr(result.data, "created_at", None),
+                "updatedAt": getattr(result.data, "updated_at", None),
+            }
 
-                service_result = {"success": True, "data": subscription_dict}
-            else:
-                service_result = {"success": False, "error": result.error}
+            self.logger.info(
+                f"Subscription created successfully: {created_subscription}"
+            )
 
-            if service_result.get("success"):
-                # Enhanced v2 response format
-                response = create_v2_response(
-                    data={
-                        "subscription": service_result.get("data", {}),
-                        "email_sent": service_result.get("data", {}).get(
-                            "email_sent", False
-                        ),
-                        "project_id": project_id,
-                        "person_email": person_data["email"],
-                    },
-                    message="Subscription created successfully",
-                )
+            # Enhanced v2 response format
+            response = create_v2_response(
+                data={
+                    "subscription": created_subscription,
+                    "email_sent": False,  # TODO: Implement email sending
+                    "project_id": project_id,
+                    "person_email": person_data["email"],
+                    "person_id": person_id,
+                },
+                message="Subscription created successfully",
+            )
 
-                self.logger.info(
-                    "Project subscription created successfully",
-                    operation="create_project_subscription_v2",
-                    project_id=project_id,
-                    subscription_id=service_result.get("data", {}).get("id"),
-                    email_sent=service_result.get("data", {}).get("email_sent", False),
-                )
-                return response
-            else:
-                from src.utils.response_formatter import ResponseFormatter
-
-                raise ResponseFormatter.internal_server_error_response(
-                    message=f"Failed to create subscription: {service_result.get('error', 'Unknown error')}"
-                )
+            self.logger.info(
+                "Project subscription created successfully",
+                operation="create_project_subscription_v2",
+                project_id=project_id,
+                subscription_id=created_subscription.get("id"),
+                person_id=person_id,
+            )
+            return response
 
         except Exception as e:
             self.logger.error(
@@ -606,5 +633,7 @@ class SubscriptionsService(BaseService):
                 operation="create_project_subscription_v2",
                 project_id=project_id,
                 error_type=type(e).__name__,
+                error_message=str(e),
+                error_details=repr(e),
             )
             raise handle_database_error("creating project subscription", e)

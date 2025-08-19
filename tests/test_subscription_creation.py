@@ -10,10 +10,7 @@ import pytest
 from src.utils.api_config import get_api_url
 
 
-# Integration test - temporarily skipped until deployment completes
-@pytest.mark.skip(
-    reason="Skipping until POST endpoint deployment completes - deployed Lambda still missing endpoint"
-)
+# Integration test - re-enabled after deployment completes
 def test_subscription_creation():
     """Test creating a new subscription directly via API."""
 

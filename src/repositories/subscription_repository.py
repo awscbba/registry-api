@@ -20,7 +20,7 @@ from ..models.subscription import Subscription
 class SubscriptionRepository(BaseRepository[Subscription]):
     """Repository for subscription data access operations"""
 
-    def __init__(self, table_name: str = "people-registry-subscriptions"):
+    def __init__(self, table_name: str = "SubscriptionsTable"):
         super().__init__(table_name)
 
     def _to_entity(self, item: Dict[str, Any]) -> Subscription:
