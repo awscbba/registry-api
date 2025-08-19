@@ -10,8 +10,7 @@ import pytest
 from src.utils.api_config import get_api_url
 
 
-# Integration test - will be enabled after deployment completes
-@pytest.mark.skip(reason="Skipping until deployment pipeline completes")
+# Integration test - testing repository pattern after deployment
 def test_subscription_creation():
     """Test creating a new subscription directly via API."""
 
