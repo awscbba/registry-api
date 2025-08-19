@@ -7,14 +7,14 @@ Provides clean data access patterns for subscription management operations.
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 
-from .base_repository import (
+from src.repositories.base_repository import (
     BaseRepository,
     RepositoryResult,
     QueryOptions,
     QueryFilter,
     QueryOperator,
 )
-from ..models.subscription import Subscription
+from src.models.subscription import Subscription
 
 
 class SubscriptionRepository(BaseRepository[Subscription]):

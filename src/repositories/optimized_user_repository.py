@@ -10,8 +10,8 @@ from typing import Dict, Any, List, Optional, Union
 from concurrent.futures import ThreadPoolExecutor
 import json
 
-from ..core.base_repository import BaseRepository
-from ..utils.logging_config import get_handler_logger
+from src.core.base_repository import BaseRepository
+from src.utils.logging_config import get_handler_logger
 
 
 class OptimizedUserRepository(BaseRepository):

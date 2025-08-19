@@ -9,8 +9,13 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any
 from decimal import Decimal
 
-from .base_repository import BaseRepository, QueryFilter, QueryOptions, RepositoryResult
-from ..models.audit import AuditLog
+from src.repositories.base_repository import (
+    BaseRepository,
+    QueryFilter,
+    QueryOptions,
+    RepositoryResult,
+)
+from src.models.audit import AuditLog
 
 
 class AuditRepository(BaseRepository[AuditLog]):

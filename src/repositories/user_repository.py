@@ -7,14 +7,14 @@ Provides clean data access patterns for user management operations.
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 
-from .base_repository import (
+from src.repositories.base_repository import (
     BaseRepository,
     RepositoryResult,
     QueryOptions,
     QueryFilter,
     QueryOperator,
 )
-from ..models.person import Person
+from src.models.person import Person
 
 
 class UserRepository(BaseRepository[Person]):
@@ -29,7 +29,7 @@ class UserRepository(BaseRepository[Person]):
             # Handle address conversion
             address_data = item.get("address", {})
             if address_data and isinstance(address_data, dict):
-                from ..models.person import Address
+                from src.models.person import Address
 
                 # Follow the same pattern as DefensiveDynamoDBService
                 # Normalize postal code field - handle ALL variants

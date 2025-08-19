@@ -7,14 +7,14 @@ Provides clean data access patterns for project management operations.
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 
-from .base_repository import (
+from src.repositories.base_repository import (
     BaseRepository,
     RepositoryResult,
     QueryOptions,
     QueryFilter,
     QueryOperator,
 )
-from ..models.project import Project
+from src.models.project import Project
 
 
 class ProjectRepository(BaseRepository[Project]):

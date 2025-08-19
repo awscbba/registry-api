@@ -8,11 +8,11 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 import uuid
 
-from ..core.base_service import BaseService
-from ..models.subscription import SubscriptionCreate, SubscriptionUpdate
-from ..utils.logging_config import get_handler_logger
-from ..utils.error_handler import handle_database_error
-from ..utils.response_models import create_v1_response, create_v2_response
+from src.core.base_service import BaseService
+from src.models.subscription import SubscriptionCreate, SubscriptionUpdate
+from src.utils.logging_config import get_handler_logger
+from src.utils.error_handler import handle_database_error
+from src.utils.response_models import create_v1_response, create_v2_response
 
 
 class SubscriptionsService(BaseService):
@@ -23,8 +23,8 @@ class SubscriptionsService(BaseService):
         # Use environment variable for table name
         table_name = os.getenv("SUBSCRIPTIONS_TABLE_NAME", "SubscriptionsTable")
         # Initialize repository for clean data access
-        from ..repositories.subscription_repository import SubscriptionRepository
-        from ..repositories.user_repository import UserRepository
+        from src.repositories.subscription_repository import SubscriptionRepository
+        from src.repositories.user_repository import UserRepository
 
         self.subscription_repository = SubscriptionRepository(table_name=table_name)
         self.user_repository = UserRepository()
@@ -554,7 +554,7 @@ class SubscriptionsService(BaseService):
             # Validate required fields
             if not subscription_data.get("person"):
                 self.logger.error("Missing person data in subscription request")
-                from ..utils.response_formatter import ResponseFormatter
+                from src.utils.response_formatter import ResponseFormatter
 
                 raise ResponseFormatter.validation_error_response(
                     [{"field": "person", "message": "Person information is required"}]
@@ -563,7 +563,7 @@ class SubscriptionsService(BaseService):
             person_data = subscription_data["person"]
             if not person_data.get("email"):
                 self.logger.error("Missing person email in subscription request")
-                from ..utils.response_formatter import ResponseFormatter
+                from src.utils.response_formatter import ResponseFormatter
 
                 raise ResponseFormatter.validation_error_response(
                     [{"field": "person.email", "message": "Person email is required"}]
@@ -585,7 +585,7 @@ class SubscriptionsService(BaseService):
             else:
                 # Create new person using repository
                 self.logger.info("Creating new person")
-                from ..models.person import PersonCreate, Address
+                from src.models.person import PersonCreate, Address
 
                 # Parse the name into first and last name
                 full_name = person_data.get("name", "").strip()
@@ -620,7 +620,7 @@ class SubscriptionsService(BaseService):
                 self.logger.info(f"Created new person with ID: {person_id}")
 
             # Step 2: Create the subscription using repository pattern
-            from ..models.subscription import SubscriptionCreate
+            from src.models.subscription import SubscriptionCreate
 
             subscription_create_data = SubscriptionCreate(
                 personId=person_id,
