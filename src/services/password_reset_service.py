@@ -99,8 +99,18 @@ class PasswordResetService(BaseService):
         """
         try:
             # Check rate limiting
+            from ..models.error_handling import ErrorContext
+
+            context = ErrorContext(
+                operation="password_reset_initiation",
+                resource_type="password_reset",
+                resource_id=request.email,
+                user_id=None,
+                ip_address=request.ip_address,
+            )
+
             rate_limit_result = await check_password_reset_rate_limit(
-                request.email, request.ip_address
+                request.email, context
             )
             if not rate_limit_result.allowed:
                 return PasswordResetResponse(
