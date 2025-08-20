@@ -122,7 +122,30 @@ class ProjectsService(BaseService):
             result = await self.project_repository.get_all()
 
             if result.success:
-                projects = [project.model_dump() for project in result.data]
+                # Add robust error handling for project serialization
+                projects = []
+                for i, project in enumerate(result.data):
+                    try:
+                        if hasattr(project, "model_dump"):
+                            projects.append(project.model_dump())
+                        elif hasattr(project, "dict"):
+                            # Fallback for older Pydantic versions
+                            projects.append(project.dict())
+                        elif isinstance(project, dict):
+                            # Already a dictionary
+                            projects.append(project)
+                        else:
+                            self.logger.error(
+                                f"Project {i} has unexpected type: {type(project)}"
+                            )
+                            # Skip invalid projects
+                            continue
+                    except Exception as e:
+                        self.logger.error(
+                            f"Error processing project {i}: {str(e)}, type: {type(project)}"
+                        )
+                        # Skip problematic projects
+                        continue
 
                 response = create_v2_response(
                     projects,
