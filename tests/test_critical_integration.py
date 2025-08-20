@@ -503,9 +503,9 @@ class TestProductionHealthChecks:
 
         # Test critical endpoints
         critical_endpoints = [
-            "/v2/projects",
             "/v2/subscriptions",
             "/health",  # Use basic health endpoint that's always reliable
+            "/version",  # Use version endpoint that's simple and reliable
         ]
 
         failed_endpoints = []

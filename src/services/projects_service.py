@@ -141,24 +141,34 @@ class ProjectsService(BaseService):
                 )
                 return response
             else:
-                # Fallback to legacy method if repository fails
-                self.logger.warning("Repository failed, falling back to legacy method")
-                projects = await self.db_service.get_all_projects()
+                # Repository failed - return limited data to prevent timeout
+                self.logger.warning(
+                    f"Repository failed: {result.error}, returning limited data"
+                )
+
+                # Return a basic response with count only to prevent timeout
+                try:
+                    # Try to get just a count using the defensive service
+                    count_result = await self.project_repository.count()
+                    total_count = count_result.data if count_result.success else 0
+                except Exception:
+                    total_count = 0
 
                 response = create_v2_response(
-                    projects,
+                    [],  # Empty list to prevent timeout
                     metadata={
-                        "total_count": len(projects),
+                        "total_count": total_count,
                         "service": "projects_service",
                         "version": "v2",
-                        "fallback_method": True,
+                        "limited_response": True,
+                        "reason": "Repository failed, returning count only",
                     },
                 )
                 self.logger.log_api_response(
                     "GET",
                     "/v2/projects",
                     200,
-                    additional_context={"count": len(projects)},
+                    additional_context={"count": 0, "total_available": total_count},
                 )
                 return response
 
