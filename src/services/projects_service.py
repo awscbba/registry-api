@@ -117,20 +117,51 @@ class ProjectsService(BaseService):
         """Get all projects (v2 format with enhanced metadata)."""
         try:
             self.logger.log_api_request("GET", "/v2/projects")
-            projects = await self.db_service.get_all_projects()
 
-            response = create_v2_response(
-                projects,
-                metadata={
-                    "total_count": len(projects),
-                    "service": "projects_service",
-                    "version": "v2",
-                },
-            )
-            self.logger.log_api_response(
-                "GET", "/v2/projects", 200, additional_context={"count": len(projects)}
-            )
-            return response
+            # Use repository for more efficient data access
+            result = await self.project_repository.get_all()
+
+            if result.success:
+                projects = [project.to_dict() for project in result.data]
+
+                response = create_v2_response(
+                    projects,
+                    metadata={
+                        "total_count": len(projects),
+                        "service": "projects_service",
+                        "version": "v2",
+                        "repository_pattern": True,
+                    },
+                )
+                self.logger.log_api_response(
+                    "GET",
+                    "/v2/projects",
+                    200,
+                    additional_context={"count": len(projects)},
+                )
+                return response
+            else:
+                # Fallback to legacy method if repository fails
+                self.logger.warning("Repository failed, falling back to legacy method")
+                projects = await self.db_service.get_all_projects()
+
+                response = create_v2_response(
+                    projects,
+                    metadata={
+                        "total_count": len(projects),
+                        "service": "projects_service",
+                        "version": "v2",
+                        "fallback_method": True,
+                    },
+                )
+                self.logger.log_api_response(
+                    "GET",
+                    "/v2/projects",
+                    200,
+                    additional_context={"count": len(projects)},
+                )
+                return response
+
         except Exception as e:
             self.logger.error(
                 "Failed to retrieve projects",
