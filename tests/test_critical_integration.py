@@ -505,7 +505,7 @@ class TestProductionHealthChecks:
         critical_endpoints = [
             "/v2/projects",
             "/v2/subscriptions",
-            "/v2/admin/dashboard",
+            "/admin/stats",  # Use existing admin endpoint from modular handler
         ]
 
         failed_endpoints = []
