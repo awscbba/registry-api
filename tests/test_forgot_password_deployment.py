@@ -6,7 +6,7 @@ This script tests the deployed forgot password API to verify it works correctly.
 Run this after deploying changes to verify the functionality.
 
 Usage:
-    python test_forgot_password.py
+    python test_forgot_password_deployment.py
 """
 
 import requests
