@@ -10,7 +10,6 @@ import pytest
 from src.utils.api_config import get_api_url
 
 
-# Integration test - re-enabled after subscription repository fixes
 def test_subscription_creation():
     """Test creating a new subscription directly via API."""
 

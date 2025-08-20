@@ -554,19 +554,21 @@ class SubscriptionsService(BaseService):
             # Validate required fields
             if not subscription_data.get("person"):
                 self.logger.error("Missing person data in subscription request")
-                from src.utils.response_formatter import ResponseFormatter
+                from fastapi import HTTPException, status
 
-                raise ResponseFormatter.validation_error_response(
-                    [{"field": "person", "message": "Person information is required"}]
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Person information is required",
                 )
 
             person_data = subscription_data["person"]
             if not person_data.get("email"):
                 self.logger.error("Missing person email in subscription request")
-                from src.utils.response_formatter import ResponseFormatter
+                from fastapi import HTTPException, status
 
-                raise ResponseFormatter.validation_error_response(
-                    [{"field": "person.email", "message": "Person email is required"}]
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Person email is required",
                 )
 
             # Step 1: Find or create the person using repository pattern
@@ -578,10 +580,8 @@ class SubscriptionsService(BaseService):
             )
 
             if person_result.success and person_result.data:
-                self.logger.info(
-                    f"Found existing person: {person_result.data.get('id')}"
-                )
-                person_id = person_result.data.get("id")
+                self.logger.info(f"Found existing person: {person_result.data.id}")
+                person_id = person_result.data.id
             else:
                 # Create new person using repository
                 self.logger.info("Creating new person")
@@ -616,7 +616,7 @@ class SubscriptionsService(BaseService):
                 if not create_result.success:
                     raise Exception(f"Failed to create person: {create_result.error}")
 
-                person_id = create_result.data.get("id")
+                person_id = create_result.data.id
                 self.logger.info(f"Created new person with ID: {person_id}")
 
             # Step 2: Create the subscription using repository pattern
@@ -661,7 +661,11 @@ class SubscriptionsService(BaseService):
                 "Project subscription created successfully",
                 operation="create_project_subscription_v2",
                 project_id=project_id,
-                subscription_id=created_subscription.get("id"),
+                subscription_id=(
+                    created_subscription.get("id")
+                    if isinstance(created_subscription, dict)
+                    else getattr(created_subscription, "id", None)
+                ),
                 person_id=person_id,
             )
             return response
