@@ -11,6 +11,7 @@ import asyncio
 import sys
 import os
 import json
+import pytest
 from datetime import datetime
 
 # Add the src directory to the path
@@ -19,6 +20,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 from models.person import PersonUpdate, Address
 
 
+@pytest.mark.asyncio
 async def test_field_mapping_consistency():
     """Test field mapping consistency across the entire stack"""
 
@@ -256,6 +258,7 @@ async def test_field_mapping_consistency():
     return True
 
 
+@pytest.mark.asyncio
 async def test_api_endpoint_directly():
     """Test the actual API endpoint to see what it expects/returns"""
 

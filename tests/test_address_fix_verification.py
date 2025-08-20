@@ -6,6 +6,7 @@ Quick test to verify the address field fix works for the admin user
 import sys
 import os
 import asyncio
+import pytest
 
 # Add the src directory to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
@@ -13,6 +14,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 from src.services.defensive_dynamodb_service import DefensiveDynamoDBService
 
 
+@pytest.mark.asyncio
 async def test_admin_user_retrieval():
     """Test that we can now retrieve the admin user without address field errors"""
 
@@ -47,6 +49,7 @@ async def test_admin_user_retrieval():
         return False
 
 
+@pytest.mark.asyncio
 async def test_person_update():
     """Test that person update now works"""
 
