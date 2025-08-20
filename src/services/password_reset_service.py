@@ -199,8 +199,8 @@ class PasswordResetService(BaseService):
             # Generate reset token
             reset_token = str(uuid.uuid4())
             expires_at = datetime.now(timezone.utc) + timedelta(
-                hours=1
-            )  # 1 hour expiry
+                hours=24
+            )  # 24 hour expiry - gives users more time to reset password
 
             # Create reset token record
             token_record = PasswordResetToken(
