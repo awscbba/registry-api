@@ -20,7 +20,7 @@ from src.models.person import Person
 class UserRepository(BaseRepository[Person]):
     """Repository for user/person data access operations"""
 
-    def __init__(self, table_name: str = "people-registry"):
+    def __init__(self, table_name: str = "PeopleTable"):
         super().__init__(table_name)
 
     def _to_entity(self, item: Dict[str, Any]) -> Person:
