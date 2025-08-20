@@ -26,16 +26,20 @@ class SubscriptionRepository(BaseRepository[Subscription]):
     def _to_entity(self, item: Dict[str, Any]) -> Subscription:
         """Convert DynamoDB item to Subscription entity"""
         try:
-            # Handle subscription data conversion
+            # Handle subscription data conversion - map from DynamoDB camelCase to snake_case
             subscription_data = {
                 "id": item.get("id"),
-                "person_id": item.get("person_id"),
-                "project_id": item.get("project_id"),
-                "person_name": item.get("person_name"),
-                "person_email": item.get("person_email"),
+                "person_id": item.get("personId") or item.get("person_id"),
+                "project_id": item.get("projectId") or item.get("project_id"),
+                "person_name": item.get("personName")
+                or item.get("person_name")
+                or "Unknown",
+                "person_email": item.get("personEmail")
+                or item.get("person_email")
+                or "unknown@example.com",
                 "status": item.get("status", "active"),
                 "notes": item.get("notes", ""),
-                "created_at": item.get("created_at"),
+                "created_at": item.get("subscribedAt") or item.get("created_at"),
                 "updated_at": item.get("updated_at"),
                 "email_sent": item.get("email_sent", False),
             }
@@ -58,21 +62,20 @@ class SubscriptionRepository(BaseRepository[Subscription]):
         """Convert Subscription entity to DynamoDB item"""
         item = {
             "id": entity.id,
-            "person_id": entity.person_id,
-            "project_id": entity.project_id,
-            "person_name": entity.person_name,
-            "person_email": entity.person_email,
+            "personId": entity.person_id,  # Use camelCase for DynamoDB
+            "projectId": entity.project_id,  # Use camelCase for DynamoDB
+            "personName": entity.person_name,  # Use camelCase for DynamoDB
+            "personEmail": entity.person_email,  # Use camelCase for DynamoDB
             "status": getattr(entity, "status", "active"),
             "notes": getattr(entity, "notes", ""),
             "email_sent": getattr(entity, "email_sent", False),
         }
 
         # Handle optional fields
-        optional_fields = ["created_at", "updated_at"]
-        for field in optional_fields:
-            value = getattr(entity, field, None)
-            if value is not None:
-                item[field] = value
+        if hasattr(entity, "created_at") and entity.created_at:
+            item["subscribedAt"] = entity.created_at  # Use camelCase for DynamoDB
+        if hasattr(entity, "updated_at") and entity.updated_at:
+            item["updated_at"] = entity.updated_at
 
         return item
 
@@ -86,7 +89,7 @@ class SubscriptionRepository(BaseRepository[Subscription]):
         """Get subscriptions by person ID"""
         filters = [
             QueryFilter(
-                field="person_id", operator=QueryOperator.EQUALS, value=person_id
+                field="personId", operator=QueryOperator.EQUALS, value=person_id
             )
         ]
         options = QueryOptions(filters=filters)
@@ -98,7 +101,7 @@ class SubscriptionRepository(BaseRepository[Subscription]):
         """Get subscriptions by project ID"""
         filters = [
             QueryFilter(
-                field="project_id", operator=QueryOperator.EQUALS, value=project_id
+                field="projectId", operator=QueryOperator.EQUALS, value=project_id
             )
         ]
         options = QueryOptions(filters=filters)
@@ -110,10 +113,10 @@ class SubscriptionRepository(BaseRepository[Subscription]):
         """Get subscription by person and project"""
         filters = [
             QueryFilter(
-                field="person_id", operator=QueryOperator.EQUALS, value=person_id
+                field="personId", operator=QueryOperator.EQUALS, value=person_id
             ),
             QueryFilter(
-                field="project_id", operator=QueryOperator.EQUALS, value=project_id
+                field="projectId", operator=QueryOperator.EQUALS, value=project_id
             ),
         ]
         options = QueryOptions(filters=filters, limit=1)
@@ -135,9 +138,7 @@ class SubscriptionRepository(BaseRepository[Subscription]):
     async def get_by_email(self, email: str) -> RepositoryResult[List[Subscription]]:
         """Get subscriptions by person email"""
         filters = [
-            QueryFilter(
-                field="person_email", operator=QueryOperator.EQUALS, value=email
-            )
+            QueryFilter(field="personEmail", operator=QueryOperator.EQUALS, value=email)
         ]
         options = QueryOptions(filters=filters)
         return await self.list_all(options)

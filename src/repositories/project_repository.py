@@ -20,7 +20,7 @@ from src.models.project import Project
 class ProjectRepository(BaseRepository[Project]):
     """Repository for project data access operations"""
 
-    def __init__(self, table_name: str = "people-registry-projects"):
+    def __init__(self, table_name: str = "ProjectsTable"):
         super().__init__(table_name)
 
     def _to_entity(self, item: Dict[str, Any]) -> Project:

@@ -21,7 +21,7 @@ from src.models.audit import AuditLog
 class AuditRepository(BaseRepository[AuditLog]):
     """Repository for audit trail data access and management."""
 
-    def __init__(self, table_name: str = "audit_logs", region: str = "us-east-1"):
+    def __init__(self, table_name: str = "AuditLogsTable", region: str = "us-east-1"):
         """
         Initialize AuditRepository.
 
