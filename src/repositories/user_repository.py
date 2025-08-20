@@ -4,6 +4,7 @@ User Repository - Data access layer for user/person entities
 Provides clean data access patterns for user management operations.
 """
 
+import os
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 
@@ -20,7 +21,9 @@ from src.models.person import Person
 class UserRepository(BaseRepository[Person]):
     """Repository for user/person data access operations"""
 
-    def __init__(self, table_name: str = "PeopleTable"):
+    def __init__(self, table_name: str = None):
+        if table_name is None:
+            table_name = os.getenv("PEOPLE_TABLE_NAME", "PeopleTable")
         super().__init__(table_name)
 
     def _to_entity(self, item: Dict[str, Any]) -> Person:

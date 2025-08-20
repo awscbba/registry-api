@@ -3,6 +3,7 @@ Role management service for database operations.
 """
 
 import logging
+import os
 import time
 from typing import List, Optional, Set, Dict, Any
 from datetime import datetime
@@ -33,9 +34,12 @@ class RolesService(BaseService):
     def __init__(
         self,
         config: Optional[Dict[str, Any]] = None,
-        table_name: str = "people-registry-roles",
+        table_name: str = None,
     ):
         super().__init__("roles_service", config)
+        # Use environment variable for table name with fallback
+        if table_name is None:
+            table_name = os.getenv("ROLES_TABLE_NAME", "people-registry-roles")
         self.table_name = table_name
         # Initialize DynamoDB resources immediately to avoid NoneType errors
         self.dynamodb = boto3.resource("dynamodb", region_name="us-east-1")

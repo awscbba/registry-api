@@ -4,6 +4,7 @@ Project Repository - Data access layer for project entities
 Provides clean data access patterns for project management operations.
 """
 
+import os
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 
@@ -20,7 +21,9 @@ from src.models.project import Project
 class ProjectRepository(BaseRepository[Project]):
     """Repository for project data access operations"""
 
-    def __init__(self, table_name: str = "ProjectsTable"):
+    def __init__(self, table_name: str = None):
+        if table_name is None:
+            table_name = os.getenv("PROJECTS_TABLE_NAME", "ProjectsTable")
         super().__init__(table_name)
 
     def _to_entity(self, item: Dict[str, Any]) -> Project:

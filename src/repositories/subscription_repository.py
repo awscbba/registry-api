@@ -4,6 +4,7 @@ Subscription Repository - Data access layer for subscription entities
 Provides clean data access patterns for subscription management operations.
 """
 
+import os
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 
@@ -20,7 +21,9 @@ from src.models.subscription import Subscription
 class SubscriptionRepository(BaseRepository[Subscription]):
     """Repository for subscription data access operations"""
 
-    def __init__(self, table_name: str = "SubscriptionsTable"):
+    def __init__(self, table_name: str = None):
+        if table_name is None:
+            table_name = os.getenv("SUBSCRIPTIONS_TABLE_NAME", "SubscriptionsTable")
         super().__init__(table_name)
 
     def _to_entity(self, item: Dict[str, Any]) -> Subscription:
