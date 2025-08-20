@@ -122,7 +122,7 @@ class ProjectsService(BaseService):
             result = await self.project_repository.get_all()
 
             if result.success:
-                projects = [project.to_dict() for project in result.data]
+                projects = [project.model_dump() for project in result.data]
 
                 response = create_v2_response(
                     projects,
