@@ -107,6 +107,7 @@ class PasswordResetService(BaseService):
                 resource_id=request.email,
                 user_id=None,
                 ip_address=request.ip_address,
+                request_id=None,  # Add missing required field
             )
 
             rate_limit_result = await check_password_reset_rate_limit(
