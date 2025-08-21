@@ -3781,6 +3781,92 @@ async def validate_reset_token(token: str):
         return {"valid": False, "expires_at": None}
 
 
+@auth_router.post("/refresh", response_model=Dict[str, Any])
+async def refresh_token(refresh_request: Dict[str, str]):
+    """
+    Refresh an access token using a refresh token.
+
+    This endpoint allows clients to get a new access token without
+    requiring the user to log in again.
+    """
+    try:
+        refresh_token = refresh_request.get("refresh_token")
+        if not refresh_token:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Refresh token is required",
+            )
+
+        # Verify refresh token
+        from ..utils.jwt_utils import JWTManager
+
+        payload = JWTManager.verify_token(refresh_token)
+        if not payload:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired refresh token",
+            )
+
+        # Check token type
+        if payload.get("type") != "refresh":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token type",
+            )
+
+        # Get user ID from token
+        user_id = payload.get("sub")
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token payload",
+            )
+
+        # Get user from database to ensure they still exist and are active
+        people_service = service_manager.get_service("people")
+        person = await people_service.get_person(user_id)
+        if not person:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found",
+            )
+
+        # Check if account is active
+        if not getattr(person, "is_active", True):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Account is deactivated",
+            )
+
+        # Create new access token
+        user_data = {
+            "email": person.email,
+            "first_name": person.first_name,
+            "last_name": person.last_name,
+            "is_admin": getattr(person, "is_admin", False),
+        }
+
+        new_access_token = JWTManager.create_access_token(
+            subject=user_id,
+            user_data=user_data,
+        )
+
+        return {
+            "access_token": new_access_token,
+            "token_type": "bearer",
+            "expires_in": 3600,  # 1 hour in seconds
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Token refresh failed: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Token refresh failed",
+        )
+
+
 # ==================== CRITICAL PHASE 1 ADMIN ENDPOINTS ====================
 # These endpoints are required by the frontend admin dashboard
 
