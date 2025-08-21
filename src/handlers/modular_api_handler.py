@@ -3633,14 +3633,12 @@ async def login(login_request: LoginRequest):
 
         if success and login_response:
             return {
-                "success": True,
-                "data": {
-                    "access_token": login_response.access_token,
-                    "refresh_token": login_response.refresh_token,
-                    "token_type": login_response.token_type,
-                    "expires_in": login_response.expires_in,
-                    "user": login_response.user if login_response.user else None,
-                },
+                "access_token": login_response.access_token,
+                "refresh_token": login_response.refresh_token,
+                "token_type": login_response.token_type,
+                "expires_in": login_response.expires_in,
+                "user": login_response.user if login_response.user else None,
+                "require_password_change": login_response.require_password_change,
             }
         else:
             raise HTTPException(
