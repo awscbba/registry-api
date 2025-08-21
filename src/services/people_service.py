@@ -2467,6 +2467,55 @@ class PeopleService(BaseService):
 
             raise
 
+    # ==================== PASSWORD RESET SUPPORT METHODS ====================
+
+    async def get_person(self, person_id: str) -> Optional[Person]:
+        """
+        Get person by ID for internal service use (e.g., password reset).
+        Returns the Person object directly, not wrapped in API response format.
+        """
+        try:
+            self.logger.debug(f"Getting person for internal use: {person_id}")
+            person = await self.db_service.get_person(person_id)
+            return person
+        except Exception as e:
+            self.logger.error(
+                "Failed to get person for internal use",
+                operation="get_person",
+                person_id=person_id,
+                error_type=type(e).__name__,
+            )
+            return None
+
+    async def update_person(
+        self, person_id: str, person_data: PersonUpdate
+    ) -> Optional[Person]:
+        """
+        Update person for internal service use (e.g., password reset).
+        Returns the updated Person object directly, not wrapped in API response format.
+        """
+        try:
+            self.logger.debug(f"Updating person for internal use: {person_id}")
+
+            # Check if person exists
+            existing_person = await self.db_service.get_person(person_id)
+            if not existing_person:
+                self.logger.warning(f"Person not found for update: {person_id}")
+                return None
+
+            # Update person
+            updated_person = await self.db_service.update_person(person_id, person_data)
+            return updated_person
+
+        except Exception as e:
+            self.logger.error(
+                "Failed to update person for internal use",
+                operation="update_person",
+                person_id=person_id,
+                error_type=type(e).__name__,
+            )
+            return None
+
     async def _get_cached_or_execute(
         self, cache_key: str, execute_func: callable, ttl: int = 3600, *args, **kwargs
     ):
