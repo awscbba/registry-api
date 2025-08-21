@@ -67,9 +67,12 @@ class ServiceRegistryManager:
             email_service = EmailService()
             self.registry.register_service("email", email_service)
 
-            # Register password reset service (depends on email service and people service for DB operations)
+            # Register password reset service (depends on email service and direct DB access)
+            from ..services.defensive_dynamodb_service import DefensiveDynamoDBService
+
+            db_service = DefensiveDynamoDBService()
             password_reset_service = PasswordResetService(
-                db_service=people_service,  # Use people service for database operations
+                db_service=db_service,  # Use defensive DB service for direct database operations
                 email_service=email_service,
             )
             self.registry.register_service("password_reset", password_reset_service)
