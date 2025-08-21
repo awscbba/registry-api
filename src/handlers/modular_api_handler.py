@@ -3639,7 +3639,7 @@ async def login(login_request: LoginRequest):
                     "refresh_token": login_response.refresh_token,
                     "token_type": login_response.token_type,
                     "expires_in": login_response.expires_in,
-                    "user": login_response.user.dict() if login_response.user else None,
+                    "user": login_response.user if login_response.user else None,
                 },
             }
         else:
