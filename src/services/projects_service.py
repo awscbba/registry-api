@@ -119,7 +119,7 @@ class ProjectsService(BaseService):
             self.logger.log_api_request("GET", "/v2/projects")
 
             # Use repository for more efficient data access
-            result = await self.project_repository.get_all()
+            result = await self.project_repository.list_all()
 
             if result.success:
                 # Add robust error handling for project serialization
