@@ -113,8 +113,11 @@ async def assign_role(
     Requires super admin access.
     """
     try:
-        # Extract admin user ID
-        admin_user_id = getattr(current_user, "id", "unknown")
+        # Extract admin user ID (handle both dict and AuthenticatedUser object)
+        if isinstance(current_user, dict):
+            admin_user_id = current_user.get("id", "unknown")
+        else:
+            admin_user_id = getattr(current_user, "id", "unknown")
 
         # Assign the role
         response = await roles_service.assign_role(request, admin_user_id)
@@ -166,8 +169,11 @@ async def revoke_role(
     Requires super admin access.
     """
     try:
-        # Extract admin user ID
-        admin_user_id = getattr(current_user, "id", "unknown")
+        # Extract admin user ID (handle both dict and AuthenticatedUser object)
+        if isinstance(current_user, dict):
+            admin_user_id = current_user.get("id", "unknown")
+        else:
+            admin_user_id = getattr(current_user, "id", "unknown")
 
         # Revoke the role
         response = await roles_service.revoke_role(user_email, role_type, admin_user_id)
@@ -211,8 +217,11 @@ async def get_my_roles(
     Requires authentication.
     """
     try:
-        # Extract user ID
-        user_id = getattr(current_user, "id", "unknown")
+        # Extract user ID (handle both dict and AuthenticatedUser object)
+        if isinstance(current_user, dict):
+            user_id = current_user.get("id", "unknown")
+        else:
+            user_id = getattr(current_user, "id", "unknown")
 
         user_roles = await roles_service.list_user_roles(user_id)
         return user_roles
@@ -237,8 +246,11 @@ async def check_permission(
     Requires authentication.
     """
     try:
-        # Extract user ID
-        user_id = getattr(current_user, "id", "unknown")
+        # Extract user ID (handle both dict and AuthenticatedUser object)
+        if isinstance(current_user, dict):
+            user_id = current_user.get("id", "unknown")
+        else:
+            user_id = getattr(current_user, "id", "unknown")
 
         has_permission = await roles_service.user_has_permission(user_id, permission)
 
@@ -261,8 +273,11 @@ async def migrate_existing_admins(
     Requires super admin access.
     """
     try:
-        # Extract admin user ID
-        admin_user_id = getattr(current_user, "id", "unknown")
+        # Extract admin user ID (handle both dict and AuthenticatedUser object)
+        if isinstance(current_user, dict):
+            admin_user_id = current_user.get("id", "unknown")
+        else:
+            admin_user_id = getattr(current_user, "id", "unknown")
 
         # Hardcoded admin emails to migrate
         hardcoded_admins = [

@@ -1542,10 +1542,13 @@ async def create_project_v2(
         # Convert dict to ProjectCreate object
         project_create_obj = ProjectCreate(**project_create_data)
 
-        # Create project with current user as creator
-        created_by = getattr(current_user, "id", None) or getattr(
-            current_user, "sub", None
-        )
+        # Create project with current user as creator (handle both dict and AuthenticatedUser object)
+        if isinstance(current_user, dict):
+            created_by = current_user.get("id") or current_user.get("sub")
+        else:
+            created_by = getattr(current_user, "id", None) or getattr(
+                current_user, "sub", None
+            )
         project = await db_service.create_project(project_create_obj, created_by)
 
         response = create_v2_response(project)

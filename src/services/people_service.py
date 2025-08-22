@@ -1693,8 +1693,16 @@ class PeopleService(BaseService):
                 "user_id": user_id,
                 "changes_applied": update_data,
                 "previous_state": {
-                    "is_active": getattr(current_user, "is_active", True),
-                    "is_suspended": getattr(current_user, "is_suspended", False),
+                    "is_active": (
+                        current_user.get("is_active", True)
+                        if isinstance(current_user, dict)
+                        else getattr(current_user, "is_active", True)
+                    ),
+                    "is_suspended": (
+                        current_user.get("is_suspended", False)
+                        if isinstance(current_user, dict)
+                        else getattr(current_user, "is_suspended", False)
+                    ),
                 },
                 "timestamp": datetime.now().isoformat(),
             }
