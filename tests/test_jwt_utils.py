@@ -224,7 +224,7 @@ class TestJWTConfig:
         assert JWTConfig.SECRET_KEY is not None
         assert len(JWTConfig.SECRET_KEY) > 0
 
-    @patch.dict("os.environ", {"JWT_SECRET_KEY": "test-secret-key"})
+    @patch.dict("os.environ", {"JWT_SECRET": "test-secret-key"})
     def test_jwt_config_from_env(self):
         """Test JWT configuration from environment variable."""
         # Need to reload the module to pick up the environment variable

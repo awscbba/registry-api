@@ -13,7 +13,7 @@ class JWTConfig:
     """JWT configuration settings."""
 
     # In production, this should come from environment variables or AWS Secrets Manager
-    SECRET_KEY = os.getenv("JWT_SECRET_KEY", secrets.token_urlsafe(32))
+    SECRET_KEY = os.getenv("JWT_SECRET", "your-jwt-secret-change-in-production-please")
     ALGORITHM = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES = 60  # 1 hour
     REFRESH_TOKEN_EXPIRE_DAYS = 7  # 7 days

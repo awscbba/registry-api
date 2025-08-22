@@ -218,8 +218,34 @@ class RolesService(BaseService):
         Returns:
             True if user is an admin, False otherwise
         """
-        user_roles = await self.get_user_roles(user_id)
-        return any(is_admin_role(role) for role in user_roles)
+        try:
+            # First, try to get roles from the roles table
+            user_roles = await self.get_user_roles(user_id)
+            if any(is_admin_role(role) for role in user_roles):
+                return True
+
+            # Fallback: Check the isAdmin field in the user record
+            # This is for backward compatibility when roles table is not populated
+            db_service = DefensiveDynamoDBService()
+            person = await db_service.get_person(user_id)
+            if person and getattr(person, "is_admin", False):
+                logger.info(f"User {user_id} is admin based on user record (fallback)")
+                return True
+
+            return False
+
+        except Exception as e:
+            logger.error(f"Error checking admin status for user {user_id}: {str(e)}")
+            # Final fallback: Check user record directly
+            try:
+                db_service = DefensiveDynamoDBService()
+                person = await db_service.get_person(user_id)
+                return person and getattr(person, "is_admin", False)
+            except Exception as fallback_error:
+                logger.error(
+                    f"Fallback admin check failed for user {user_id}: {str(fallback_error)}"
+                )
+                return False
 
     async def user_is_super_admin(self, user_id: str) -> bool:
         """
