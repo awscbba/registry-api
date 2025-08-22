@@ -1251,7 +1251,7 @@ class PeopleService(BaseService):
                     "service": "people_service",
                     "version": "bulk_operation",
                     "operation_type": operation,
-                    "admin_user": admin_user.get("id") if admin_user else None,
+                    "admin_user": admin_user.id if admin_user else None,
                     "timestamp": datetime.now().isoformat(),
                 },
             )
@@ -1334,7 +1334,7 @@ class PeopleService(BaseService):
                     "version": "lifecycle_management",
                     "action": action,
                     "user_id": user_id,
-                    "admin_user": admin_user.get("id") if admin_user else None,
+                    "admin_user": admin_user.id if admin_user else None,
                     "timestamp": datetime.now().isoformat(),
                 },
             )
@@ -1389,7 +1389,7 @@ class PeopleService(BaseService):
             export_metadata = {
                 "total_records": len(all_people),
                 "format": format,
-                "exported_by": admin_user.get("id") if admin_user else None,
+                "exported_by": admin_user.id if admin_user else None,
                 "export_timestamp": datetime.now().isoformat(),
                 "filters_applied": filters or {},
             }

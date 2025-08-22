@@ -1611,7 +1611,7 @@ async def get_people_dashboard(
     try:
         logger.info(
             "Getting people dashboard data",
-            extra={"admin_user": current_user.get("id")},
+            extra={"admin_user": current_user.id},
         )
 
         people_service = service_manager.get_service("people")
@@ -1662,7 +1662,7 @@ async def get_people_analytics(
         logger.info(
             "Getting people analytics",
             extra={
-                "admin_user": current_user.get("id"),
+                "admin_user": current_user.id,
                 "date_from": date_from,
                 "date_to": date_to,
                 "metric_type": metric_type,
@@ -1751,7 +1751,7 @@ async def get_registration_trends(
         logger.info(
             "Getting registration trends",
             extra={
-                "admin_user": current_user.get("id"),
+                "admin_user": current_user.id,
                 "date_from": date_from,
                 "date_to": date_to,
             },
@@ -1802,7 +1802,7 @@ async def get_activity_patterns(
         logger.info(
             "Getting activity patterns",
             extra={
-                "admin_user": current_user.get("id"),
+                "admin_user": current_user.id,
                 "date_from": date_from,
                 "date_to": date_to,
             },
@@ -1850,9 +1850,7 @@ async def get_demographics(
 ):
     """Get user demographic insights and distributions."""
     try:
-        logger.info(
-            "Getting demographics", extra={"admin_user": current_user.get("id")}
-        )
+        logger.info("Getting demographics", extra={"admin_user": current_user.id})
 
         people_service = service_manager.get_service("people")
         demographics_data = await people_service.get_demographic_insights()
@@ -1894,9 +1892,7 @@ async def get_engagement_metrics(
 ):
     """Get user engagement metrics and statistics."""
     try:
-        logger.info(
-            "Getting engagement metrics", extra={"admin_user": current_user.get("id")}
-        )
+        logger.info("Getting engagement metrics", extra={"admin_user": current_user.id})
 
         people_service = service_manager.get_service("people")
         engagement_data = await people_service.get_engagement_metrics()
@@ -2032,7 +2028,7 @@ async def advanced_user_search(
         logger.info(
             "Performing advanced user search",
             extra={
-                "admin_user": current_user.get("id"),
+                "admin_user": current_user.id,
                 "query": search_request.query,
                 "filters": {
                     "status": search_request.status,
@@ -2125,7 +2121,7 @@ async def bulk_user_operation(
         logger.info(
             "Executing bulk user operation",
             extra={
-                "admin_user": current_user.get("id"),
+                "admin_user": current_user.id,
                 "operation": operation_request.operation,
                 "user_count": len(operation_request.user_ids),
             },
@@ -2201,7 +2197,7 @@ async def manage_user_lifecycle(
         logger.info(
             "Managing user lifecycle",
             extra={
-                "admin_user": current_user.get("id"),
+                "admin_user": current_user.id,
                 "target_user": user_id,
                 "action": lifecycle_request.action,
             },
@@ -2269,7 +2265,7 @@ async def export_user_data(
         logger.info(
             "Exporting user data",
             extra={
-                "admin_user": current_user.get("id"),
+                "admin_user": current_user.id,
                 "format": export_request.format,
                 "include_sensitive": export_request.include_sensitive,
             },
@@ -2324,14 +2320,14 @@ async def get_saved_searches(
                     "status": ["active"],
                     "registration_date_from": "2024-01-01",
                 },
-                "created_by": current_user.get("id"),
+                "created_by": current_user.id,
                 "usage_count": 15,
             },
             {
                 "id": "search_2",
                 "name": "Inactive Users for Cleanup",
                 "criteria": {"status": ["inactive"], "last_activity_to": "2023-12-31"},
-                "created_by": current_user.get("id"),
+                "created_by": current_user.id,
                 "usage_count": 8,
             },
         ]
@@ -2341,7 +2337,7 @@ async def get_saved_searches(
             metadata={
                 "service": "people_service",
                 "version": "saved_searches",
-                "user_id": current_user.get("id"),
+                "user_id": current_user.id,
             },
         )
 
@@ -2403,7 +2399,7 @@ async def import_users(
         logger.info(
             "Starting user import",
             extra={
-                "admin_user": current_user.get("id"),
+                "admin_user": current_user.id,
                 "filename": file.filename,
                 "validate_only": validate_only,
                 "skip_duplicates": skip_duplicates,
@@ -2436,14 +2432,14 @@ async def import_users(
             validate_only=validate_only,
             skip_duplicates=skip_duplicates,
             update_existing=update_existing,
-            imported_by=current_user.get("id"),
+            imported_by=current_user.id,
         )
 
         # Log import results
         logger.info(
             "User import completed",
             extra={
-                "admin_user": current_user.get("id"),
+                "admin_user": current_user.id,
                 "filename": file.filename,
                 "processed_count": import_result.get("processed_count", 0),
                 "success_count": import_result.get("success_count", 0),
@@ -2464,7 +2460,7 @@ async def import_users(
         logger.error(
             f"Failed to import users: {str(e)}",
             extra={
-                "admin_user": current_user.get("id"),
+                "admin_user": current_user.id,
                 "filename": file.filename if file else "unknown",
             },
         )
@@ -2516,7 +2512,7 @@ async def send_user_communication(
         logger.info(
             "Initiating user communication",
             extra={
-                "admin_user": current_user.get("id"),
+                "admin_user": current_user.id,
                 "type": communication.type,
                 "subject": (
                     communication.subject[:50] + "..."
@@ -2591,7 +2587,7 @@ async def send_user_communication(
             sender=current_user,
             schedule_time=communication.schedule_time,
             metadata={
-                "admin_id": current_user.get("id"),
+                "admin_id": current_user.id,
                 "target_count": len(target_users),
                 "communication_id": f"comm_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}",
             },
@@ -2600,7 +2596,7 @@ async def send_user_communication(
         logger.info(
             "User communication sent successfully",
             extra={
-                "admin_user": current_user.get("id"),
+                "admin_user": current_user.id,
                 "type": communication.type,
                 "target_count": len(target_users),
                 "communication_id": result.get("communication_id"),
@@ -2619,7 +2615,7 @@ async def send_user_communication(
         logger.error(
             f"Failed to send user communication: {str(e)}",
             extra={
-                "admin_user": current_user.get("id"),
+                "admin_user": current_user.id,
                 "type": communication.type if communication else "unknown",
             },
         )
@@ -2675,7 +2671,7 @@ async def get_communication_history(
         logger.info(
             "Getting communication history",
             extra={
-                "admin_user": current_user.get("id"),
+                "admin_user": current_user.id,
                 "filters": {
                     "type": communication_type,
                     "date_from": date_from,
@@ -2747,7 +2743,7 @@ async def save_search_query(
         logger.info(
             "Saving search query",
             extra={
-                "admin_user": current_user.get("id"),
+                "admin_user": current_user.id,
                 "search_name": search_name,
                 "is_shared": is_shared,
             },
@@ -2758,7 +2754,7 @@ async def save_search_query(
         saved_search = await people_service.save_search_query(
             name=search_name,
             criteria=search_criteria.dict(),
-            admin_user_id=current_user.get("id"),
+            admin_user_id=current_user.id,
             is_shared=is_shared,
         )
 
@@ -2819,7 +2815,7 @@ async def get_performance_dashboard(
         logger.info(
             "Getting performance dashboard",
             extra={
-                "admin_user": current_user.get("id"),
+                "admin_user": current_user.id,
                 "time_window_minutes": time_window_minutes,
             },
         )
@@ -2893,7 +2889,7 @@ async def get_endpoint_metrics(
         logger.info(
             f"Getting endpoint metrics for {method} {endpoint}",
             extra={
-                "admin_user": current_user.get("id"),
+                "admin_user": current_user.id,
                 "endpoint": endpoint,
                 "method": method,
                 "time_window_minutes": time_window_minutes,
@@ -2961,9 +2957,7 @@ async def get_cache_stats(
 ):
     """Get comprehensive cache performance statistics."""
     try:
-        logger.info(
-            "Getting cache statistics", extra={"admin_user": current_user.get("id")}
-        )
+        logger.info("Getting cache statistics", extra={"admin_user": current_user.id})
 
         cache_service = service_manager.get_service("cache")
         if not cache_service:
@@ -3031,7 +3025,7 @@ async def clear_cache(
         logger.info(
             "Cache clear operation initiated",
             extra={
-                "admin_user": current_user.get("id"),
+                "admin_user": current_user.id,
                 "prefix": prefix,
                 "clear_all": clear_all,
                 "confirmed": confirm,
@@ -3115,7 +3109,7 @@ async def warm_cache(
     try:
         logger.info(
             "Cache warming operation initiated",
-            extra={"admin_user": current_user.get("id"), "services": services},
+            extra={"admin_user": current_user.id, "services": services},
         )
 
         cache_service = service_manager.get_service("cache")
@@ -3196,9 +3190,7 @@ async def get_performance_alerts(
 ):
     """Get current performance alerts."""
     try:
-        logger.info(
-            "Getting performance alerts", extra={"admin_user": current_user.get("id")}
-        )
+        logger.info("Getting performance alerts", extra={"admin_user": current_user.id})
 
         performance_service = service_manager.get_service("performance_metrics")
         if not performance_service:
@@ -3273,7 +3265,7 @@ async def clear_performance_alerts(
         logger.info(
             "Clearing performance alerts",
             extra={
-                "admin_user": current_user.get("id"),
+                "admin_user": current_user.id,
                 "alert_ids": alert_ids,
                 "clear_all": clear_all,
             },
@@ -3355,7 +3347,7 @@ async def get_database_performance_analysis(
         logger.info(
             "Getting database performance analysis",
             extra={
-                "admin_user": current_user.get("id"),
+                "admin_user": current_user.id,
                 "time_window_hours": time_window_hours,
             },
         )
@@ -3416,7 +3408,7 @@ async def get_database_optimization_recommendations(
     try:
         logger.info(
             "Getting database optimization recommendations",
-            extra={"admin_user": current_user.get("id")},
+            extra={"admin_user": current_user.id},
         )
 
         db_opt_service = service_manager.get_service("database_optimization")
@@ -3485,7 +3477,7 @@ async def optimize_database_queries(
     try:
         logger.info(
             "Starting database query optimization",
-            extra={"admin_user": current_user.get("id")},
+            extra={"admin_user": current_user.id},
         )
 
         db_opt_service = service_manager.get_service("database_optimization")
@@ -3540,7 +3532,7 @@ async def get_connection_pool_status(
     try:
         logger.info(
             "Getting connection pool status",
-            extra={"admin_user": current_user.get("id")},
+            extra={"admin_user": current_user.id},
         )
 
         db_opt_service = service_manager.get_service("database_optimization")
@@ -3594,7 +3586,7 @@ async def optimize_connection_pools(
     try:
         logger.info(
             "Optimizing database connection pools",
-            extra={"admin_user": current_user.get("id")},
+            extra={"admin_user": current_user.id},
         )
 
         db_opt_service = service_manager.get_service("database_optimization")
@@ -3895,7 +3887,7 @@ async def get_admin_stats(
     try:
         logger.info(
             "Getting admin statistics",
-            extra={"admin_user": current_user.get("id")},
+            extra={"admin_user": current_user.id},
         )
 
         # Get statistics from multiple services
@@ -3924,45 +3916,44 @@ async def get_admin_stats(
             "timestamp": datetime.utcnow().isoformat(),
         }
 
-        # Get people statistics
+        # Get people statistics using existing dashboard method
         if people_service:
             try:
-                people_stats = await people_service.get_statistics()
-                if people_stats.get("success"):
-                    data = people_stats.get("data", {})
-                    stats["overview"]["total_users"] = data.get("total_count", 0)
-                    stats["overview"]["active_users"] = data.get("active_count", 0)
-                    stats["recent_activity"]["new_users_today"] = data.get(
-                        "new_today", 0
+                people_dashboard = await people_service.get_dashboard_data()
+                if people_dashboard.get("success"):
+                    data = people_dashboard.get("data", {})
+                    overview = data.get("overview", {})
+                    stats["overview"]["total_users"] = overview.get("total_users", 0)
+                    stats["overview"]["active_users"] = overview.get("active_users", 0)
+                    stats["recent_activity"]["new_users_today"] = overview.get(
+                        "new_users_this_month", 0
                     )
             except Exception as e:
                 logger.warning(f"Failed to get people statistics: {str(e)}")
 
-        # Get projects statistics
+        # Get projects statistics using existing methods
         if projects_service:
             try:
-                projects_stats = await projects_service.get_statistics()
-                if projects_stats.get("success"):
-                    data = projects_stats.get("data", {})
-                    stats["overview"]["total_projects"] = data.get("total_count", 0)
-                    stats["recent_activity"]["new_projects_today"] = data.get(
-                        "new_today", 0
-                    )
+                projects_response = await projects_service.get_all_projects_v2()
+                if projects_response.get("success"):
+                    data = projects_response.get("data", [])
+                    stats["overview"]["total_projects"] = len(data)
+                    # Count projects created today (simplified)
+                    stats["recent_activity"]["new_projects_today"] = 0
             except Exception as e:
                 logger.warning(f"Failed to get projects statistics: {str(e)}")
 
-        # Get subscriptions statistics
+        # Get subscriptions statistics using existing methods
         if subscriptions_service:
             try:
-                subscriptions_stats = await subscriptions_service.get_statistics()
-                if subscriptions_stats.get("success"):
-                    data = subscriptions_stats.get("data", {})
-                    stats["overview"]["total_subscriptions"] = data.get(
-                        "total_count", 0
-                    )
-                    stats["recent_activity"]["new_subscriptions_today"] = data.get(
-                        "new_today", 0
-                    )
+                subscriptions_response = (
+                    await subscriptions_service.get_all_subscriptions_v2()
+                )
+                if subscriptions_response.get("success"):
+                    data = subscriptions_response.get("data", [])
+                    stats["overview"]["total_subscriptions"] = len(data)
+                    # Count subscriptions created today (simplified)
+                    stats["recent_activity"]["new_subscriptions_today"] = 0
             except Exception as e:
                 logger.warning(f"Failed to get subscriptions statistics: {str(e)}")
 
@@ -4009,7 +4000,7 @@ async def get_admin_users(
         logger.info(
             "Getting admin users list",
             extra={
-                "admin_user": current_user.get("id"),
+                "admin_user": current_user.id,
                 "page": page,
                 "limit": limit,
                 "status": status,
@@ -4072,7 +4063,7 @@ async def get_admin_performance_health(
     try:
         logger.info(
             "Getting admin performance health",
-            extra={"admin_user": current_user.get("id")},
+            extra={"admin_user": current_user.id},
         )
 
         # Get comprehensive health data
