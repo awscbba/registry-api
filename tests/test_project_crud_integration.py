@@ -14,7 +14,7 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../src"))
 
-from src.handlers.versioned_api_handler import app, get_current_user
+from src.handlers.modular_api_handler import app, get_current_user
 
 
 class TestProjectCRUDIntegration:
@@ -58,13 +58,15 @@ class TestProjectCRUDIntegration:
         # Clean up after test
         app.dependency_overrides.clear()
 
-    @patch("src.handlers.versioned_api_handler.db_service")
+    @patch("src.handlers.modular_api_handler.service_registry.get_service")
     def test_create_project_workflow(
-        self, mock_db_service, client, mock_user, sample_project
+        self, mock_get_service, client, mock_user, sample_project
     ):
         """Test complete project creation workflow"""
         # Setup mocks
-        mock_db_service.create_project = AsyncMock(return_value=sample_project)
+        mock_projects_service = Mock()
+        mock_projects_service.create_project = AsyncMock(return_value=sample_project)
+        mock_get_service.return_value = mock_projects_service
 
         # Test data
         create_data = {
@@ -84,8 +86,8 @@ class TestProjectCRUDIntegration:
         assert data["data"]["name"] == "Test Project"
 
         # Verify service was called correctly
-        assert mock_db_service.create_project.call_count == 1
-        call_args = mock_db_service.create_project.call_args
+        assert mock_projects_service.create_project.call_count == 1
+        call_args = mock_projects_service.create_project.call_args
         assert call_args[0][1] == "test-user-id"  # Second argument should be user ID
 
         # Check that the first argument is a ProjectCreate object with correct data
