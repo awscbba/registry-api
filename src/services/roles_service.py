@@ -25,6 +25,12 @@ from ..models.roles import (
 )
 from ..services.defensive_dynamodb_service import DefensiveDynamoDBService
 
+# Import for type hints - avoid circular imports
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .people_service import PeopleService
+
 logger = logging.getLogger(__name__)
 
 
@@ -35,6 +41,7 @@ class RolesService(BaseService):
         self,
         config: Optional[Dict[str, Any]] = None,
         table_name: str = None,
+        people_service: Optional["PeopleService"] = None,
     ):
         super().__init__("roles_service", config)
         # Use environment variable for table name with fallback
@@ -44,6 +51,8 @@ class RolesService(BaseService):
         # Initialize DynamoDB resources immediately to avoid NoneType errors
         self.dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
         self.table = self.dynamodb.Table(self.table_name)
+        # Inject people_service for proper dependency management
+        self.people_service = people_service
 
     async def initialize(self) -> bool:
         """Initialize the roles service."""
@@ -226,11 +235,15 @@ class RolesService(BaseService):
 
             # Fallback: Check the isAdmin field in the user record
             # This is for backward compatibility when roles table is not populated
-            db_service = DefensiveDynamoDBService()
-            person = await db_service.get_person(user_id)
-            if person and getattr(person, "is_admin", False):
-                logger.info(f"User {user_id} is admin based on user record (fallback)")
-                return True
+            if self.people_service:
+                person_response = await self.people_service.get_person(user_id)
+                if person_response.success and person_response.data:
+                    person = person_response.data
+                    if getattr(person, "is_admin", False):
+                        logger.info(
+                            f"User {user_id} is admin based on user record (fallback)"
+                        )
+                        return True
 
             return False
 
@@ -238,9 +251,12 @@ class RolesService(BaseService):
             logger.error(f"Error checking admin status for user {user_id}: {str(e)}")
             # Final fallback: Check user record directly
             try:
-                db_service = DefensiveDynamoDBService()
-                person = await db_service.get_person(user_id)
-                return person and getattr(person, "is_admin", False)
+                if self.people_service:
+                    person_response = await self.people_service.get_person(user_id)
+                    if person_response.success and person_response.data:
+                        person = person_response.data
+                        return getattr(person, "is_admin", False)
+                return False
             except Exception as fallback_error:
                 logger.error(
                     f"Fallback admin check failed for user {user_id}: {str(fallback_error)}"

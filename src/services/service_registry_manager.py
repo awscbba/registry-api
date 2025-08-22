@@ -57,7 +57,7 @@ class ServiceRegistryManager:
             self.registry.register_service("subscriptions", subscriptions_service)
 
             # Register Core Services
-            roles_service = RolesService()
+            roles_service = RolesService(people_service=people_service)
             self.registry.register_service("roles", roles_service)
 
             # Auth service depends on roles service
