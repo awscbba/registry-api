@@ -51,15 +51,8 @@ async def require_admin_access(
         raise AdminAuthorizationError("Authentication required for admin access")
 
     # Extract user information
-    user_id = None
-    user_email = None
-
-    if isinstance(current_user, dict):
-        user_id = current_user.get("id", "unknown")
-        user_email = current_user.get("email", "unknown")
-    else:
-        user_id = getattr(current_user, "id", "unknown")
-        user_email = getattr(current_user, "email", "unknown")
+    user_id = getattr(current_user, "id", "unknown")
+    user_email = getattr(current_user, "email", "unknown")
 
     # Check if user has admin privileges using roles service
     is_admin = await roles_service.user_is_admin(user_id)
@@ -108,15 +101,8 @@ async def require_super_admin_access(
         AdminAuthorizationError: If user is not a super admin
     """
     # Extract user information
-    user_id = None
-    user_email = None
-
-    if isinstance(current_user, dict):
-        user_id = current_user.get("id", "unknown")
-        user_email = current_user.get("email", "unknown")
-    else:
-        user_id = getattr(current_user, "id", "unknown")
-        user_email = getattr(current_user, "email", "unknown")
+    user_id = getattr(current_user, "id", "unknown")
+    user_email = getattr(current_user, "email", "unknown")
 
     # Check if user has super admin privileges using roles service
     is_super_admin = await roles_service.user_is_super_admin(user_id)
@@ -164,15 +150,8 @@ async def require_permission(permission: Permission):
             raise AdminAuthorizationError("Authentication required")
 
         # Extract user information
-        user_id = None
-        user_email = None
-
-        if isinstance(current_user, dict):
-            user_id = current_user.get("id", "unknown")
-            user_email = current_user.get("email", "unknown")
-        else:
-            user_id = getattr(current_user, "id", "unknown")
-            user_email = getattr(current_user, "email", "unknown")
+        user_id = getattr(current_user, "id", "unknown")
+        user_email = getattr(current_user, "email", "unknown")
 
         # Check if user has the required permission
         has_permission = await roles_service.user_has_permission(user_id, permission)
@@ -218,16 +197,10 @@ async def get_admin_user_info(
         dict: Admin user information for logging
     """
     # Extract user information
-    if isinstance(current_user, dict):
-        user_email = current_user.get("email", "unknown")
-        user_id = current_user.get("id", "unknown")
-        first_name = current_user.get("first_name", "")
-        last_name = current_user.get("last_name", "")
-    else:
-        user_email = getattr(current_user, "email", "unknown")
-        user_id = getattr(current_user, "id", "unknown")
-        first_name = getattr(current_user, "first_name", "")
-        last_name = getattr(current_user, "last_name", "")
+    user_email = getattr(current_user, "email", "unknown")
+    user_id = getattr(current_user, "id", "unknown")
+    first_name = getattr(current_user, "first_name", "")
+    last_name = getattr(current_user, "last_name", "")
 
     # Get user roles from database
     user_roles = await roles_service.get_user_roles(user_id)
@@ -266,12 +239,8 @@ class AdminActionLogger:
             success: Whether the action was successful
         """
         # Extract user information
-        if isinstance(admin_user, dict):
-            admin_user_id = admin_user.get("id", "unknown")
-            admin_user_email = admin_user.get("email", "unknown")
-        else:
-            admin_user_id = getattr(admin_user, "id", "unknown")
-            admin_user_email = getattr(admin_user, "email", "unknown")
+        admin_user_id = getattr(admin_user, "id", "unknown")
+        admin_user_email = getattr(admin_user, "email", "unknown")
 
         # Get user roles for audit trail
         user_roles = await roles_service.get_user_roles(admin_user_id)
@@ -322,12 +291,8 @@ async def verify_admin_or_self_access(
         raise AdminAuthorizationError("Authentication required")
 
     # Extract user information
-    if isinstance(current_user, dict):
-        user_id = current_user.get("id", "unknown")
-        user_email = current_user.get("email", "unknown")
-    else:
-        user_id = getattr(current_user, "id", "unknown")
-        user_email = getattr(current_user, "email", "unknown")
+    user_id = getattr(current_user, "id", "unknown")
+    user_email = getattr(current_user, "email", "unknown")
 
     # Check if user is admin or accessing their own data
     is_admin = await roles_service.user_is_admin(user_id)
