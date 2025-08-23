@@ -1697,7 +1697,7 @@ async def get_project_dashboard():
     response_model=Dict[str, Any],
 )
 async def get_people_dashboard(
-    current_user: Dict[str, Any] = Depends(require_admin_access),
+    current_user: AuthenticatedUser = Depends(require_admin_access),
 ):
     """Get comprehensive people administration dashboard data."""
     try:
@@ -1747,7 +1747,7 @@ async def get_people_analytics(
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
     metric_type: Optional[str] = None,
-    current_user: Dict[str, Any] = Depends(require_admin_access),
+    current_user: AuthenticatedUser = Depends(require_admin_access),
 ):
     """Get comprehensive people analytics."""
     try:
@@ -1836,7 +1836,7 @@ async def get_people_analytics(
 async def get_registration_trends(
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
-    current_user: Dict[str, Any] = Depends(require_admin_access),
+    current_user: AuthenticatedUser = Depends(require_admin_access),
 ):
     """Get user registration trends over time."""
     try:
@@ -1887,7 +1887,7 @@ async def get_registration_trends(
 async def get_activity_patterns(
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
-    current_user: Dict[str, Any] = Depends(require_admin_access),
+    current_user: AuthenticatedUser = Depends(require_admin_access),
 ):
     """Get user activity patterns and engagement metrics."""
     try:
@@ -1938,7 +1938,7 @@ async def get_activity_patterns(
     response_model=Dict[str, Any],
 )
 async def get_demographics(
-    current_user: Dict[str, Any] = Depends(require_admin_access),
+    current_user: AuthenticatedUser = Depends(require_admin_access),
 ):
     """Get user demographic insights and distributions."""
     try:
@@ -1980,7 +1980,7 @@ async def get_demographics(
     response_model=Dict[str, Any],
 )
 async def get_engagement_metrics(
-    current_user: Dict[str, Any] = Depends(require_admin_access),
+    current_user: AuthenticatedUser = Depends(require_admin_access),
 ):
     """Get user engagement metrics and statistics."""
     try:
@@ -2113,7 +2113,7 @@ class UserCommunication(BaseModel):
 )
 async def advanced_user_search(
     search_request: UserSearchRequest,
-    current_user: Dict[str, Any] = Depends(require_admin_access),
+    current_user: AuthenticatedUser = Depends(require_admin_access),
 ):
     """Advanced user search with filtering and pagination."""
     try:
@@ -2206,7 +2206,7 @@ async def advanced_user_search(
 )
 async def bulk_user_operation(
     operation_request: BulkUserOperation,
-    current_user: Dict[str, Any] = Depends(require_admin_access),
+    current_user: AuthenticatedUser = Depends(require_admin_access),
 ):
     """Execute bulk operations on multiple users."""
     try:
@@ -2282,7 +2282,7 @@ async def bulk_user_operation(
 async def manage_user_lifecycle(
     user_id: str,
     lifecycle_request: UserLifecycleAction,
-    current_user: Dict[str, Any] = Depends(require_admin_access),
+    current_user: AuthenticatedUser = Depends(require_admin_access),
 ):
     """Manage user lifecycle operations."""
     try:
@@ -2350,7 +2350,7 @@ async def manage_user_lifecycle(
 )
 async def export_user_data(
     export_request: UserExportRequest,
-    current_user: Dict[str, Any] = Depends(require_admin_access),
+    current_user: AuthenticatedUser = Depends(require_admin_access),
 ):
     """Export user data based on filters."""
     try:
@@ -2399,7 +2399,7 @@ async def export_user_data(
     response_model=Dict[str, Any],
 )
 async def get_saved_searches(
-    current_user: Dict[str, Any] = Depends(require_admin_access),
+    current_user: AuthenticatedUser = Depends(require_admin_access),
 ):
     """Get saved search queries for the current admin."""
     try:
@@ -2756,7 +2756,7 @@ async def get_communication_history(
     admin_user_id: Optional[str] = Query(None, description="Filter by admin user"),
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
-    current_user: Dict[str, Any] = Depends(require_admin_access),
+    current_user: AuthenticatedUser = Depends(require_admin_access),
 ):
     """Get communication history with analytics and filtering."""
     try:
@@ -2828,7 +2828,7 @@ async def save_search_query(
         ..., description="Search criteria to save"
     ),
     is_shared: bool = Query(False, description="Make search available to other admins"),
-    current_user: Dict[str, Any] = Depends(require_admin_access),
+    current_user: AuthenticatedUser = Depends(require_admin_access),
 ):
     """Save a search query for future use."""
     try:
@@ -2900,7 +2900,7 @@ async def get_performance_dashboard(
     time_window_minutes: int = Query(
         60, ge=5, le=1440, description="Time window in minutes (5-1440)"
     ),
-    current_user: Dict[str, Any] = Depends(require_admin_access),
+    current_user: AuthenticatedUser = Depends(require_admin_access),
 ):
     """Get comprehensive performance dashboard data."""
     try:
@@ -2974,7 +2974,7 @@ async def get_endpoint_metrics(
     time_window_minutes: int = Query(
         60, ge=5, le=1440, description="Time window in minutes"
     ),
-    current_user: Dict[str, Any] = Depends(require_admin_access),
+    current_user: AuthenticatedUser = Depends(require_admin_access),
 ):
     """Get detailed performance metrics for a specific endpoint."""
     try:
@@ -3045,7 +3045,7 @@ async def get_endpoint_metrics(
     response_model=Dict[str, Any],
 )
 async def get_cache_stats(
-    current_user: Dict[str, Any] = Depends(require_admin_access),
+    current_user: AuthenticatedUser = Depends(require_admin_access),
 ):
     """Get comprehensive cache performance statistics."""
     try:
@@ -3195,7 +3195,7 @@ async def warm_cache(
     services: List[str] = Query(
         ["dashboard", "analytics"], description="Services to warm"
     ),
-    current_user: Dict[str, Any] = Depends(require_admin_access),
+    current_user: AuthenticatedUser = Depends(require_admin_access),
 ):
     """Warm cache with frequently accessed data."""
     try:
@@ -3278,7 +3278,7 @@ async def warm_cache(
     response_model=Dict[str, Any],
 )
 async def get_performance_alerts(
-    current_user: Dict[str, Any] = Depends(require_admin_access),
+    current_user: AuthenticatedUser = Depends(require_admin_access),
 ):
     """Get current performance alerts."""
     try:
@@ -3350,7 +3350,7 @@ async def clear_performance_alerts(
         None, description="Specific alert IDs to clear"
     ),
     clear_all: bool = Query(False, description="Clear all alerts"),
-    current_user: Dict[str, Any] = Depends(require_admin_access),
+    current_user: AuthenticatedUser = Depends(require_admin_access),
 ):
     """Clear performance alerts."""
     try:
@@ -3432,7 +3432,7 @@ async def get_database_performance_analysis(
     time_window_hours: int = Query(
         24, ge=1, le=168, description="Analysis time window in hours (1-168)"
     ),
-    current_user: Dict[str, Any] = Depends(require_admin_access),
+    current_user: AuthenticatedUser = Depends(require_admin_access),
 ):
     """Get comprehensive database performance analysis."""
     try:
@@ -3494,7 +3494,7 @@ async def get_database_performance_analysis(
     response_model=Dict[str, Any],
 )
 async def get_database_optimization_recommendations(
-    current_user: Dict[str, Any] = Depends(require_admin_access),
+    current_user: AuthenticatedUser = Depends(require_admin_access),
 ):
     """Get database optimization recommendations."""
     try:
@@ -3563,7 +3563,7 @@ async def get_database_optimization_recommendations(
     response_model=Dict[str, Any],
 )
 async def optimize_database_queries(
-    current_user: Dict[str, Any] = Depends(require_admin_access),
+    current_user: AuthenticatedUser = Depends(require_admin_access),
 ):
     """Optimize database query patterns for improved performance."""
     try:
@@ -3618,7 +3618,7 @@ async def optimize_database_queries(
     response_model=Dict[str, Any],
 )
 async def get_connection_pool_status(
-    current_user: Dict[str, Any] = Depends(require_admin_access),
+    current_user: AuthenticatedUser = Depends(require_admin_access),
 ):
     """Get database connection pool status and metrics."""
     try:
@@ -3672,7 +3672,7 @@ async def get_connection_pool_status(
     response_model=Dict[str, Any],
 )
 async def optimize_connection_pools(
-    current_user: Dict[str, Any] = Depends(require_admin_access),
+    current_user: AuthenticatedUser = Depends(require_admin_access),
 ):
     """Optimize database connection pools for improved performance."""
     try:
@@ -4085,7 +4085,7 @@ async def get_admin_users(
     limit: int = Query(25, ge=1, le=100, description="Items per page"),
     status: Optional[str] = Query(None, description="Filter by user status"),
     search: Optional[str] = Query(None, description="Search by name or email"),
-    current_user: Dict[str, Any] = Depends(require_admin_access),
+    current_user: AuthenticatedUser = Depends(require_admin_access),
 ):
     """Get users list for admin management."""
     try:
