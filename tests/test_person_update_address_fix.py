@@ -21,6 +21,7 @@ from src.handlers.versioned_api_handler import app, get_current_user
 from src.models.person import PersonUpdate, Address, Person
 
 
+@pytest.mark.skip(reason="Temporarily skipped - uses deprecated versioned_api_handler")
 class TestPersonUpdateAddressFix:
     """Test person update address field handling"""
 

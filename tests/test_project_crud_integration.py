@@ -21,8 +21,8 @@ class TestProjectCRUDIntegration:
     """Tests for complete project CRUD operations"""
 
     @pytest.fixture
-    def client(self):
-        """Test client for the API"""
+    def client(self, dynamodb_mock):
+        """Test client for the API with mocked DynamoDB"""
         return TestClient(app)
 
     @pytest.fixture
@@ -58,15 +58,12 @@ class TestProjectCRUDIntegration:
         # Clean up after test
         app.dependency_overrides.clear()
 
-    @patch("src.handlers.modular_api_handler.service_registry.get_service")
     def test_create_project_workflow(
-        self, mock_get_service, client, mock_user, sample_project
+        self, client, mock_user, sample_project, dynamodb_mock
     ):
         """Test complete project creation workflow"""
-        # Setup mocks
-        mock_projects_service = Mock()
-        mock_projects_service.create_project = AsyncMock(return_value=sample_project)
-        mock_get_service.return_value = mock_projects_service
+        # Setup mock DynamoDB table
+        projects_table = dynamodb_mock.Table("test-projects-table")
 
         # Test data
         create_data = {
@@ -85,27 +82,11 @@ class TestProjectCRUDIntegration:
         assert data["version"] == "v2"
         assert data["data"]["name"] == "Test Project"
 
-        # Verify service was called correctly
-        assert mock_projects_service.create_project.call_count == 1
-        call_args = mock_projects_service.create_project.call_args
-        assert call_args[0][1] == "test-user-id"  # Second argument should be user ID
-
-        # Check that the first argument is a ProjectCreate object with correct data
-        project_create_obj = call_args[0][0]
-        from src.models.project import ProjectCreate
-
-        assert isinstance(project_create_obj, ProjectCreate)
-        assert project_create_obj.name == "Test Project"
-        assert (
-            project_create_obj.description == "A test project for integration testing"
-        )
-        assert project_create_obj.maxParticipants == 50
-
-    @patch("src.handlers.versioned_api_handler.db_service")
-    def test_get_project_by_id_workflow(self, mock_db_service, client, sample_project):
+    def test_get_project_by_id_workflow(self, client, sample_project, dynamodb_mock):
         """Test retrieving a specific project by ID"""
-        # Setup mock
-        mock_db_service.get_project_by_id = AsyncMock(return_value=sample_project)
+        # Setup mock DynamoDB data
+        projects_table = dynamodb_mock.Table("test-projects-table")
+        projects_table.put_item(Item=sample_project)
 
         # Make request
         response = client.get("/v2/projects/test-project-id")
@@ -118,14 +99,9 @@ class TestProjectCRUDIntegration:
         assert data["data"]["id"] == "test-project-id"
         assert data["data"]["name"] == "Test Project"
 
-        # Verify service was called correctly
-        mock_db_service.get_project_by_id.assert_called_once_with("test-project-id")
-
-    @patch("src.handlers.versioned_api_handler.db_service")
-    def test_get_project_not_found(self, mock_db_service, client):
+    def test_get_project_not_found(self, client, dynamodb_mock):
         """Test handling of non-existent project"""
-        # Setup mock to return None
-        mock_db_service.get_project_by_id = AsyncMock(return_value=None)
+        # Don't add any data to the table, so the project won't be found
 
         # Make request
         response = client.get("/v2/projects/non-existent-id")

@@ -256,11 +256,38 @@ class BaseRepository(ABC, Generic[T]):
             item = self._to_item(entity)
             primary_key = self._get_primary_key(entity)
 
-            # Build update expression
+            # Build update expression with reserved keyword handling
             update_expression = "SET updated_at = :updated_at, version = version + :inc"
             expression_values = {
                 ":updated_at": datetime.now(timezone.utc).isoformat(),
                 ":inc": 1,
+            }
+            expression_names = {}
+
+            # DynamoDB reserved keywords that need expression attribute names
+            reserved_keywords = {
+                "status",
+                "name",
+                "type",
+                "data",
+                "timestamp",
+                "order",
+                "group",
+                "user",
+                "role",
+                "date",
+                "time",
+                "year",
+                "month",
+                "day",
+                "size",
+                "count",
+                "value",
+                "key",
+                "index",
+                "range",
+                "hash",
+                "comment",
             }
 
             # Add all non-key fields to update
@@ -270,16 +297,29 @@ class BaseRepository(ABC, Generic[T]):
                     "updated_at",
                     "version",
                 ]:
-                    update_expression += f", {key} = :{key}"
+                    # Use expression attribute names for reserved keywords
+                    if key.lower() in reserved_keywords:
+                        attr_name = f"#{key}"
+                        expression_names[attr_name] = key
+                        update_expression += f", {attr_name} = :{key}"
+                    else:
+                        update_expression += f", {key} = :{key}"
                     expression_values[f":{key}"] = value
 
-            response = self.table.update_item(
-                Key=primary_key,
-                UpdateExpression=update_expression,
-                ExpressionAttributeValues=expression_values,
-                ConditionExpression=Attr("id").exists(),
-                ReturnValues="ALL_NEW",
-            )
+            # Build update_item parameters
+            update_params = {
+                "Key": primary_key,
+                "UpdateExpression": update_expression,
+                "ExpressionAttributeValues": expression_values,
+                "ConditionExpression": Attr("id").exists(),
+                "ReturnValues": "ALL_NEW",
+            }
+
+            # Add expression attribute names if we have any reserved keywords
+            if expression_names:
+                update_params["ExpressionAttributeNames"] = expression_names
+
+            response = self.table.update_item(**update_params)
 
             duration = time.time() - start_time
             self._log_operation(

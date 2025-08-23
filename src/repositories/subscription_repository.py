@@ -64,12 +64,23 @@ class SubscriptionRepository(BaseRepository[Subscription]):
 
     def _to_item(self, entity: Subscription) -> Dict[str, Any]:
         """Convert Subscription entity to DynamoDB item"""
+        # Generate ID if not present (for new entities)
+        entity_id = getattr(entity, "id", None)
+        if entity_id is None:
+            import uuid
+
+            entity_id = str(uuid.uuid4())
+
         item = {
-            "id": entity.id,
-            "person_id": entity.person_id,  # Use snake_case for DynamoDB
-            "project_id": entity.project_id,  # Use snake_case for DynamoDB
-            "person_name": entity.person_name,  # Use snake_case for DynamoDB
-            "person_email": entity.person_email,  # Use snake_case for DynamoDB
+            "id": entity_id,
+            "person_id": getattr(entity, "person_id", None)
+            or getattr(entity, "personId", None),
+            "project_id": getattr(entity, "project_id", None)
+            or getattr(entity, "projectId", None),
+            "person_name": getattr(entity, "person_name", None)
+            or getattr(entity, "personName", "Unknown"),
+            "person_email": getattr(entity, "person_email", None)
+            or getattr(entity, "personEmail", "unknown@example.com"),
             "status": getattr(entity, "status", "active"),
             "notes": getattr(entity, "notes", ""),
             "email_sent": getattr(entity, "email_sent", False),

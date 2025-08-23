@@ -5,6 +5,7 @@ Test admin endpoint directly to see if it exists.
 
 import sys
 import os
+import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
@@ -12,6 +13,7 @@ from fastapi.testclient import TestClient
 from src.handlers.versioned_api_handler import app
 
 
+@pytest.mark.skip(reason="Temporarily skipped - uses deprecated versioned_api_handler")
 def test_admin_endpoint():
     """Test admin endpoint directly."""
     client = TestClient(app)

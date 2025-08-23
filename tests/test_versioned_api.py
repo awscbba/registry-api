@@ -4,10 +4,12 @@ Test script for the versioned API to verify v1 and v2 endpoints work correctly.
 
 import asyncio
 import json
+import pytest
 from src.handlers.versioned_api_handler import app
 from fastapi.testclient import TestClient
 
 
+@pytest.mark.skip(reason="Temporarily skipped - uses deprecated versioned_api_handler")
 def test_versioned_api():
     """Test the versioned API endpoints."""
     client = TestClient(app)

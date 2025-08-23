@@ -498,6 +498,22 @@ async def create_subscription_v2(subscription_data: dict):
     return await service_manager.create_subscription_v2(subscription_data)
 
 
+@v2_router.put("/subscriptions/{subscription_id}")
+async def update_subscription_v2(subscription_id: str, subscription_data: dict):
+    """Update subscription (v2 - enhanced version)."""
+    # Convert dict to SubscriptionUpdate model
+    subscription_update = SubscriptionUpdate(**subscription_data)
+    return await service_manager.update_subscription_v2(
+        subscription_id, subscription_update
+    )
+
+
+@v2_router.delete("/subscriptions/{subscription_id}")
+async def delete_subscription_v2(subscription_id: str):
+    """Delete subscription (v2 - enhanced version)."""
+    return await service_manager.delete_subscription_v2(subscription_id)
+
+
 @v2_router.get("/projects/{project_id}/subscriptions")
 async def get_project_subscriptions_v2(project_id: str):
     """Get subscriptions for a project (v2 - enhanced version)."""
@@ -510,6 +526,82 @@ async def create_project_subscription_v2(project_id: str, subscription_data: dic
     return await service_manager.create_project_subscription_v2(
         project_id, subscription_data
     )
+
+
+# ==================== PROJECT SUBSCRIBERS ENDPOINTS ====================
+# These are aliases for the subscription endpoints to maintain API compatibility
+
+
+@v2_router.get("/projects/{project_id}/subscribers")
+async def get_project_subscribers_v2(project_id: str):
+    """Get all subscribers for a specific project (v2 - alias for subscriptions)."""
+    # Get the subscription data
+    subscription_response = await service_manager.get_project_subscriptions_v2(
+        project_id
+    )
+
+    # Reformat the response to match the expected subscribers format
+    if subscription_response.get("success") and "data" in subscription_response:
+        subscribers_data = subscription_response["data"]
+
+        # Convert Pydantic models to dicts if needed
+        if subscribers_data and hasattr(subscribers_data[0], "model_dump"):
+            subscribers_data = [
+                s.model_dump() if hasattr(s, "model_dump") else s
+                for s in subscribers_data
+            ]
+
+        # Calculate metadata
+        total_count = len(subscribers_data)
+        active_count = len([s for s in subscribers_data if s.get("status") == "active"])
+        pending_count = len(
+            [s for s in subscribers_data if s.get("status") == "pending"]
+        )
+
+        # Create the subscribers response format
+        response_data = {
+            "subscribers": subscribers_data,
+            "metadata": {
+                "totalCount": total_count,
+                "activeCount": active_count,
+                "pendingCount": pending_count,
+                "projectId": project_id,
+            },
+        }
+
+        # Return in v2 format
+        from src.utils.response_models import create_v2_response
+
+        return create_v2_response(response_data)
+
+    # If there was an error, return the original response
+    return subscription_response
+
+
+@v2_router.post("/projects/{project_id}/subscribers")
+async def subscribe_person_to_project_v2(project_id: str, subscription_data: dict):
+    """Subscribe a person to a project (v2 - alias for create subscription)."""
+    return await service_manager.create_project_subscription_v2(
+        project_id, subscription_data
+    )
+
+
+@v2_router.put("/projects/{project_id}/subscribers/{subscription_id}")
+async def update_project_subscription_v2(
+    project_id: str, subscription_id: str, update_data: dict
+):
+    """Update a project subscription (v2)."""
+    # Convert dict to SubscriptionUpdate model
+    subscription_update = SubscriptionUpdate(**update_data)
+    return await service_manager.update_subscription_v2(
+        subscription_id, subscription_update
+    )
+
+
+@v2_router.delete("/projects/{project_id}/subscribers/{subscription_id}")
+async def unsubscribe_person_from_project_v2(project_id: str, subscription_id: str):
+    """Remove a person's subscription from a project (v2)."""
+    return await service_manager.delete_subscription_v2(subscription_id)
 
 
 # ==================== SERVICE REGISTRY ENDPOINTS ====================

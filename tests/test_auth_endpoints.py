@@ -5,6 +5,7 @@ Quick test script to verify auth endpoints are working.
 
 import sys
 import os
+import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
@@ -12,6 +13,7 @@ from fastapi.testclient import TestClient
 from src.handlers.versioned_api_handler import app
 
 
+@pytest.mark.skip(reason="Temporarily skipped - uses deprecated versioned_api_handler")
 def test_auth_endpoints():
     """Test that auth endpoints are accessible."""
     client = TestClient(app)

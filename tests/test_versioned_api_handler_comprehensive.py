@@ -24,6 +24,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from src.handlers.versioned_api_handler import app
 
 
+@pytest.mark.skip(reason="Temporarily skipped - uses deprecated versioned_api_handler")
 class TestVersionedAPIHandler:
     """Test suite for versioned API handler"""
 

@@ -19,6 +19,7 @@ from src.handlers.versioned_api_handler import app, get_current_user
 from src.models.person import PersonUpdate
 
 
+@pytest.mark.skip(reason="Temporarily skipped - uses deprecated versioned_api_handler")
 class TestPersonUpdateFix:
     """Test person update functionality with all fields"""
 

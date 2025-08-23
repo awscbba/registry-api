@@ -237,26 +237,51 @@ class SubscriptionsService(BaseService):
         try:
             self.logger.log_api_request("POST", "/v2/public/subscribe")
 
-            # Convert dict to SubscriptionCreate model
-            subscription_create = SubscriptionCreate(**subscription_data)
+            # Check if this is a direct subscription creation (with personId/projectId)
+            # or a public subscription (with person object and project info)
+            if "personId" in subscription_data and "projectId" in subscription_data:
+                # Direct subscription creation - use the existing model
+                subscription_create = SubscriptionCreate(**subscription_data)
 
-            # Create subscription using repository
-            result = await self.subscription_repository.create(subscription_create)
+                # Create subscription using repository
+                result = await self.subscription_repository.create(subscription_create)
 
-            if not result.success:
-                raise Exception(result.error)
+                if not result.success:
+                    raise Exception(result.error)
 
-            created_subscription = result.data
+                created_subscription = result.data
 
-            response = create_v2_response(
-                created_subscription,
-                metadata={
-                    "subscription_id": created_subscription.get("id"),
-                    "service": "subscriptions_service",
-                    "version": "v2",
-                    "created_at": datetime.now().isoformat(),
-                },
-            )
+                response = create_v2_response(
+                    created_subscription,
+                    metadata={
+                        "subscription_id": (
+                            created_subscription.get("id")
+                            if isinstance(created_subscription, dict)
+                            else getattr(created_subscription, "id", None)
+                        ),
+                        "service": "subscriptions_service",
+                        "version": "v2",
+                        "created_at": datetime.now().isoformat(),
+                    },
+                )
+            else:
+                # Public subscription - handle person creation workflow
+                # This should work like create_project_subscription_v2 but for public subscriptions
+                # For now, require projectId to be provided
+                if "projectId" not in subscription_data:
+                    from fastapi import HTTPException, status
+
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="projectId is required for public subscriptions",
+                    )
+
+                project_id = subscription_data["projectId"]
+                # Use the project subscription workflow
+                response = await self.create_project_subscription_v2(
+                    project_id, subscription_data
+                )
+
             self.logger.log_api_response("POST", "/v2/public/subscribe", 201)
             return response
         except Exception as e:
@@ -331,10 +356,17 @@ class SubscriptionsService(BaseService):
                     detail="Subscription not found",
                 )
 
-            # Update subscription
-            result = await self.subscription_repository.update(
-                subscription_id, subscription_data
-            )
+            # Get the existing subscription and merge with updates
+            existing_subscription = existing_result.data
+
+            # Update only the fields that are provided
+            if subscription_data.status is not None:
+                existing_subscription.status = subscription_data.status.value
+            if subscription_data.notes is not None:
+                existing_subscription.notes = subscription_data.notes
+
+            # Update subscription using the full entity
+            result = await self.subscription_repository.update(existing_subscription)
 
             if not result.success:
                 raise Exception(result.error)

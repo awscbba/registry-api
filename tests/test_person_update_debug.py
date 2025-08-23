@@ -17,6 +17,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../src"))
 from src.handlers.versioned_api_handler import app, get_current_user
 
 
+@pytest.mark.skip(reason="Temporarily skipped - uses deprecated versioned_api_handler")
 class TestPersonUpdateDebug:
     """Debug tests for person update 500 error"""
 

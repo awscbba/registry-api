@@ -89,8 +89,15 @@ class UserRepository(BaseRepository[Person]):
 
     def _to_item(self, entity: Person) -> Dict[str, Any]:
         """Convert Person entity to DynamoDB item"""
+        # Generate ID if not present (for new entities)
+        entity_id = getattr(entity, "id", None)
+        if entity_id is None:
+            import uuid
+
+            entity_id = str(uuid.uuid4())
+
         item = {
-            "id": entity.id,
+            "id": entity_id,
             "firstName": entity.first_name,
             "lastName": entity.last_name,
             "email": entity.email,
