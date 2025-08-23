@@ -28,7 +28,7 @@ from pydantic import BaseModel, Field
 from ..models.person import PersonCreate, PersonUpdate
 from ..models.project import ProjectCreate, ProjectUpdate
 from ..models.subscription import SubscriptionCreate, SubscriptionUpdate
-from ..models.auth import LoginRequest, LoginResponse
+from ..models.auth import LoginRequest, LoginResponse, AuthenticatedUser
 from ..models.password_reset import (
     PasswordResetRequest,
     PasswordResetValidation,
@@ -3973,7 +3973,7 @@ async def refresh_token(refresh_request: Dict[str, str]):
     response_model=Dict[str, Any],
 )
 async def get_admin_stats(
-    current_user: Dict[str, Any] = Depends(require_admin_access),
+    current_user: AuthenticatedUser = Depends(require_admin_access),
 ):
     """Get comprehensive admin statistics for dashboard."""
     try:
@@ -4149,7 +4149,7 @@ async def get_admin_users(
     response_model=Dict[str, Any],
 )
 async def get_admin_performance_health(
-    current_user: Dict[str, Any] = Depends(require_admin_access),
+    current_user: AuthenticatedUser = Depends(require_admin_access),
 ):
     """Get detailed performance health for admin monitoring."""
     try:
