@@ -353,17 +353,23 @@ class TestMetricsService:
     @pytest.mark.asyncio
     async def test_health_check(self):
         """Test metrics service health check."""
+        from src.core.base_service import HealthCheck, ServiceStatus
+
         health = await self.metrics_service.health_check()
 
-        assert "healthy" in health
-        assert "status" in health
-        assert "metrics_available" in health
-        assert "collector_active" in health
-        assert "last_check" in health
+        # Verify it returns a HealthCheck object
+        assert isinstance(health, HealthCheck)
+        assert health.service_name == "metrics"
+        assert health.status == ServiceStatus.HEALTHY
+        assert health.message == "Metrics service is healthy"
+        assert isinstance(health.response_time_ms, (int, float))
 
-        assert health["healthy"] is True
-        assert health["status"] == "operational"
-        assert health["collector_active"] is True
+        # Verify details contain expected fields
+        assert "metrics_available" in health.details
+        assert "collector_active" in health.details
+        assert "last_check" in health.details
+
+        assert health.details["collector_active"] is True
 
 
 class TestMonitorPerformanceDecorator:

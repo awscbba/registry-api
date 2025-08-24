@@ -463,28 +463,50 @@ class TestProjectAdministrationService:
     @pytest.mark.asyncio
     async def test_health_check_success(self):
         """Test service health check."""
+        from src.core.base_service import HealthCheck, ServiceStatus
+
         health = await self.service.health_check()
 
-        assert health["healthy"] is True
-        assert health["status"] == "operational"
-        assert health["repository_accessible"] is True
-        assert health["templates_loaded"] == 3
-        assert "last_check" in health
-        assert health["error"] is None
+        # Verify it returns a HealthCheck object
+        assert isinstance(health, HealthCheck)
+        assert health.service_name == "project_administration"
+        assert health.status == ServiceStatus.HEALTHY
+        assert health.message == "Project administration service is healthy"
+        assert isinstance(health.response_time_ms, (int, float))
+
+        # Verify details contain expected fields
+        assert "repository_accessible" in health.details
+        assert "templates_loaded" in health.details
+        assert "last_check" in health.details
+
+        assert health.details["repository_accessible"] is True
+        assert health.details["templates_loaded"] == 3
 
     @pytest.mark.asyncio
     async def test_health_check_failure(self):
         """Test service health check with repository failure."""
+        from src.core.base_service import HealthCheck, ServiceStatus
+
         self.service.project_repository.count.return_value = AsyncMock(
             success=False, error="Connection timeout"
         )
 
         health = await self.service.health_check()
 
-        assert health["healthy"] is False
-        assert health["status"] == "error"
-        assert health["repository_accessible"] is False
-        assert "Connection timeout" in health["error"]
+        # Verify it returns a HealthCheck object
+        assert isinstance(health, HealthCheck)
+        assert health.service_name == "project_administration"
+        assert health.status == ServiceStatus.UNHEALTHY
+        assert "Connection timeout" in health.message
+        assert isinstance(health.response_time_ms, (int, float))
+
+        # Verify details contain expected fields
+        assert "repository_accessible" in health.details
+        assert "templates_loaded" in health.details
+        assert "error" in health.details
+
+        assert health.details["repository_accessible"] is False
+        assert "Connection timeout" in health.details["error"]
 
 
 class TestBulkOperationResult:
