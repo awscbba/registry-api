@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, List
 
 from src.services.people_service import PeopleService
+from src.models.person import Person, Address
 
 
 class TestPeopleDashboardService:
@@ -26,54 +27,105 @@ class TestPeopleDashboardService:
 
     @pytest.fixture
     def mock_people_data(self):
-        """Mock people data for testing."""
+        """Mock people data for testing - returns Person objects."""
         base_date = datetime.now()
-        return [
-            {
-                "id": "user1",
-                "first_name": "John",
-                "last_name": "Doe",
-                "email": "john@example.com",
-                "is_active": True,
-                "is_admin": False,
-                "created_at": base_date.isoformat(),
-                "date_of_birth": "1990-01-01",
-                "address": {"city": "New York", "state": "NY"},
-            },
-            {
-                "id": "user2",
-                "first_name": "Jane",
-                "last_name": "Smith",
-                "email": "jane@example.com",
-                "is_active": True,
-                "is_admin": True,
-                "created_at": (base_date - timedelta(days=30)).isoformat(),
-                "date_of_birth": "1985-05-15",
-                "address": {"city": "Los Angeles", "state": "CA"},
-            },
-            {
-                "id": "user3",
-                "first_name": "Bob",
-                "last_name": "Johnson",
-                "email": "bob@example.com",
-                "is_active": False,
-                "is_admin": False,
-                "created_at": (base_date - timedelta(days=60)).isoformat(),
-                "date_of_birth": "1975-12-20",
-                "address": {"city": "Chicago", "state": "IL"},
-            },
-            {
-                "id": "user4",
-                "first_name": "Alice",
-                "last_name": "Wilson",
-                "email": "alice@example.com",
-                "is_active": True,
-                "is_admin": False,
-                "created_at": (base_date - timedelta(days=1)).isoformat(),
-                "date_of_birth": "1995-08-10",
-                "address": {"city": "New York", "state": "NY"},
-            },
-        ]
+
+        # Create Person objects with proper structure
+        people = []
+
+        # User 1: Active, not admin
+        people.append(
+            Person(
+                id="user1",
+                first_name="John",
+                last_name="Doe",
+                email="john@example.com",
+                phone="555-0001",
+                date_of_birth="1990-01-01",
+                address=Address(
+                    street="123 Main St",
+                    city="New York",
+                    state="NY",
+                    postalCode="10001",
+                    country="USA",
+                ),
+                is_active=True,
+                is_admin=False,
+                created_at=base_date,
+                updated_at=base_date,
+            )
+        )
+
+        # User 2: Active, admin
+        people.append(
+            Person(
+                id="user2",
+                first_name="Jane",
+                last_name="Smith",
+                email="jane@example.com",
+                phone="555-0002",
+                date_of_birth="1985-05-15",
+                address=Address(
+                    street="456 Oak Ave",
+                    city="Los Angeles",
+                    state="CA",
+                    postalCode="90001",
+                    country="USA",
+                ),
+                is_active=True,
+                is_admin=True,
+                created_at=base_date - timedelta(days=30),
+                updated_at=base_date - timedelta(days=30),
+            )
+        )
+
+        # User 3: Inactive, not admin
+        people.append(
+            Person(
+                id="user3",
+                first_name="Bob",
+                last_name="Johnson",
+                email="bob@example.com",
+                phone="555-0003",
+                date_of_birth="1975-12-20",
+                address=Address(
+                    street="789 Pine St",
+                    city="Chicago",
+                    state="IL",
+                    postalCode="60601",
+                    country="USA",
+                ),
+                is_active=False,
+                is_admin=False,
+                created_at=base_date - timedelta(days=60),
+                updated_at=base_date - timedelta(days=60),
+            )
+        )
+
+        # User 4: Active, not admin
+        people.append(
+            Person(
+                id="user4",
+                first_name="Alice",
+                last_name="Wilson",
+                email="alice@example.com",
+                phone="555-0004",
+                date_of_birth="1995-08-10",
+                address=Address(
+                    street="321 Elm St",
+                    city="New York",
+                    state="NY",
+                    postalCode="10002",
+                    country="USA",
+                ),
+                is_active=True,
+                is_admin=False,
+                created_at=base_date - timedelta(days=1),
+                updated_at=base_date - timedelta(days=1),
+            )
+        )
+
+        return people
 
     @pytest.mark.asyncio
     @pytest.mark.asyncio

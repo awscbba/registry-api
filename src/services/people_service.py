@@ -706,10 +706,8 @@ class PeopleService(BaseService):
             if date_from or date_to:
                 filtered_people = []
                 for person in all_people:
-                    if person.get("created_at"):
-                        created_date = datetime.fromisoformat(
-                            person["created_at"].replace("Z", "+00:00")
-                        ).date()
+                    if getattr(person, "created_at", None):
+                        created_date = person.created_at.date()
 
                         if (
                             date_from
@@ -728,10 +726,8 @@ class PeopleService(BaseService):
             # Group by month for trends
             monthly_registrations = {}
             for person in all_people:
-                if person.get("created_at"):
-                    created_date = datetime.fromisoformat(
-                        person["created_at"].replace("Z", "+00:00")
-                    )
+                if getattr(person, "created_at", None):
+                    created_date = person.created_at
                     month_key = created_date.strftime("%Y-%m")
                     monthly_registrations[month_key] = (
                         monthly_registrations.get(month_key, 0) + 1
@@ -880,9 +876,7 @@ class PeopleService(BaseService):
 
     # Private helper methods for analytics calculations
 
-    async def _get_activity_metrics(
-        self, all_people: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+    async def _get_activity_metrics(self, all_people: List[Any]) -> Dict[str, Any]:
         """Calculate activity metrics for dashboard."""
         try:
             # Mock activity data - in real implementation, this would come from activity logs
@@ -913,9 +907,7 @@ class PeopleService(BaseService):
             self.logger.error(f"Error calculating activity metrics: {str(e)}")
             return {"error": "Failed to calculate activity metrics"}
 
-    async def _get_demographic_insights(
-        self, all_people: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+    async def _get_demographic_insights(self, all_people: List[Any]) -> Dict[str, Any]:
         """Calculate demographic insights."""
         try:
             # Location distribution
@@ -930,16 +922,16 @@ class PeopleService(BaseService):
 
             for person in all_people:
                 # Location analysis
-                if person.get("address") and person["address"].get("city"):
-                    city = person["address"]["city"]
+                if getattr(person, "address", None) and getattr(
+                    person.address, "city", None
+                ):
+                    city = person.address.city
                     location_distribution[city] = location_distribution.get(city, 0) + 1
 
                 # Age analysis (mock calculation based on date_of_birth)
-                if person.get("date_of_birth"):
+                if getattr(person, "date_of_birth", None):
                     try:
-                        birth_date = datetime.strptime(
-                            person["date_of_birth"], "%Y-%m-%d"
-                        )
+                        birth_date = datetime.strptime(person.date_of_birth, "%Y-%m-%d")
                         age = (datetime.now() - birth_date).days // 365
 
                         if age <= 25:
@@ -969,7 +961,7 @@ class PeopleService(BaseService):
             return {"error": "Failed to calculate demographic insights"}
 
     async def _get_recent_activity(
-        self, all_people: List[Dict[str, Any]], limit: int = 15
+        self, all_people: List[Any], limit: int = 15
     ) -> List[Dict[str, Any]]:
         """Get recent user activity for dashboard."""
         try:
@@ -983,11 +975,11 @@ class PeopleService(BaseService):
             recent_activity = []
             for person in sorted_people[:limit]:
                 activity = {
-                    "user_id": person.get("id", "unknown"),
-                    "user_name": f"{person.get('first_name', '')} {person.get('last_name', '')}".strip(),
-                    "email": person.get("email", ""),
+                    "user_id": getattr(person, "id", "unknown"),
+                    "user_name": f"{getattr(person, 'first_name', '')} {getattr(person, 'last_name', '')}".strip(),
+                    "email": getattr(person, "email", ""),
                     "activity_type": "registration",
-                    "timestamp": person.get("created_at", ""),
+                    "timestamp": getattr(person, "created_at", ""),
                     "details": "New user registered",
                 }
                 recent_activity.append(activity)
@@ -1041,7 +1033,7 @@ class PeopleService(BaseService):
         }
 
     async def _calculate_engagement_score(
-        self, all_people: List[Dict[str, Any]]
+        self, all_people: List[Any]
     ) -> Dict[str, Any]:
         """Calculate overall engagement score (mock implementation)."""
         active_users = len([p for p in all_people if getattr(p, "is_active", True)])
@@ -1057,9 +1049,7 @@ class PeopleService(BaseService):
             "active_user_ratio": round(engagement_score / 100, 2),
         }
 
-    async def _calculate_user_segments(
-        self, all_people: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+    async def _calculate_user_segments(self, all_people: List[Any]) -> Dict[str, Any]:
         """Calculate user segments for engagement analysis."""
         total_users = len(all_people)
         active_users = len([p for p in all_people if getattr(p, "is_active", True)])
@@ -1464,15 +1454,15 @@ class PeopleService(BaseService):
         for person in people:
             # Search in multiple fields
             searchable_fields = [
-                person.get("first_name", ""),
-                person.get("last_name", ""),
-                person.get("email", ""),
-                person.get("phone", ""),
+                getattr(person, "first_name", ""),
+                getattr(person, "last_name", ""),
+                getattr(person, "email", ""),
+                getattr(person, "phone", ""),
             ]
 
             # Include address fields if present
-            if person.get("address"):
-                address = person["address"]
+            if getattr(person, "address", None):
+                address = person.address
                 searchable_fields.extend(
                     [
                         address.get("city", ""),
@@ -1560,15 +1550,15 @@ class PeopleService(BaseService):
         # Define sort key function
         def get_sort_key(person):
             if sort_by == "name":
-                return f"{person.get('first_name', '')} {person.get('last_name', '')}"
+                return f"{getattr(person, 'first_name', '')} {getattr(person, 'last_name', '')}"
             elif sort_by == "email":
-                return person.get("email", "")
+                return getattr(person, "email", "")
             elif sort_by == "created_at":
-                return person.get("created_at", "")
+                return getattr(person, "created_at", "")
             elif sort_by == "last_activity":
-                return person.get("last_activity", "")
+                return getattr(person, "last_activity", "")
             else:
-                return person.get(sort_by, "")
+                return getattr(person, sort_by, "")
 
         try:
             return sorted(people, key=get_sort_key, reverse=reverse)
@@ -1576,13 +1566,13 @@ class PeopleService(BaseService):
             # Fallback to original order if sorting fails
             return people
 
-    def _get_user_status(self, person: Dict[str, Any]) -> str:
+    def _get_user_status(self, person) -> str:
         """Determine user status based on person data."""
-        if not person.get("is_active", True):
+        if not getattr(person, "is_active", True):
             return "inactive"
-        elif person.get("account_locked_until"):
+        elif getattr(person, "account_locked_until", None):
             return "locked"
-        elif person.get("is_suspended", False):
+        elif getattr(person, "is_suspended", False):
             return "suspended"
         else:
             return "active"
@@ -1747,13 +1737,13 @@ class PeopleService(BaseService):
             csv_data = "id,first_name,last_name,email,phone,is_active,created_at\n"
             for person in people:
                 csv_data += (
-                    f"{person.get('id', '')},"
-                    f"{person.get('first_name', '')},"
-                    f"{person.get('last_name', '')},"
-                    f"{person.get('email', '')},"
-                    f"{person.get('phone', '')},"
-                    f"{person.get('is_active', True)},"
-                    f"{person.get('created_at', '')}\n"
+                    f"{getattr(person, 'id', '')},"
+                    f"{getattr(person, 'first_name', '')},"
+                    f"{getattr(person, 'last_name', '')},"
+                    f"{getattr(person, 'email', '')},"
+                    f"{getattr(person, 'phone', '')},"
+                    f"{getattr(person, 'is_active', True)},"
+                    f"{getattr(person, 'created_at', '')}\n"
                 )
             return csv_data
         else:
