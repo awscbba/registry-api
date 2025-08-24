@@ -1499,7 +1499,9 @@ class PeopleService(BaseService):
             filtered_people = [
                 p
                 for p in filtered_people
-                if self._is_in_date_range(p.get("created_at"), date_from, date_to)
+                if self._is_in_date_range(
+                    getattr(p, "created_at", None), date_from, date_to
+                )
             ]
 
         if filters.get("activity_date_range"):
@@ -1507,7 +1509,9 @@ class PeopleService(BaseService):
             filtered_people = [
                 p
                 for p in filtered_people
-                if self._is_in_date_range(p.get("last_activity"), date_from, date_to)
+                if self._is_in_date_range(
+                    getattr(p, "last_activity", None), date_from, date_to
+                )
             ]
 
         # Age range filter
@@ -1517,7 +1521,9 @@ class PeopleService(BaseService):
             filtered_people = [
                 p
                 for p in filtered_people
-                if self._is_in_age_range(p.get("date_of_birth"), age_min, age_max)
+                if self._is_in_age_range(
+                    getattr(p, "date_of_birth", None), age_min, age_max
+                )
             ]
 
         # Location filter
@@ -1526,7 +1532,8 @@ class PeopleService(BaseService):
             filtered_people = [
                 p
                 for p in filtered_people
-                if p.get("address") and location in p["address"].get("city", "").lower()
+                if getattr(p, "address", None)
+                and location in getattr(p.address, "city", "").lower()
             ]
 
         # Has projects filter
@@ -1536,7 +1543,7 @@ class PeopleService(BaseService):
             filtered_people = [
                 p
                 for p in filtered_people
-                if bool(p.get("project_count", 0) > 0) == has_projects
+                if bool(getattr(p, "project_count", 0) > 0) == has_projects
             ]
 
         return filtered_people
