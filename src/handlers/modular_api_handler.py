@@ -878,7 +878,7 @@ async def get_system_metrics():
         metrics = await metrics_service.get_current_metrics()
 
         return create_v2_response(
-            data=metrics, message="System metrics retrieved successfully"
+            data=metrics, metadata={"message": "System metrics retrieved successfully"}
         )
     except Exception as e:
         logger.error(f"Failed to get system metrics: {str(e)}")
@@ -968,7 +968,7 @@ async def get_system_alerts():
                     else "warning" if current_alerts else "healthy"
                 ),
             },
-            message="System alerts retrieved successfully",
+            metadata={"message": "System alerts retrieved successfully"},
         )
     except Exception as e:
         logger.error(f"Failed to get system alerts: {str(e)}")
@@ -1053,7 +1053,7 @@ async def get_monitoring_dashboard():
 
         return create_v2_response(
             data=dashboard_data,
-            message="Monitoring dashboard data retrieved successfully",
+            metadata={"message": "Monitoring dashboard data retrieved successfully"},
         )
     except Exception as e:
         logger.error(f"Failed to get monitoring dashboard data: {str(e)}")
@@ -1654,7 +1654,9 @@ async def get_project_dashboard():
         if dashboard_data.get("success"):
             return create_v2_response(
                 data=dashboard_data,
-                message="Project administration dashboard data retrieved successfully",
+                metadata={
+                    "message": "Project administration dashboard data retrieved successfully"
+                },
             )
         else:
             raise HTTPException(
@@ -2786,7 +2788,8 @@ async def get_communication_history(
         )
 
         return create_v2_response(
-            data=history_result, message="Communication history retrieved successfully"
+            data=history_result,
+            metadata={"message": "Communication history retrieved successfully"},
         )
 
     except Exception as e:
@@ -2924,7 +2927,7 @@ async def get_performance_dashboard(
 
         return create_v2_response(
             data=dashboard_data,
-            message="Performance dashboard data retrieved successfully",
+            metadata={"message": "Performance dashboard data retrieved successfully"},
         )
 
     except HTTPException:
@@ -3058,7 +3061,8 @@ async def get_cache_stats(
         cache_stats = await cache_service.get_cache_stats()
 
         return create_v2_response(
-            data=cache_stats, message="Cache statistics retrieved successfully"
+            data=cache_stats,
+            metadata={"message": "Cache statistics retrieved successfully"},
         )
 
     except HTTPException:
@@ -3230,7 +3234,7 @@ async def warm_cache(
                 "services_requested": services,
                 "timestamp": datetime.utcnow().isoformat(),
             },
-            message="Cache warming completed",
+            metadata={"message": "Cache warming completed"},
         )
 
     except HTTPException:
@@ -3456,7 +3460,9 @@ async def get_database_performance_analysis(
 
         return create_v2_response(
             data=analysis,
-            message="Database performance analysis retrieved successfully",
+            metadata={
+                "message": "Database performance analysis retrieved successfully"
+            },
         )
 
     except HTTPException:
@@ -3582,7 +3588,7 @@ async def optimize_database_queries(
 
         return create_v2_response(
             data=optimization_result,
-            message="Database query optimization completed successfully",
+            metadata={"message": "Database query optimization completed successfully"},
         )
 
     except HTTPException:
@@ -3636,7 +3642,8 @@ async def get_connection_pool_status(
         pool_status = await db_opt_service.manage_connection_pools("status")
 
         return create_v2_response(
-            data=pool_status, message="Connection pool status retrieved successfully"
+            data=pool_status,
+            metadata={"message": "Connection pool status retrieved successfully"},
         )
 
     except HTTPException:
@@ -3691,7 +3698,7 @@ async def optimize_connection_pools(
 
         return create_v2_response(
             data=optimization_result,
-            message="Connection pool optimization completed successfully",
+            metadata={"message": "Connection pool optimization completed successfully"},
         )
 
     except HTTPException:
@@ -4051,7 +4058,7 @@ async def get_admin_stats(
 
         return create_v2_response(
             data=stats,
-            message="Admin statistics retrieved successfully",
+            metadata={"message": "Admin statistics retrieved successfully"},
         )
 
     except HTTPException:
@@ -4234,7 +4241,7 @@ async def get_admin_performance_health(
 
         return create_v2_response(
             data=health_data,
-            message="Performance health data retrieved successfully",
+            metadata={"message": "Performance health data retrieved successfully"},
         )
 
     except HTTPException:

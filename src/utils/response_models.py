@@ -5,6 +5,8 @@ Standardized response models for consistent API responses across v1 and v2.
 from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel, Field
 from datetime import datetime
+from decimal import Decimal
+import json
 
 
 class BaseAPIResponse(BaseModel):
@@ -122,6 +124,23 @@ class ResponseFactory:
         )
 
 
+# Utility function to handle Decimal serialization
+def convert_decimals(obj: Any) -> Any:
+    """Convert Decimal objects to int/float for JSON serialization."""
+    if isinstance(obj, Decimal):
+        # Convert to int if it's a whole number, otherwise float
+        if obj % 1 == 0:
+            return int(obj)
+        else:
+            return float(obj)
+    elif isinstance(obj, dict):
+        return {key: convert_decimals(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_decimals(item) for item in obj]
+    else:
+        return obj
+
+
 # Legacy response helpers for backward compatibility
 def create_v1_response(data: Any, success: bool = True) -> Dict[str, Any]:
     """Create v1-style response for backward compatibility."""
@@ -135,18 +154,22 @@ def create_v2_response(
     data: Any, success: bool = True, metadata: Optional[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
     """Create v2-style response with enhanced metadata."""
+    # Convert any Decimal objects to proper JSON-serializable types
+    converted_data = convert_decimals(data)
+    converted_metadata = convert_decimals(metadata) if metadata else None
+
     response = {
         "success": success,
         "version": "v2",
         "timestamp": datetime.utcnow().isoformat(),
-        "data": data,
+        "data": converted_data,
     }
 
-    if isinstance(data, list):
-        response["count"] = len(data)
+    if isinstance(converted_data, list):
+        response["count"] = len(converted_data)
 
-    if metadata:
-        response["metadata"] = metadata
+    if converted_metadata:
+        response["metadata"] = converted_metadata
 
     return response
 
