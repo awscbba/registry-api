@@ -49,8 +49,13 @@ class SubscriptionsService(BaseService):
             self.logger.error(f"Failed to initialize subscriptions service: {str(e)}")
             return False
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self):
         """Check the health of the subscriptions service."""
+        from ..core.base_service import HealthCheck, ServiceStatus
+        import time
+
+        start_time = time.time()
+
         try:
             # Use a lightweight health check with timeout
             import asyncio
@@ -58,29 +63,43 @@ class SubscriptionsService(BaseService):
             # Try a quick database connectivity test with 1 second timeout
             try:
                 await asyncio.wait_for(self._quick_db_check(), timeout=1.0)
-                return {
-                    "service": "subscriptions_service",
-                    "status": "healthy",
-                    "database": "connected",
-                    "timestamp": datetime.now().isoformat(),
-                }
+                response_time = (time.time() - start_time) * 1000
+                return HealthCheck(
+                    service_name=self.service_name,
+                    status=ServiceStatus.HEALTHY,
+                    message="Subscriptions service is healthy",
+                    details={
+                        "database": "connected",
+                        "timestamp": datetime.now().isoformat(),
+                    },
+                    response_time_ms=response_time,
+                )
             except asyncio.TimeoutError:
-                return {
-                    "service": "subscriptions_service",
-                    "status": "degraded",
-                    "database": "timeout",
-                    "message": "Database check timed out",
-                    "timestamp": datetime.now().isoformat(),
-                }
+                response_time = (time.time() - start_time) * 1000
+                return HealthCheck(
+                    service_name=self.service_name,
+                    status=ServiceStatus.DEGRADED,
+                    message="Database check timed out",
+                    details={
+                        "database": "timeout",
+                        "timestamp": datetime.now().isoformat(),
+                    },
+                    response_time_ms=response_time,
+                )
         except Exception as e:
+            response_time = (time.time() - start_time) * 1000
             self.logger.error(f"Subscriptions service health check failed: {str(e)}")
-            return {
-                "service": "subscriptions_service",
-                "status": "unhealthy",
-                "database": "disconnected",
-                "error": str(e),
-                "timestamp": datetime.now().isoformat(),
-            }
+            return HealthCheck(
+                service_name=self.service_name,
+                status=ServiceStatus.UNHEALTHY,
+                message=f"Health check failed: {str(e)}",
+                details={
+                    "database": "disconnected",
+                    "error": str(e),
+                    "timestamp": datetime.now().isoformat(),
+                },
+                response_time_ms=response_time,
+            )
 
     async def _quick_db_check(self):
         """Quick database connectivity check."""

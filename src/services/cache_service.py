@@ -45,8 +45,13 @@ class CacheService(BaseService):
             self.logger.error(f"Failed to initialize cache service: {str(e)}")
             return False
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self):
         """Check the health of the cache service."""
+        from ..core.base_service import HealthCheck, ServiceStatus
+        import time
+
+        start_time = time.time()
+
         try:
             cache_size = len(self.cache_store)
             hit_rate = (
@@ -54,23 +59,33 @@ class CacheService(BaseService):
                 if (self.stats["hits"] + self.stats["misses"]) > 0
                 else 0
             )
+            response_time = (time.time() - start_time) * 1000
 
-            return {
-                "service": "cache_service",
-                "status": "healthy",
-                "cache_size": cache_size,
-                "hit_rate": round(hit_rate * 100, 2),
-                "statistics": self.stats.copy(),
-                "timestamp": datetime.utcnow().isoformat(),
-            }
+            return HealthCheck(
+                service_name=self.service_name,
+                status=ServiceStatus.HEALTHY,
+                message="Cache service is healthy",
+                details={
+                    "cache_size": cache_size,
+                    "hit_rate": round(hit_rate * 100, 2),
+                    "statistics": self.stats.copy(),
+                    "timestamp": datetime.utcnow().isoformat(),
+                },
+                response_time_ms=response_time,
+            )
         except Exception as e:
+            response_time = (time.time() - start_time) * 1000
             self.logger.error(f"Cache service health check failed: {str(e)}")
-            return {
-                "service": "cache_service",
-                "status": "unhealthy",
-                "error": str(e),
-                "timestamp": datetime.utcnow().isoformat(),
-            }
+            return HealthCheck(
+                service_name=self.service_name,
+                status=ServiceStatus.UNHEALTHY,
+                message=f"Health check failed: {str(e)}",
+                details={
+                    "error": str(e),
+                    "timestamp": datetime.utcnow().isoformat(),
+                },
+                response_time_ms=response_time,
+            )
 
     def generate_cache_key(self, prefix: str, *args, **kwargs) -> str:
         """Generate a consistent cache key from prefix and parameters."""

@@ -49,8 +49,13 @@ class PeopleService(BaseService):
             self.logger.error(f"Failed to initialize people service: {str(e)}")
             return False
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self):
         """Check the health of the people service using repository pattern."""
+        from ..core.base_service import HealthCheck, ServiceStatus
+        import time
+
+        start_time = time.time()
+
         try:
             import asyncio
 
@@ -60,41 +65,59 @@ class PeopleService(BaseService):
                     self.user_repository.count(), timeout=1.0
                 )
                 performance_stats = self.user_repository.get_performance_stats()
+                response_time = (time.time() - start_time) * 1000
 
                 if count_result.success:
-                    return {
-                        "service": "people_service",
-                        "status": "healthy",
-                        "repository": "connected",
-                        "user_count": count_result.data,
-                        "performance": performance_stats,
-                        "timestamp": datetime.now().isoformat(),
-                    }
+                    return HealthCheck(
+                        service_name=self.service_name,
+                        status=ServiceStatus.HEALTHY,
+                        message="People service is healthy",
+                        details={
+                            "repository": "connected",
+                            "user_count": count_result.data,
+                            "performance": performance_stats,
+                            "timestamp": datetime.now().isoformat(),
+                        },
+                        response_time_ms=response_time,
+                    )
                 else:
-                    return {
-                        "service": "people_service",
-                        "status": "unhealthy",
-                        "repository": "disconnected",
-                        "error": count_result.error,
-                        "timestamp": datetime.now().isoformat(),
-                    }
+                    return HealthCheck(
+                        service_name=self.service_name,
+                        status=ServiceStatus.UNHEALTHY,
+                        message="Repository connectivity failed",
+                        details={
+                            "repository": "disconnected",
+                            "error": count_result.error,
+                            "timestamp": datetime.now().isoformat(),
+                        },
+                        response_time_ms=response_time,
+                    )
             except asyncio.TimeoutError:
-                return {
-                    "service": "people_service",
-                    "status": "degraded",
-                    "repository": "timeout",
-                    "message": "Repository check timed out",
-                    "timestamp": datetime.now().isoformat(),
-                }
+                response_time = (time.time() - start_time) * 1000
+                return HealthCheck(
+                    service_name=self.service_name,
+                    status=ServiceStatus.DEGRADED,
+                    message="Repository check timed out",
+                    details={
+                        "repository": "timeout",
+                        "timestamp": datetime.now().isoformat(),
+                    },
+                    response_time_ms=response_time,
+                )
         except Exception as e:
+            response_time = (time.time() - start_time) * 1000
             self.logger.error(f"People service health check failed: {str(e)}")
-            return {
-                "service": "people_service",
-                "status": "unhealthy",
-                "repository": "disconnected",
-                "error": str(e),
-                "timestamp": datetime.now().isoformat(),
-            }
+            return HealthCheck(
+                service_name=self.service_name,
+                status=ServiceStatus.UNHEALTHY,
+                message=f"Health check failed: {str(e)}",
+                details={
+                    "repository": "disconnected",
+                    "error": str(e),
+                    "timestamp": datetime.now().isoformat(),
+                },
+                response_time_ms=response_time,
+            )
 
     async def get_all_people_v1(self) -> Dict[str, Any]:
         """Get all people (v1 format)."""
@@ -603,9 +626,9 @@ class PeopleService(BaseService):
 
             # Calculate overview metrics
             total_users = len(all_people)
-            active_users = len([p for p in all_people if p.get("is_active", True)])
+            active_users = len([p for p in all_people if getattr(p, "is_active", True)])
             inactive_users = total_users - active_users
-            admin_users = len([p for p in all_people if p.get("is_admin", False)])
+            admin_users = len([p for p in all_people if getattr(p, "is_admin", False)])
 
             # Calculate today's registrations
             today = datetime.now().date()
@@ -613,11 +636,7 @@ class PeopleService(BaseService):
                 [
                     p
                     for p in all_people
-                    if p.get("created_at")
-                    and datetime.fromisoformat(
-                        p["created_at"].replace("Z", "+00:00")
-                    ).date()
-                    == today
+                    if getattr(p, "created_at", None) and p.created_at.date() == today
                 ]
             )
 
@@ -627,11 +646,8 @@ class PeopleService(BaseService):
                 [
                     p
                     for p in all_people
-                    if p.get("created_at")
-                    and datetime.fromisoformat(
-                        p["created_at"].replace("Z", "+00:00")
-                    ).date()
-                    >= current_month
+                    if getattr(p, "created_at", None)
+                    and p.created_at.date() >= current_month
                 ]
             )
 
@@ -873,15 +889,15 @@ class PeopleService(BaseService):
             return {
                 "login_activity": {
                     "daily_active_users": len(
-                        [p for p in all_people if p.get("is_active", True)]
+                        [p for p in all_people if getattr(p, "is_active", True)]
                     )
                     // 3,
                     "weekly_active_users": len(
-                        [p for p in all_people if p.get("is_active", True)]
+                        [p for p in all_people if getattr(p, "is_active", True)]
                     )
                     // 2,
                     "monthly_active_users": len(
-                        [p for p in all_people if p.get("is_active", True)]
+                        [p for p in all_people if getattr(p, "is_active", True)]
                     ),
                 },
                 "profile_updates": {
@@ -890,7 +906,7 @@ class PeopleService(BaseService):
                     "this_month": len(all_people) // 3,
                 },
                 "inactive_users": len(
-                    [p for p in all_people if not p.get("is_active", True)]
+                    [p for p in all_people if not getattr(p, "is_active", True)]
                 ),
             }
         except Exception as e:
@@ -989,7 +1005,7 @@ class PeopleService(BaseService):
     ) -> Dict[str, Any]:
         """Calculate login activity statistics (mock implementation)."""
         # In real implementation, this would query activity logs
-        active_users = len([p for p in all_people if p.get("is_active", True)])
+        active_users = len([p for p in all_people if getattr(p, "is_active", True)])
         return {
             "total_logins": active_users * 5,  # Mock data
             "unique_users": active_users,
@@ -1015,7 +1031,9 @@ class PeopleService(BaseService):
         self, all_people: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
         """Calculate inactive user statistics."""
-        inactive_count = len([p for p in all_people if not p.get("is_active", True)])
+        inactive_count = len(
+            [p for p in all_people if not getattr(p, "is_active", True)]
+        )
         return {
             "count": inactive_count,
             "percentage": (inactive_count / len(all_people) * 100) if all_people else 0,
@@ -1026,7 +1044,7 @@ class PeopleService(BaseService):
         self, all_people: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
         """Calculate overall engagement score (mock implementation)."""
-        active_users = len([p for p in all_people if p.get("is_active", True)])
+        active_users = len([p for p in all_people if getattr(p, "is_active", True)])
         engagement_score = (active_users / len(all_people) * 100) if all_people else 0
 
         return {
@@ -1044,8 +1062,8 @@ class PeopleService(BaseService):
     ) -> Dict[str, Any]:
         """Calculate user segments for engagement analysis."""
         total_users = len(all_people)
-        active_users = len([p for p in all_people if p.get("is_active", True)])
-        admin_users = len([p for p in all_people if p.get("is_admin", False)])
+        active_users = len([p for p in all_people if getattr(p, "is_active", True)])
+        admin_users = len([p for p in all_people if getattr(p, "is_admin", False)])
 
         return {
             "highly_engaged": active_users // 3,

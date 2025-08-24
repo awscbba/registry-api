@@ -45,8 +45,13 @@ class AuditService(BaseService):
             self.logger.error(f"Failed to initialize audit service: {str(e)}")
             return False
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self):
         """Check the health of the audit service using repository pattern."""
+        from ..core.base_service import HealthCheck, ServiceStatus
+        import time
+
+        start_time = time.time()
+
         try:
             import asyncio
 
@@ -56,41 +61,59 @@ class AuditService(BaseService):
                     self.audit_repository.count(), timeout=1.0
                 )
                 performance_stats = self.audit_repository.get_performance_stats()
+                response_time = (time.time() - start_time) * 1000
 
                 if count_result.success:
-                    return {
-                        "service": "audit_service",
-                        "status": "healthy",
-                        "repository": "connected",
-                        "audit_log_count": count_result.data,
-                        "performance": performance_stats,
-                        "timestamp": datetime.now().isoformat(),
-                    }
+                    return HealthCheck(
+                        service_name=self.service_name,
+                        status=ServiceStatus.HEALTHY,
+                        message="Audit service is healthy",
+                        details={
+                            "repository": "connected",
+                            "audit_log_count": count_result.data,
+                            "performance": performance_stats,
+                            "timestamp": datetime.now().isoformat(),
+                        },
+                        response_time_ms=response_time,
+                    )
                 else:
-                    return {
-                        "service": "audit_service",
-                        "status": "unhealthy",
-                        "repository": "disconnected",
-                        "error": count_result.error,
-                        "timestamp": datetime.now().isoformat(),
-                    }
+                    return HealthCheck(
+                        service_name=self.service_name,
+                        status=ServiceStatus.UNHEALTHY,
+                        message="Repository connectivity failed",
+                        details={
+                            "repository": "disconnected",
+                            "error": count_result.error,
+                            "timestamp": datetime.now().isoformat(),
+                        },
+                        response_time_ms=response_time,
+                    )
             except asyncio.TimeoutError:
-                return {
-                    "service": "audit_service",
-                    "status": "degraded",
-                    "repository": "timeout",
-                    "message": "Repository check timed out",
-                    "timestamp": datetime.now().isoformat(),
-                }
+                response_time = (time.time() - start_time) * 1000
+                return HealthCheck(
+                    service_name=self.service_name,
+                    status=ServiceStatus.DEGRADED,
+                    message="Repository check timed out",
+                    details={
+                        "repository": "timeout",
+                        "timestamp": datetime.now().isoformat(),
+                    },
+                    response_time_ms=response_time,
+                )
         except Exception as e:
+            response_time = (time.time() - start_time) * 1000
             self.logger.error(f"Audit service health check failed: {str(e)}")
-            return {
-                "service": "audit_service",
-                "status": "unhealthy",
-                "repository": "disconnected",
-                "error": str(e),
-                "timestamp": datetime.now().isoformat(),
-            }
+            return HealthCheck(
+                service_name=self.service_name,
+                status=ServiceStatus.UNHEALTHY,
+                message=f"Health check failed: {str(e)}",
+                details={
+                    "repository": "disconnected",
+                    "error": str(e),
+                    "timestamp": datetime.now().isoformat(),
+                },
+                response_time_ms=response_time,
+            )
 
     async def create_audit_log(
         self,
