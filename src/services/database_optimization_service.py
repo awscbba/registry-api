@@ -74,8 +74,13 @@ class DatabaseOptimizationService(BaseService):
             )
             return False
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self):
         """Check the health of the database optimization service."""
+        from ..core.base_service import HealthCheck, ServiceStatus
+        import time
+
+        start_time = time.time()
+
         try:
             total_queries = sum(
                 metrics["total_queries"] for metrics in self.query_metrics.values()
@@ -87,26 +92,36 @@ class DatabaseOptimizationService(BaseService):
             optimization_rate = (
                 (optimized_queries / total_queries * 100) if total_queries > 0 else 0
             )
+            response_time = (time.time() - start_time) * 1000
 
-            return {
-                "service": "database_optimization_service",
-                "status": "healthy",
-                "total_queries_tracked": total_queries,
-                "optimization_rate": round(optimization_rate, 2),
-                "active_connection_pools": len(self.connection_pools),
-                "pending_recommendations": len(self.optimization_recommendations),
-                "timestamp": datetime.utcnow().isoformat(),
-            }
+            return HealthCheck(
+                service_name=self.service_name,
+                status=ServiceStatus.HEALTHY,
+                message="Database optimization service is healthy",
+                details={
+                    "total_queries_tracked": total_queries,
+                    "optimization_rate": round(optimization_rate, 2),
+                    "active_connection_pools": len(self.connection_pools),
+                    "pending_recommendations": len(self.optimization_recommendations),
+                    "timestamp": datetime.utcnow().isoformat(),
+                },
+                response_time_ms=response_time,
+            )
         except Exception as e:
+            response_time = (time.time() - start_time) * 1000
             self.logger.error(
                 f"Database optimization service health check failed: {str(e)}"
             )
-            return {
-                "service": "database_optimization_service",
-                "status": "unhealthy",
-                "error": str(e),
-                "timestamp": datetime.utcnow().isoformat(),
-            }
+            return HealthCheck(
+                service_name=self.service_name,
+                status=ServiceStatus.UNHEALTHY,
+                message=f"Health check failed: {str(e)}",
+                details={
+                    "error": str(e),
+                    "timestamp": datetime.utcnow().isoformat(),
+                },
+                response_time_ms=response_time,
+            )
 
     async def track_query_performance(
         self,

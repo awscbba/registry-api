@@ -968,7 +968,7 @@ class PeopleService(BaseService):
             # Sort by creation date and get most recent
             sorted_people = sorted(
                 all_people,
-                key=lambda x: x.get("created_at", "1970-01-01T00:00:00Z"),
+                key=lambda x: getattr(x, "created_at", "1970-01-01T00:00:00Z"),
                 reverse=True,
             )
 
@@ -1465,9 +1465,9 @@ class PeopleService(BaseService):
                 address = person.address
                 searchable_fields.extend(
                     [
-                        address.get("city", ""),
-                        address.get("state", ""),
-                        address.get("country", ""),
+                        getattr(address, "city", ""),
+                        getattr(address, "state", ""),
+                        getattr(address, "country", ""),
                     ]
                 )
 

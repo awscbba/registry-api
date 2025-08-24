@@ -61,36 +61,51 @@ class PerformanceMetricsService(BaseService):
             )
             return False
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self):
         """Check the health of the performance metrics service."""
+        from ..core.base_service import HealthCheck, ServiceStatus
+        import time
+
+        start_time = time.time()
+
         try:
             total_endpoints = len(self.endpoint_stats)
             total_requests = sum(
                 stats["total_requests"] for stats in self.endpoint_stats.values()
             )
             active_alerts_count = len(self.active_alerts)
+            response_time = (time.time() - start_time) * 1000
 
-            return {
-                "service": "performance_metrics_service",
-                "status": "healthy",
-                "total_endpoints_tracked": total_endpoints,
-                "total_requests_tracked": total_requests,
-                "active_alerts": active_alerts_count,
-                "metrics_stored": sum(
-                    len(metrics) for metrics in self.metrics_store.values()
-                ),
-                "timestamp": datetime.utcnow().isoformat(),
-            }
+            return HealthCheck(
+                service_name=self.service_name,
+                status=ServiceStatus.HEALTHY,
+                message="Performance metrics service is healthy",
+                details={
+                    "total_endpoints_tracked": total_endpoints,
+                    "total_requests_tracked": total_requests,
+                    "active_alerts": active_alerts_count,
+                    "metrics_stored": sum(
+                        len(metrics) for metrics in self.metrics_store.values()
+                    ),
+                    "timestamp": datetime.utcnow().isoformat(),
+                },
+                response_time_ms=response_time,
+            )
         except Exception as e:
+            response_time = (time.time() - start_time) * 1000
             self.logger.error(
                 f"Performance metrics service health check failed: {str(e)}"
             )
-            return {
-                "service": "performance_metrics_service",
-                "status": "unhealthy",
-                "error": str(e),
-                "timestamp": datetime.utcnow().isoformat(),
-            }
+            return HealthCheck(
+                service_name=self.service_name,
+                status=ServiceStatus.UNHEALTHY,
+                message=f"Health check failed: {str(e)}",
+                details={
+                    "error": str(e),
+                    "timestamp": datetime.utcnow().isoformat(),
+                },
+                response_time_ms=response_time,
+            )
 
     async def track_request(
         self,

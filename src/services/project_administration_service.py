@@ -786,25 +786,53 @@ class ProjectAdministrationService(BaseService):
                 "error": f"Dashboard data generation failed: {str(e)}",
             }
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self):
         """Health check for project administration service."""
+        from ..core.base_service import HealthCheck, ServiceStatus
+        import time
+
+        start_time = time.time()
+
         try:
             # Test repository connectivity
             count_result = await self.project_repository.count()
+            response_time = (time.time() - start_time) * 1000
 
-            return {
-                "healthy": count_result.success,
-                "status": "operational" if count_result.success else "error",
-                "repository_accessible": count_result.success,
-                "templates_loaded": len(self.templates),
-                "last_check": datetime.utcnow().isoformat(),
-                "error": None if count_result.success else count_result.error,
-            }
+            if count_result.success:
+                return HealthCheck(
+                    service_name=self.service_name,
+                    status=ServiceStatus.HEALTHY,
+                    message="Project administration service is healthy",
+                    details={
+                        "repository_accessible": True,
+                        "templates_loaded": len(self.templates),
+                        "last_check": datetime.utcnow().isoformat(),
+                    },
+                    response_time_ms=response_time,
+                )
+            else:
+                return HealthCheck(
+                    service_name=self.service_name,
+                    status=ServiceStatus.UNHEALTHY,
+                    message=f"Repository connectivity failed: {count_result.error}",
+                    details={
+                        "repository_accessible": False,
+                        "templates_loaded": len(self.templates),
+                        "last_check": datetime.utcnow().isoformat(),
+                        "error": count_result.error,
+                    },
+                    response_time_ms=response_time,
+                )
 
         except Exception as e:
-            return {
-                "healthy": False,
-                "status": "error",
-                "error": str(e),
-                "last_check": datetime.utcnow().isoformat(),
-            }
+            response_time = (time.time() - start_time) * 1000
+            return HealthCheck(
+                service_name=self.service_name,
+                status=ServiceStatus.UNHEALTHY,
+                message=f"Health check failed: {str(e)}",
+                details={
+                    "error": str(e),
+                    "last_check": datetime.utcnow().isoformat(),
+                },
+                response_time_ms=response_time,
+            )

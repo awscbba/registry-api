@@ -428,23 +428,38 @@ class MetricsService(BaseService):
 
         return recommendations
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self):
         """Health check for metrics service."""
+        from ..core.base_service import HealthCheck, ServiceStatus
+        import time
+
+        start_time = time.time()
+
         try:
             # Test metrics collection
             test_metrics = await self.get_current_metrics()
+            response_time = (time.time() - start_time) * 1000
 
-            return {
-                "healthy": True,
-                "status": "operational",
-                "metrics_available": "timestamp" in test_metrics,
-                "collector_active": self.collector is not None,
-                "last_check": datetime.utcnow().isoformat(),
-            }
+            return HealthCheck(
+                service_name=self.service_name,
+                status=ServiceStatus.HEALTHY,
+                message="Metrics service is healthy",
+                details={
+                    "metrics_available": "timestamp" in test_metrics,
+                    "collector_active": self.collector is not None,
+                    "last_check": datetime.utcnow().isoformat(),
+                },
+                response_time_ms=response_time,
+            )
         except Exception as e:
-            return {
-                "healthy": False,
-                "status": "error",
-                "error": str(e),
-                "last_check": datetime.utcnow().isoformat(),
-            }
+            response_time = (time.time() - start_time) * 1000
+            return HealthCheck(
+                service_name=self.service_name,
+                status=ServiceStatus.UNHEALTHY,
+                message=f"Health check failed: {str(e)}",
+                details={
+                    "error": str(e),
+                    "last_check": datetime.utcnow().isoformat(),
+                },
+                response_time_ms=response_time,
+            )

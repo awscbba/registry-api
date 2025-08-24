@@ -65,6 +65,28 @@ async def main():
         (CacheService, "CacheService"),
     ]
 
+    # Test additional services we fixed
+    try:
+        from src.services.metrics_service import MetricsService
+        from src.services.performance_metrics_service import PerformanceMetricsService
+        from src.services.database_optimization_service import (
+            DatabaseOptimizationService,
+        )
+        from src.services.project_administration_service import (
+            ProjectAdministrationService,
+        )
+
+        services_to_test.extend(
+            [
+                (MetricsService, "MetricsService"),
+                (PerformanceMetricsService, "PerformanceMetricsService"),
+                (DatabaseOptimizationService, "DatabaseOptimizationService"),
+                (ProjectAdministrationService, "ProjectAdministrationService"),
+            ]
+        )
+    except ImportError as e:
+        print(f"⚠️ Could not import additional services: {e}")
+
     results = []
 
     for service_class, service_name in services_to_test:
