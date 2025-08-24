@@ -4260,6 +4260,11 @@ app.include_router(v1_router)
 app.include_router(v2_router)
 app.include_router(auth_router)
 
+# Include enhanced admin router for user management
+from .enhanced_admin_handler import enhanced_admin_router
+
+app.include_router(enhanced_admin_router)
+
 # ==================== STARTUP AND SHUTDOWN EVENTS ====================
 
 

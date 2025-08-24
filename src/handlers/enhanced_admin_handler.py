@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 from ..models.person import PersonUpdate, PersonResponse
 from ..models.project import ProjectCreate, ProjectUpdate
 from ..models.auth import AuthenticatedUser
-from ..services.dynamodb_service import DynamoDBService
+from ..services.service_registry_manager import service_manager
 from ..middleware.admin_middleware_v2 import (
     require_admin_access,
     require_super_admin_access,
@@ -27,9 +27,6 @@ from ..utils.response_models import create_v2_response
 from ..utils.logging_config import get_handler_logger
 
 logger = get_handler_logger(__name__)
-
-# Initialize services
-db_service = DynamoDBService()
 
 # Create router
 enhanced_admin_router = APIRouter(prefix="/v2/admin", tags=["Enhanced Admin"])
@@ -93,10 +90,19 @@ async def get_enhanced_admin_dashboard(
             target_resource="dashboard",
         )
 
-        # Get all data from database
-        projects = await db_service.get_all_projects()
-        subscriptions = await db_service.get_all_subscriptions()
-        people = await db_service.list_people()  # Fix: Use correct method name
+        # Get all data using service registry
+        projects_service = service_manager.get_service("projects")
+        subscriptions_service = service_manager.get_service("subscriptions")
+        people_service = service_manager.get_service("people")
+
+        projects = await projects_service.get_all_projects()
+        subscriptions = await subscriptions_service.get_all_subscriptions()
+        people_result = await people_service.get_all_people()
+        people = (
+            people_result.get("data", [])
+            if isinstance(people_result, dict)
+            else people_result
+        )
 
         # Calculate project statistics
         active_projects = [p for p in projects if p.get("status") == "active"]
@@ -201,6 +207,311 @@ async def get_enhanced_admin_dashboard(
         )
 
 
+@enhanced_admin_router.get("/users")
+async def list_users(
+    admin_user: AuthenticatedUser = Depends(require_admin_access),
+    page: int = 1,
+    limit: int = 50,
+    search: Optional[str] = None,
+    status: Optional[str] = None,
+):
+    """List all users with pagination and filtering (admin only)."""
+    try:
+        logger.log_api_request("GET", "/v2/admin/users")
+
+        # Log admin action
+        await AdminActionLogger.log_admin_action(
+            action="LIST_USERS",
+            admin_user=admin_user,
+            target_resource="users",
+            details={
+                "page": page,
+                "limit": limit,
+                "search": search,
+                "status": status,
+            },
+        )
+
+        # Get all users using service registry
+        people_service = service_manager.get_service("people")
+        people_result = await people_service.get_all_people()
+        all_users = (
+            people_result.get("data", [])
+            if isinstance(people_result, dict)
+            else people_result
+        )
+
+        # Apply filters
+        filtered_users = all_users
+
+        if search:
+            search_lower = search.lower()
+            filtered_users = [
+                user
+                for user in filtered_users
+                if (
+                    search_lower in user.get("firstName", "").lower()
+                    or search_lower in user.get("lastName", "").lower()
+                    or search_lower in user.get("email", "").lower()
+                )
+            ]
+
+        if status:
+            if status == "active":
+                filtered_users = [
+                    user for user in filtered_users if user.get("isActive", True)
+                ]
+            elif status == "inactive":
+                filtered_users = [
+                    user for user in filtered_users if not user.get("isActive", True)
+                ]
+            elif status == "admin":
+                filtered_users = [
+                    user for user in filtered_users if user.get("isAdmin", False)
+                ]
+
+        # Calculate pagination
+        total_users = len(filtered_users)
+        start_index = (page - 1) * limit
+        end_index = start_index + limit
+        paginated_users = filtered_users[start_index:end_index]
+
+        # Format user data for admin panel
+        formatted_users = []
+        for user in paginated_users:
+            formatted_user = {
+                "id": user.get("id"),
+                "email": user.get("email"),
+                "firstName": user.get("firstName", ""),
+                "lastName": user.get("lastName", ""),
+                "phone": user.get("phone", ""),
+                "dateOfBirth": user.get("dateOfBirth"),
+                "isActive": user.get("isActive", True),
+                "isAdmin": user.get("isAdmin", False),
+                "requirePasswordChange": user.get("requirePasswordChange", False),
+                "address": user.get("address"),
+                "createdAt": user.get("createdAt"),
+                "updatedAt": user.get("updatedAt"),
+                "lastActivity": user.get("lastActivity"),
+            }
+            formatted_users.append(formatted_user)
+
+        response_data = {
+            "users": formatted_users,
+            "pagination": {
+                "page": page,
+                "limit": limit,
+                "total": total_users,
+                "totalPages": (total_users + limit - 1) // limit,
+                "hasNext": end_index < total_users,
+                "hasPrevious": page > 1,
+            },
+            "filters": {
+                "search": search,
+                "status": status,
+            },
+            "metadata": {
+                "totalUsers": len(all_users),
+                "filteredUsers": total_users,
+                "activeUsers": len([u for u in all_users if u.get("isActive", True)]),
+                "adminUsers": len([u for u in all_users if u.get("isAdmin", False)]),
+                "generatedAt": datetime.utcnow().isoformat(),
+            },
+        }
+
+        response = create_v2_response(response_data)
+        logger.log_api_response("GET", "/v2/admin/users", 200)
+        return response
+
+    except Exception as e:
+        logger.error(f"Failed to list users: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve users: {str(e)}",
+        )
+
+
+@enhanced_admin_router.get("/users/{user_id}")
+async def get_user(
+    user_id: str,
+    admin_user: AuthenticatedUser = Depends(require_admin_access),
+):
+    """Get specific user details (admin only)."""
+    try:
+        logger.log_api_request("GET", f"/v2/admin/users/{user_id}")
+
+        # Log admin action
+        await AdminActionLogger.log_admin_action(
+            action="VIEW_USER",
+            admin_user=admin_user,
+            target_resource="user",
+            target_id=user_id,
+        )
+
+        # Get user using service registry
+        people_service = service_manager.get_service("people")
+        user_result = await people_service.get_person_by_id(user_id)
+        user = user_result.get("data") if isinstance(user_result, dict) else user_result
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            )
+
+        # Format user data
+        formatted_user = {
+            "id": user.id,
+            "email": user.email,
+            "firstName": user.first_name,
+            "lastName": user.last_name,
+            "phone": user.phone,
+            "dateOfBirth": user.date_of_birth,
+            "isActive": user.is_active,
+            "isAdmin": user.is_admin,
+            "requirePasswordChange": user.require_password_change,
+            "address": user.address,
+            "createdAt": user.created_at.isoformat() if user.created_at else None,
+            "updatedAt": user.updated_at.isoformat() if user.updated_at else None,
+        }
+
+        response = create_v2_response(formatted_user)
+        logger.log_api_response("GET", f"/v2/admin/users/{user_id}", 200)
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get user {user_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve user: {str(e)}",
+        )
+
+
+@enhanced_admin_router.delete("/users/{user_id}")
+async def delete_user(
+    user_id: str,
+    admin_user: AuthenticatedUser = Depends(require_super_admin_access),
+):
+    """Delete user (super admin only)."""
+    try:
+        logger.log_api_request("DELETE", f"/v2/admin/users/{user_id}")
+
+        # Log admin action
+        await AdminActionLogger.log_admin_action(
+            action="DELETE_USER",
+            admin_user=admin_user,
+            target_resource="user",
+            target_id=user_id,
+        )
+
+        # Get user first to check if exists
+        people_service = service_manager.get_service("people")
+        user_result = await people_service.get_person_by_id(user_id)
+        user = user_result.get("data") if isinstance(user_result, dict) else user_result
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            )
+
+        # Delete user using service registry
+        await people_service.delete_person(user_id)
+
+        response_data = {
+            "message": "User deleted successfully",
+            "deletedUser": {
+                "id": user.id,
+                "email": user.email,
+                "name": f"{user.first_name} {user.last_name}",
+            },
+            "deletedBy": {
+                "id": admin_user.id,
+                "email": admin_user.email,
+                "name": f"{admin_user.first_name} {admin_user.last_name}",
+            },
+            "deletedAt": datetime.utcnow().isoformat(),
+        }
+
+        response = create_v2_response(response_data)
+        logger.log_api_response("DELETE", f"/v2/admin/users/{user_id}", 200)
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to delete user {user_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete user: {str(e)}",
+        )
+
+
+@enhanced_admin_router.post("/users")
+async def create_user(
+    user_data: dict,
+    admin_user: AuthenticatedUser = Depends(require_admin_access),
+):
+    """Create new user (admin only)."""
+    try:
+        logger.log_api_request("POST", "/v2/admin/users")
+
+        # Log admin action
+        await AdminActionLogger.log_admin_action(
+            action="CREATE_USER",
+            admin_user=admin_user,
+            target_resource="user",
+            details=user_data,
+        )
+
+        # Create PersonCreate object
+        from ..models.person import PersonCreate
+
+        person_create = PersonCreate(**user_data)
+
+        # Create user using service registry
+        people_service = service_manager.get_service("people")
+        create_result = await people_service.create_person(person_create)
+        created_user = (
+            create_result.get("data")
+            if isinstance(create_result, dict)
+            else create_result
+        )
+
+        response_data = {
+            "message": "User created successfully",
+            "user": {
+                "id": created_user.id,
+                "email": created_user.email,
+                "firstName": created_user.first_name,
+                "lastName": created_user.last_name,
+                "phone": created_user.phone,
+                "dateOfBirth": created_user.date_of_birth,
+                "isActive": created_user.is_active,
+                "isAdmin": created_user.is_admin,
+                "createdAt": (
+                    created_user.created_at.isoformat()
+                    if created_user.created_at
+                    else None
+                ),
+            },
+            "createdBy": {
+                "id": admin_user.id,
+                "email": admin_user.email,
+                "name": f"{admin_user.first_name} {admin_user.last_name}",
+            },
+        }
+
+        response = create_v2_response(response_data)
+        logger.log_api_response("POST", "/v2/admin/users", 201)
+        return response
+
+    except Exception as e:
+        logger.error(f"Failed to create user: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create user: {str(e)}",
+        )
+
+
 @enhanced_admin_router.put("/users/{user_id}")
 async def edit_user(
     user_id: str,
@@ -220,10 +531,12 @@ async def edit_user(
             details=user_data.dict(exclude_none=True),
         )
 
-        # Get current user data
-        current_user = await db_service.get_person(
-            user_id
-        )  # Fix: Use correct method name
+        # Get current user data using service registry
+        people_service = service_manager.get_service("people")
+        user_result = await people_service.get_person_by_id(user_id)
+        current_user = (
+            user_result.get("data") if isinstance(user_result, dict) else user_result
+        )
         if not current_user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
@@ -251,8 +564,13 @@ async def edit_user(
         # Create PersonUpdate object
         person_update = PersonUpdate(**update_data)
 
-        # Update user
-        updated_user = await db_service.update_person(user_id, person_update)
+        # Update user using service registry
+        update_result = await people_service.update_person(user_id, person_update)
+        updated_user = (
+            update_result.get("data")
+            if isinstance(update_result, dict)
+            else update_result
+        )
 
         response_data = {
             "message": "User updated successfully",
@@ -323,7 +641,13 @@ async def create_project(
         }
 
         project_create = ProjectCreate(**project_create_data)
-        created_project = await db_service.create_project(project_create)
+        projects_service = service_manager.get_service("projects")
+        create_result = await projects_service.create_project(project_create)
+        created_project = (
+            create_result.get("data")
+            if isinstance(create_result, dict)
+            else create_result
+        )
 
         response_data = {
             "message": "Project created successfully",
@@ -380,8 +704,14 @@ async def edit_project(
             details=project_data.dict(exclude_none=True),
         )
 
-        # Get current project
-        current_project = await db_service.get_project_by_id(project_id)
+        # Get current project using service registry
+        projects_service = service_manager.get_service("projects")
+        project_result = await projects_service.get_project_by_id(project_id)
+        current_project = (
+            project_result.get("data")
+            if isinstance(project_result, dict)
+            else project_result
+        )
         if not current_project:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
@@ -405,8 +735,15 @@ async def edit_project(
         # Create ProjectUpdate object
         project_update = ProjectUpdate(**update_data)
 
-        # Update project
-        updated_project = await db_service.update_project(project_id, project_update)
+        # Update project using service registry
+        update_result = await projects_service.update_project(
+            project_id, project_update
+        )
+        updated_project = (
+            update_result.get("data")
+            if isinstance(update_result, dict)
+            else update_result
+        )
 
         response_data = {
             "message": "Project updated successfully",
@@ -471,10 +808,14 @@ async def bulk_user_action(
 
         for user_id in bulk_request.userIds:
             try:
-                # Get user
-                user = await db_service.get_person(
-                    user_id
-                )  # Fix: Use correct method name
+                # Get user using service registry
+                people_service = service_manager.get_service("people")
+                user_result = await people_service.get_person_by_id(user_id)
+                user = (
+                    user_result.get("data")
+                    if isinstance(user_result, dict)
+                    else user_result
+                )
                 if not user:
                     errors.append({"userId": user_id, "error": "User not found"})
                     continue
@@ -496,9 +837,16 @@ async def bulk_user_action(
                     )
                     continue
 
-                # Update user
+                # Update user using service registry
                 person_update = PersonUpdate(**update_data)
-                updated_user = await db_service.update_person(user_id, person_update)
+                update_result = await people_service.update_person(
+                    user_id, person_update
+                )
+                updated_user = (
+                    update_result.get("data")
+                    if isinstance(update_result, dict)
+                    else update_result
+                )
 
                 results.append(
                     {
@@ -554,10 +902,19 @@ async def get_admin_analytics(
             target_resource="analytics",
         )
 
-        # Get all data
-        projects = await db_service.get_all_projects()
-        subscriptions = await db_service.get_all_subscriptions()
-        people = await db_service.list_people()  # Fix: Use correct method name
+        # Get all data using service registry
+        projects_service = service_manager.get_service("projects")
+        subscriptions_service = service_manager.get_service("subscriptions")
+        people_service = service_manager.get_service("people")
+
+        projects = await projects_service.get_all_projects()
+        subscriptions = await subscriptions_service.get_all_subscriptions()
+        people_result = await people_service.get_all_people()
+        people = (
+            people_result.get("data", [])
+            if isinstance(people_result, dict)
+            else people_result
+        )
 
         # Calculate monthly trends (last 6 months)
         monthly_data = {}
