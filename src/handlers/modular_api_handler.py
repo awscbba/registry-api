@@ -4193,9 +4193,14 @@ app.include_router(v1_router)
 app.include_router(v2_router)
 app.include_router(auth_router)
 
-# Include enhanced admin router for user management
+# Include domain-specific admin routers
+from .admin.users_admin_handler import users_admin_router
 from .enhanced_admin_handler import enhanced_admin_router
 
+# Include user management router (domain-specific)
+app.include_router(users_admin_router)
+
+# Include enhanced admin router (dashboard, projects, analytics)
 app.include_router(enhanced_admin_router)
 
 # ==================== STARTUP AND SHUTDOWN EVENTS ====================
