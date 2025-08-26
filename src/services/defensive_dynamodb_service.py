@@ -449,6 +449,8 @@ class DefensiveDynamoDBService:
             field_mappings = {
                 "first_name": "first_name",
                 "last_name": "last_name",
+                "email": "email",
+                "phone": "phone",
                 "date_of_birth": "date_of_birth",
                 "is_admin": "is_admin",
                 "is_active": "is_active",
@@ -811,7 +813,17 @@ class DefensiveDynamoDBService:
             if not update_data:
                 return None
 
-            field_mappings = {"maxParticipants": "maxParticipants"}
+            field_mappings = {
+                "name": "name",
+                "description": "description",
+                "startDate": "startDate",
+                "endDate": "endDate",
+                "maxParticipants": "maxParticipants",
+                "status": "status",
+                "category": "category",
+                "location": "location",
+                "requirements": "requirements",
+            }
 
             update_expression, expression_values, expression_names = (
                 safe_update_expression_builder(update_data, field_mappings)
@@ -969,7 +981,8 @@ class DefensiveDynamoDBService:
 
             # Build update expression with proper field mappings for reserved words
             field_mappings = {
-                "status": "status"  # status is a reserved word in DynamoDB
+                "status": "status",  # status is a reserved word in DynamoDB
+                "notes": "notes",
             }
 
             update_expression, expression_values, expression_names = (
