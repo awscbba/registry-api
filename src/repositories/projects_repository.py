@@ -1,0 +1,130 @@
+"""
+Projects repository implementation.
+Handles all data access operations for projects.
+"""
+
+import uuid
+from datetime import datetime
+from typing import Dict, List, Optional, Any
+
+from .base_repository import BaseRepository
+from ..core.database import db
+from ..models.project import Project, ProjectCreate, ProjectUpdate, ProjectStatus
+
+
+class ProjectsRepository(BaseRepository[Project]):
+    """Repository for projects data access operations."""
+
+    def __init__(self):
+        self.table_name = "projects"
+
+    async def create(self, project_data: ProjectCreate) -> Project:
+        """Create a new project in the database."""
+        # Generate ID and timestamps
+        project_id = str(uuid.uuid4())
+        now = datetime.utcnow()
+
+        # Convert to database format (already camelCase - no conversion needed!)
+        db_item = project_data.model_dump()
+        db_item.update(
+            {
+                "id": project_id,
+                "createdAt": now.isoformat(),
+                "updatedAt": now.isoformat(),
+                "currentParticipants": 0,
+                "createdBy": "system",  # TODO: Use actual user ID when auth is implemented
+            }
+        )
+
+        # Save to database
+        success = await db.put_item(self.table_name, db_item)
+        if not success:
+            raise Exception("Failed to create project in database")
+
+        return Project(**db_item)
+
+    async def get_by_id(self, project_id: str) -> Optional[Project]:
+        """Get a project by its ID."""
+        project_data = await db.get_item(self.table_name, {"id": project_id})
+        if not project_data:
+            return None
+
+        return Project(**project_data)
+
+    async def update(
+        self, project_id: str, updates: ProjectUpdate
+    ) -> Optional[Project]:
+        """Update an existing project."""
+        # Check if project exists
+        existing_project = await self.get_by_id(project_id)
+        if not existing_project:
+            return None
+
+        # Prepare update data (exclude None values)
+        update_data = updates.model_dump(exclude_none=True)
+        if update_data:
+            update_data["updatedAt"] = datetime.utcnow().isoformat()
+
+            # Update in database (no field conversion needed!)
+            success = await db.update_item(
+                self.table_name, {"id": project_id}, update_data
+            )
+            if not success:
+                raise Exception("Failed to update project in database")
+
+        # Return updated project
+        return await self.get_by_id(project_id)
+
+    async def delete(self, project_id: str) -> bool:
+        """Delete a project by its ID."""
+        return await db.delete_item(self.table_name, {"id": project_id})
+
+    async def list_all(self, limit: Optional[int] = None) -> List[Project]:
+        """List all projects with optional limit."""
+        projects_data = await db.scan_table(self.table_name, limit=limit)
+        return [Project(**project_data) for project_data in projects_data]
+
+    async def exists(self, project_id: str) -> bool:
+        """Check if a project exists."""
+        project = await self.get_by_id(project_id)
+        return project is not None
+
+    async def list_by_status(
+        self, status: ProjectStatus, limit: Optional[int] = None
+    ) -> List[Project]:
+        """List projects by status."""
+        all_projects = await self.list_all(limit)
+        return [project for project in all_projects if project.status == status]
+
+    async def list_by_category(
+        self, category: str, limit: Optional[int] = None
+    ) -> List[Project]:
+        """List projects by category."""
+        all_projects = await self.list_all(limit)
+        return [
+            project
+            for project in all_projects
+            if project.category and project.category.lower() == category.lower()
+        ]
+
+    async def list_public_projects(self, limit: Optional[int] = None) -> List[Project]:
+        """List public/active projects."""
+        all_projects = await self.list_all(limit)
+        return [
+            project
+            for project in all_projects
+            if project.status in [ProjectStatus.ACTIVE, ProjectStatus.PENDING]
+        ]
+
+    async def update_participant_count(
+        self, project_id: str, count: int
+    ) -> Optional[Project]:
+        """Update the current participant count for a project."""
+        update_data = {
+            "currentParticipants": count,
+            "updatedAt": datetime.utcnow().isoformat(),
+        }
+        success = await db.update_item(self.table_name, {"id": project_id}, update_data)
+        if not success:
+            return None
+        return await self.get_by_id(project_id)

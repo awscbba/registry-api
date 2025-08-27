@@ -24,6 +24,13 @@ if str(src_dir) not in sys.path:
 
 # Set up environment for tests
 os.environ.setdefault("AWS_DEFAULT_REGION", "us-east-1")
+
+# Standardized V2 tables for tests
+os.environ.setdefault("PEOPLE_TABLE_V2_NAME", "test-people-table-v2")
+os.environ.setdefault("PROJECTS_TABLE_V2_NAME", "test-projects-table-v2")
+os.environ.setdefault("SUBSCRIPTIONS_TABLE_V2_NAME", "test-subscriptions-table-v2")
+
+# Legacy tables (for migration compatibility)
 os.environ.setdefault("PEOPLE_TABLE_NAME", "test-people-table")
 os.environ.setdefault("PROJECTS_TABLE_NAME", "test-projects-table")
 os.environ.setdefault("SUBSCRIPTIONS_TABLE_NAME", "test-subscriptions-table")
