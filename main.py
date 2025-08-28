@@ -8,6 +8,7 @@ from src.app import app
 
 # Lambda handler
 handler = Mangum(app)
+lambda_handler = handler  # Alias for Lambda deployment
 
 if __name__ == "__main__":
     import uvicorn

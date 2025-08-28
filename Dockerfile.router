@@ -1,16 +1,15 @@
 FROM public.ecr.aws/lambda/python:3.13
 
-# Install uv for dependency management (for consistency with main Lambda)
+# Install uv for dependency management
 RUN pip install uv
 
 # Copy uv project files for dependency resolution
 COPY pyproject.toml ./
 COPY uv.lock ./
 
-# Install only production dependencies (router uses minimal deps)
-# --frozen ensures exact versions from uv.lock are used
-# --no-dev excludes development dependencies
-RUN uv sync --frozen --no-dev
+# Install minimal dependencies for router (only what's needed for routing)
+# Router only needs boto3, logging, and basic Python libraries
+RUN uv pip install --system boto3 python-json-logger
 
 # Copy router code
 COPY router_main.py ./

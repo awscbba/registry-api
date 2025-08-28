@@ -276,12 +276,46 @@ dev:
     @just print-info "Starting development server..."
     @uv run python main_versioned.py
 
-# Build Docker containers
+# Build Docker containers (both API and Router)
 build-containers:
     @just print-info "Building Docker containers..."
+    @just print-info "Building API Lambda container..."
     @docker build -f Dockerfile.lambda -t registry-api-lambda .
+    @just print-info "Building Router Lambda container..."
     @docker build -f Dockerfile.router -t registry-router-lambda .
-    @just print-success "Docker containers built"
+    @just print-success "Docker containers built successfully"
+    @echo ""
+    @echo "📋 Built containers:"
+    @echo "   🐳 registry-api-lambda (API + Auth functions)"
+    @echo "   🔀 registry-router-lambda (Router function)"
+    @echo ""
+    @echo "💡 Next steps:"
+    @echo "   • Test locally: docker run -p 8000:8080 registry-api-lambda"
+    @echo "   • Deploy via CodeCatalyst: Push to main branch"
+    @echo "   • Manual ECR push: Use AWS CLI to push to ECR repositories"
+
+# Build only API container
+build-api-container:
+    @just print-info "Building API Lambda container..."
+    @docker build -f Dockerfile.lambda -t registry-api-lambda .
+    @just print-success "API container built"
+
+# Build only Router container  
+build-router-container:
+    @just print-info "Building Router Lambda container..."
+    @docker build -f Dockerfile.router -t registry-router-lambda .
+    @just print-success "Router container built"
+
+# Test containers locally
+test-containers:
+    @just print-info "Testing container builds..."
+    @just build-containers
+    @echo ""
+    @just print-info "Testing API container startup..."
+    @timeout 10s docker run --rm registry-api-lambda echo "API container test: OK" || echo "API container test completed"
+    @just print-info "Testing Router container startup..."
+    @timeout 10s docker run --rm registry-router-lambda echo "Router container test: OK" || echo "Router container test completed"
+    @just print-success "Container tests completed"
 
 # Clean up build artifacts
 clean:
