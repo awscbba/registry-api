@@ -86,9 +86,25 @@ Actions:
             
             # Run linting with project configuration
             echo "🔍 Running linting (using .flake8 config)..."
-            flake8 --config=.flake8 src/ tests/ scripts/ || {
-                echo "❌ Linting failed"
-                echo "💡 Check .flake8 configuration and fix linting errors"
+            if [ -n "$(find scripts/ -name '*.py' 2>/dev/null)" ]; then
+                echo "Found Python files in scripts/, including in linting"
+                flake8 --config=.flake8 src/ tests/ scripts/ || {
+                    echo "❌ Linting failed"
+                    echo "💡 Check .flake8 configuration and fix linting errors"
+                    echo "💡 Current .flake8 rules:"
+                    cat .flake8
+                    exit 1
+                }
+            else
+                echo "No Python files in scripts/, linting src/ and tests/ only"
+                flake8 --config=.flake8 src/ tests/ || {
+                    echo "❌ Linting failed"
+                    echo "💡 Check .flake8 configuration and fix linting errors"
+                    echo "💡 Current .flake8 rules:"
+                    cat .flake8
+                    exit 1
+                }
+            fi
                 echo "💡 Current .flake8 rules:"
                 cat .flake8
                 exit 1

@@ -102,14 +102,27 @@ test-coverage:
 # Code quality checks
 lint:
     @just print-info "Running code quality checks..."
-    @uv run black --check --diff src/ tests/ scripts/
-    @uv run flake8 src/ tests/ scripts/
+    @if [ -n "$(find scripts/ -name '*.py' 2>/dev/null)" ]; then \
+        echo "Found Python files in scripts/, including in checks"; \
+        uv run black --check --diff src/ tests/ scripts/; \
+        uv run flake8 src/ tests/ scripts/; \
+    else \
+        echo "No Python files in scripts/, checking src/ and tests/ only"; \
+        uv run black --check --diff src/ tests/; \
+        uv run flake8 src/ tests/; \
+    fi
     @just print-success "Code quality checks completed"
 
 # Fix code formatting
 format:
     @just print-info "Formatting code with black..."
-    @uv run black src/ tests/ scripts/
+    @if [ -n "$(find scripts/ -name '*.py' 2>/dev/null)" ]; then \
+        echo "Found Python files in scripts/, including in formatting"; \
+        uv run black src/ tests/ scripts/; \
+    else \
+        echo "No Python files in scripts/, formatting src/ and tests/ only"; \
+        uv run black src/ tests/; \
+    fi
     @just print-success "Code formatting completed"
 
 # Run syntax validation
