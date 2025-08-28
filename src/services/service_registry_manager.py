@@ -49,9 +49,11 @@ class ServiceRegistryManager:
         # Initialize enterprise services
         from .rbac_service import RBACService
         from .logging_service import EnterpriseLoggingService
+        from .performance_service import PerformanceService
 
         self._services["rbac"] = RBACService()
         self._services["logging"] = EnterpriseLoggingService()
+        self._services["performance"] = PerformanceService(self._services["logging"])
 
         self._initialized = True
 
@@ -109,6 +111,11 @@ class ServiceRegistryManager:
         """Get the logging service instance."""
         self.initialize()
         return self._services["logging"]
+
+    def get_performance_service(self):
+        """Get the performance service instance."""
+        self.initialize()
+        return self._services["performance"]
 
     def reset(self):
         """Reset all services and repositories (useful for testing)."""
@@ -181,3 +188,8 @@ def get_rbac_service():
 def get_logging_service():
     """FastAPI dependency for logging service."""
     return service_registry.get_logging_service()
+
+
+def get_performance_service():
+    """FastAPI dependency for performance service."""
+    return service_registry.get_performance_service()

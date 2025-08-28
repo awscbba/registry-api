@@ -13,6 +13,14 @@ from ..services.service_registry_manager import (
     get_admin_service,
     get_people_service,
     get_subscriptions_service,
+    get_performance_service,
+)
+from ..services.logging_service import LogLevel, LogCategory
+from ..exceptions.base_exceptions import (
+    ResourceNotFoundException,
+    ValidationException,
+    AuthorizationException,
+    DatabaseException,
 )
 from ..models.auth import User
 from ..models.person import PersonCreate, PersonUpdate, PersonResponse
@@ -30,9 +38,40 @@ async def get_dashboard_data(
     """Get admin dashboard data."""
     try:
         dashboard_data = await admin_service.get_dashboard_data()
+
+        # Log successful dashboard access
+        from ..services.logging_service import logging_service
+
+        logging_service.log_structured(
+            level=LogLevel.INFO,
+            category=LogCategory.SYSTEM_EVENTS,
+            message="Admin accessed dashboard data",
+            additional_data={
+                "admin_user_id": current_user.id,
+                "total_users": dashboard_data.get("totalUsers", 0),
+                "total_projects": dashboard_data.get("totalProjects", 0),
+            },
+        )
+
         return create_success_response(dashboard_data)
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # Log error with enterprise logging
+        from ..services.logging_service import logging_service
+
+        logging_service.log_structured(
+            level=LogLevel.ERROR,
+            category=LogCategory.SYSTEM_EVENTS,
+            message=f"Failed to get dashboard data: {str(e)}",
+            additional_data={"admin_user_id": current_user.id, "error": str(e)},
+        )
+
+        # Raise appropriate enterprise exception
+        raise DatabaseException(
+            message="Failed to retrieve dashboard data",
+            details={"error": str(e)},
+            user_message="Unable to retrieve dashboard information at this time",
+        )
 
 
 @router.get("/dashboard/enhanced", response_model=dict)
@@ -101,13 +140,65 @@ async def get_user(
     try:
         user = await people_service.get_person(user_id)
         if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+            # Log user not found
+            from ..services.logging_service import logging_service
+
+            logging_service.log_structured(
+                level=LogLevel.WARNING,
+                category=LogCategory.USER_OPERATIONS,
+                message=f"Admin attempted to access non-existent user: {user_id}",
+                additional_data={
+                    "admin_user_id": current_user.id,
+                    "requested_user_id": user_id,
+                },
+            )
+
+            raise ResourceNotFoundException(
+                message=f"User with ID {user_id} not found",
+                resource_type="User",
+                resource_id=user_id,
+            )
+
+        # Log successful user access
+        from ..services.logging_service import logging_service
+
+        logging_service.log_structured(
+            level=LogLevel.INFO,
+            category=LogCategory.USER_OPERATIONS,
+            message=f"Admin accessed user details: {user_id}",
+            additional_data={
+                "admin_user_id": current_user.id,
+                "accessed_user_id": user_id,
+                "accessed_user_email": user.email if hasattr(user, "email") else None,
+            },
+        )
 
         return create_success_response(user)
-    except HTTPException:
+
+    except (ResourceNotFoundException, ValidationException, AuthorizationException):
+        # Re-raise enterprise exceptions
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # Log error with enterprise logging
+        from ..services.logging_service import logging_service
+
+        logging_service.log_structured(
+            level=LogLevel.ERROR,
+            category=LogCategory.USER_OPERATIONS,
+            message=f"Failed to get user {user_id}: {str(e)}",
+            additional_data={
+                "admin_user_id": current_user.id,
+                "requested_user_id": user_id,
+                "error": str(e),
+            },
+        )
+
+        # Raise appropriate enterprise exception
+        raise DatabaseException(
+            message=f"Failed to retrieve user {user_id}",
+            details={"error": str(e), "user_id": user_id},
+            user_message="Unable to retrieve user information at this time",
+        )
 
 
 @router.post("/users", response_model=dict)
@@ -241,6 +332,33 @@ async def get_admin_registrations(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# Performance and Health Endpoints
+@router.get("/performance/health", response_model=dict)
+async def get_performance_health(
+    current_user: User = Depends(require_admin),
+    admin_service: AdminService = Depends(get_admin_service),
+):
+    """Get system performance and health status."""
+    try:
+        health_data = await admin_service.get_system_health()
+        return create_success_response(health_data)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/stats", response_model=dict)
+async def get_admin_stats(
+    current_user: User = Depends(require_admin),
+    admin_service: AdminService = Depends(get_admin_service),
+):
+    """Get comprehensive admin statistics."""
+    try:
+        stats_data = await admin_service.get_comprehensive_stats()
+        return create_success_response(stats_data)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/test", response_model=dict)
 async def test_admin_system(current_user: User = Depends(require_admin)):
     """Test admin system functionality."""
@@ -251,3 +369,154 @@ async def test_admin_system(current_user: User = Depends(require_admin)):
             "timestamp": "2025-01-27T00:00:00Z",
         }
     )
+
+
+# Performance and Stats Endpoints
+@router.get("/performance/health", response_model=dict)
+async def get_performance_health(
+    current_user: User = Depends(require_admin),
+    performance_service=Depends(get_performance_service),
+):
+    """Get system performance health status."""
+    try:
+        health_status = await performance_service.get_health_status()
+
+        # Log successful health check access
+        from ..services.logging_service import logging_service
+
+        logging_service.log_structured(
+            level=LogLevel.INFO,
+            category=LogCategory.PERFORMANCE,
+            message="Admin accessed performance health status",
+            additional_data={
+                "admin_user_id": current_user.id,
+                "health_status": health_status.get("status", "unknown"),
+                "overall_score": health_status.get("overallScore", 0),
+            },
+        )
+
+        return create_success_response(health_status)
+
+    except Exception as e:
+        # Log error with enterprise logging
+        from ..services.logging_service import logging_service
+
+        logging_service.log_structured(
+            level=LogLevel.ERROR,
+            category=LogCategory.PERFORMANCE,
+            message=f"Failed to get performance health status: {str(e)}",
+            additional_data={"admin_user_id": current_user.id, "error": str(e)},
+        )
+
+        # Raise appropriate enterprise exception
+        raise DatabaseException(
+            message="Failed to retrieve system health status",
+            details={"error": str(e)},
+            user_message="Unable to retrieve system health information at this time",
+        )
+
+
+@router.get("/stats", response_model=dict)
+async def get_admin_stats(
+    current_user: User = Depends(require_admin),
+    admin_service: AdminService = Depends(get_admin_service),
+    performance_service=Depends(get_performance_service),
+):
+    """Get comprehensive admin statistics."""
+    try:
+        # Get basic dashboard data
+        dashboard_data = await admin_service.get_dashboard_data()
+
+        # Get performance stats
+        performance_stats = await performance_service.get_performance_stats()
+
+        # Combine into comprehensive stats
+        stats = {
+            **dashboard_data,
+            "performance": performance_stats,
+            "system": {
+                "version": "2.0.0",
+                "environment": "production",
+                "timestamp": dashboard_data.get("lastUpdated"),
+            },
+        }
+
+        # Log successful stats access
+        from ..services.logging_service import logging_service
+
+        logging_service.log_structured(
+            level=LogLevel.INFO,
+            category=LogCategory.SYSTEM_EVENTS,
+            message="Admin accessed comprehensive statistics",
+            additional_data={
+                "admin_user_id": current_user.id,
+                "total_users": stats.get("totalUsers", 0),
+                "total_projects": stats.get("totalProjects", 0),
+                "uptime_seconds": performance_stats.get("uptime_seconds", 0),
+            },
+        )
+
+        return create_success_response(stats)
+
+    except Exception as e:
+        # Log error with enterprise logging
+        from ..services.logging_service import logging_service
+
+        logging_service.log_structured(
+            level=LogLevel.ERROR,
+            category=LogCategory.SYSTEM_EVENTS,
+            message=f"Failed to get admin statistics: {str(e)}",
+            additional_data={"admin_user_id": current_user.id, "error": str(e)},
+        )
+
+        # Raise appropriate enterprise exception
+        raise DatabaseException(
+            message="Failed to retrieve admin statistics",
+            details={"error": str(e)},
+            user_message="Unable to retrieve system statistics at this time",
+        )
+
+
+@router.get("/performance/stats", response_model=dict)
+async def get_performance_stats(
+    current_user: User = Depends(require_admin),
+    performance_service=Depends(get_performance_service),
+):
+    """Get detailed performance statistics."""
+    try:
+        stats = await performance_service.get_performance_stats()
+
+        # Log successful performance stats access
+        from ..services.logging_service import logging_service
+
+        logging_service.log_structured(
+            level=LogLevel.INFO,
+            category=LogCategory.PERFORMANCE,
+            message="Admin accessed detailed performance statistics",
+            additional_data={
+                "admin_user_id": current_user.id,
+                "total_requests": stats.get("total_requests", 0),
+                "average_response_time_ms": stats.get("average_response_time_ms", 0),
+                "uptime_seconds": stats.get("uptime_seconds", 0),
+            },
+        )
+
+        return create_success_response(stats)
+
+    except Exception as e:
+        # Log error with enterprise logging
+        from ..services.logging_service import logging_service
+
+        logging_service.log_structured(
+            level=LogLevel.ERROR,
+            category=LogCategory.PERFORMANCE,
+            message=f"Failed to get performance statistics: {str(e)}",
+            additional_data={"admin_user_id": current_user.id, "error": str(e)},
+        )
+
+        # Raise appropriate enterprise exception
+        raise DatabaseException(
+            message="Failed to retrieve performance statistics",
+            details={"error": str(e)},
+            user_message="Unable to retrieve performance statistics at this time",
+        )
