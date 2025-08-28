@@ -7,6 +7,7 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query, Depends
 
 from ..services.subscriptions_service import SubscriptionsService
+from ..services.service_registry_manager import get_subscriptions_service
 from ..models.subscription import (
     SubscriptionCreate,
     SubscriptionUpdate,
@@ -15,11 +16,6 @@ from ..models.subscription import (
 from ..utils.responses import create_success_response, create_error_response
 
 router = APIRouter(prefix="/v2/subscriptions", tags=["subscriptions"])
-
-
-def get_subscriptions_service() -> SubscriptionsService:
-    """Dependency to get subscriptions service."""
-    return SubscriptionsService()
 
 
 @router.get("", response_model=dict)

@@ -86,6 +86,54 @@ async def create_project(
         )
 
 
+@router.put("/{project_id}", response_model=dict)
+async def update_project(
+    project_id: str,
+    project_data: ProjectUpdate,
+    projects_service: ProjectsService = Depends(get_projects_service),
+) -> dict:
+    """Update an existing project."""
+    try:
+        project = await projects_service.update_project(project_id, project_data)
+
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found")
+
+        return create_success_response(project, "Project updated successfully")
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to update project: {str(e)}"
+        )
+
+
+@router.delete("/{project_id}", response_model=dict)
+async def delete_project(
+    project_id: str, projects_service: ProjectsService = Depends(get_projects_service)
+) -> dict:
+    """Delete a project."""
+    try:
+        success = await projects_service.delete_project(project_id)
+
+        if not success:
+            raise HTTPException(status_code=404, detail="Project not found")
+
+        return create_success_response(
+            {"deleted": True}, "Project deleted successfully"
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to delete project: {str(e)}"
+        )
+
+
 @router.get("/public", response_model=dict)
 async def get_public_projects(
     limit: Optional[int] = Query(

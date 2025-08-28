@@ -36,11 +36,11 @@ class TestPeopleRouter:
         assert data["data"]["version"] == "2.0.0"
 
     @patch("src.core.database.db.scan_table")
-    async def test_list_people_empty(self, mock_scan):
+    def test_list_people_empty(self, mock_scan, client, auth_headers):
         """Test listing people when database is empty."""
         mock_scan.return_value = []
 
-        response = client.get("/v2/people/")
+        response = client.get("/v2/people/", headers=auth_headers)
         assert response.status_code == 200
 
         data = response.json()
@@ -49,7 +49,7 @@ class TestPeopleRouter:
         assert data["count"] == 0
 
     @patch("src.core.database.db.scan_table")
-    async def test_list_people_with_data(self, mock_scan):
+    def test_list_people_with_data(self, mock_scan, client, auth_headers):
         """Test listing people with sample data."""
         sample_people = [
             {
@@ -76,7 +76,7 @@ class TestPeopleRouter:
         ]
         mock_scan.return_value = sample_people
 
-        response = client.get("/v2/people/")
+        response = client.get("/v2/people/", headers=auth_headers)
         assert response.status_code == 200
 
         data = response.json()
@@ -86,17 +86,17 @@ class TestPeopleRouter:
         assert data["data"][0]["email"] == "john@example.com"
 
     @patch("src.core.database.db.get_item")
-    async def test_get_person_not_found(self, mock_get):
+    def test_get_person_not_found(self, mock_get, client, auth_headers):
         """Test getting a person that doesn't exist."""
         mock_get.return_value = None
 
-        response = client.get("/v2/people/nonexistent")
+        response = client.get("/v2/people/nonexistent", headers=auth_headers)
         assert response.status_code == 404
 
-    def test_create_person_validation(self):
+    def test_create_person_validation(self, client, auth_headers):
         """Test person creation with validation."""
         # Test missing required fields
-        response = client.post("/v2/people/", json={})
+        response = client.post("/v2/people/", json={}, headers=auth_headers)
         assert response.status_code == 422  # Validation error
 
         # Test invalid email
@@ -113,11 +113,11 @@ class TestPeopleRouter:
                 "country": "USA",
             },
         }
-        response = client.post("/v2/people/", json=invalid_person)
+        response = client.post("/v2/people/", json=invalid_person, headers=auth_headers)
         assert response.status_code == 422  # Validation error
 
     @patch("src.core.database.db.put_item")
-    async def test_create_person_success(self, mock_put):
+    def test_create_person_success(self, mock_put, client, auth_headers):
         """Test successful person creation."""
         mock_put.return_value = True
 
@@ -137,7 +137,7 @@ class TestPeopleRouter:
             "isAdmin": False,
         }
 
-        response = client.post("/v2/people/", json=valid_person)
+        response = client.post("/v2/people/", json=valid_person, headers=auth_headers)
         assert response.status_code == 201
 
         data = response.json()

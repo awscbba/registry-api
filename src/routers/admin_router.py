@@ -9,27 +9,17 @@ from fastapi import APIRouter, HTTPException, Query, Depends
 from ..services.admin_service import AdminService
 from ..services.people_service import PeopleService
 from ..services.subscriptions_service import SubscriptionsService
+from ..services.service_registry_manager import (
+    get_admin_service,
+    get_people_service,
+    get_subscriptions_service,
+)
 from ..models.auth import User
 from ..models.person import PersonCreate, PersonUpdate, PersonResponse
 from ..routers.auth_router import require_admin, get_current_user
 from ..utils.responses import create_success_response, create_error_response
 
 router = APIRouter(prefix="/v2/admin", tags=["admin"])
-
-
-def get_admin_service() -> AdminService:
-    """Dependency to get admin service."""
-    return AdminService()
-
-
-def get_people_service() -> PeopleService:
-    """Dependency to get people service."""
-    return PeopleService()
-
-
-def get_subscriptions_service() -> SubscriptionsService:
-    """Dependency to get subscriptions service."""
-    return SubscriptionsService()
 
 
 @router.get("/dashboard", response_model=dict)

@@ -8,23 +8,20 @@ from fastapi import APIRouter, HTTPException, Depends, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from ..services.auth_service import AuthService
+from ..services.service_registry_manager import get_auth_service
 from ..models.auth import (
     LoginRequest,
     LoginResponse,
     TokenRefreshRequest,
     PasswordChangeRequest,
     PasswordResetRequest,
+    PasswordResetConfirm,
     User,
 )
 from ..utils.responses import create_success_response, create_error_response
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 security = HTTPBearer()
-
-
-def get_auth_service() -> AuthService:
-    """Dependency to get auth service."""
-    return AuthService()
 
 
 async def get_current_user(
@@ -120,7 +117,52 @@ async def change_password(
                 status_code=400, detail="New password and confirmation do not match"
             )
 
-        # For now, return success (password change logic would be implemented here)
+        # Validate and change password
+        from ..utils.password_utils import hash_and_validate_password, PasswordHasher
+
+        # Verify current password
+        person = await auth_service.people_repository.get_by_id(current_user.id)
+        if not person or not hasattr(person, "passwordHash") or not person.passwordHash:
+            raise HTTPException(
+                status_code=400, detail="Account not set up for password change"
+            )
+
+        if not PasswordHasher.verify_password(
+            password_data.currentPassword, person.passwordHash
+        ):
+            raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+        # Validate and hash new password
+        is_valid, new_hash, errors = hash_and_validate_password(
+            password_data.newPassword
+        )
+        if not is_valid:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Password validation failed: {', '.join(errors)}",
+            )
+
+        # Update password in database
+        from ..models.person import PersonUpdate
+
+        update_data = PersonUpdate(passwordHash=new_hash)
+        updated_person = await auth_service.people_repository.update(
+            current_user.id, update_data
+        )
+
+        if not updated_person:
+            raise HTTPException(status_code=500, detail="Failed to update password")
+
+        # Log password change
+        from ..services.logging_service import logging_service, LogCategory, LogLevel
+
+        logging_service.log_structured(
+            level=LogLevel.INFO,
+            category=LogCategory.PASSWORD_MANAGEMENT,
+            message=f"Password changed for user {current_user.id}",
+            additional_data={"user_id": current_user.id},
+        )
+
         return create_success_response(
             {"message": "Password changed successfully", "userId": current_user.id}
         )
@@ -130,20 +172,45 @@ async def change_password(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/password/reset", response_model=dict)
-async def request_password_reset(
+@router.post("/forgot-password", response_model=dict)
+async def forgot_password(
     reset_data: PasswordResetRequest,
     auth_service: AuthService = Depends(get_auth_service),
 ):
     """Request password reset (send email with reset link)."""
     try:
-        # For now, return success (password reset logic would be implemented here)
-        return create_success_response(
-            {
-                "message": "If the email exists, a password reset link has been sent",
-                "email": reset_data.email,
-            }
+        result = await auth_service.initiate_password_reset(reset_data.email)
+        return create_success_response(result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/reset-password", response_model=dict)
+async def reset_password(
+    reset_data: PasswordResetConfirm,
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    """Reset password using reset token."""
+    try:
+        result = await auth_service.reset_password(
+            reset_data.token, reset_data.newPassword, reset_data.confirmPassword
         )
+        return create_success_response(result)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/validate-reset-token/{token}", response_model=dict)
+async def validate_reset_token(
+    token: str,
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    """Validate password reset token."""
+    try:
+        is_valid = await auth_service.validate_reset_token(token)
+        return create_success_response({"valid": is_valid, "token": token})
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

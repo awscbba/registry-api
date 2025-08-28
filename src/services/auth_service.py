@@ -4,7 +4,6 @@ Handles business logic for authentication operations.
 """
 
 import jwt
-import bcrypt
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 
@@ -12,6 +11,11 @@ from ..core.config import config
 from ..repositories.people_repository import PeopleRepository
 from ..models.auth import LoginResponse, User
 from ..models.person import PersonResponse
+from ..utils.password_utils import (
+    PasswordHasher,
+    PasswordValidator,
+    hash_and_validate_password,
+)
 
 
 class AuthService:
@@ -25,17 +29,11 @@ class AuthService:
 
     def _hash_password(self, password: str) -> str:
         """Hash a password using bcrypt."""
-        salt = bcrypt.gensalt()
-        return bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
+        return PasswordHasher.hash_password(password)
 
     def _verify_password(self, password: str, hashed_password: str) -> bool:
         """Verify a password against its hash."""
-        try:
-            return bcrypt.checkpw(
-                password.encode("utf-8"), hashed_password.encode("utf-8")
-            )
-        except Exception:
-            return False
+        return PasswordHasher.verify_password(password, hashed_password)
 
     def _generate_access_token(self, user_data: Dict[str, Any]) -> str:
         """Generate JWT access token."""
@@ -74,13 +72,46 @@ class AuthService:
         if not person.isActive:
             return None
 
-        # Verify password (for now, we'll assume password is stored as plain text)
-        # In production, this should be properly hashed
-        if not hasattr(person, "password") or not person.password:
+        # Verify password hash
+        if not hasattr(person, "passwordHash") or not person.passwordHash:
+            # Log failed login attempt
+            from ..security.authorization import authorization_service
+
+            authorization_service.record_failed_login(person.id)
+
+            from ..services.logging_service import (
+                logging_service,
+                LogCategory,
+                LogLevel,
+            )
+
+            logging_service.log_authentication_event(
+                event_type="login_failed",
+                user_id=person.id,
+                success=False,
+                details={"reason": "no_password_hash", "email": email},
+            )
             return None
 
-        # For now, simple password comparison (should be hashed in production)
-        if person.password != password:
+        # Verify password against hash
+        if not self._verify_password(password, person.passwordHash):
+            # Record failed login attempt
+            from ..security.authorization import authorization_service
+
+            authorization_service.record_failed_login(person.id)
+
+            from ..services.logging_service import (
+                logging_service,
+                LogCategory,
+                LogLevel,
+            )
+
+            logging_service.log_authentication_event(
+                event_type="login_failed",
+                user_id=person.id,
+                success=False,
+                details={"reason": "invalid_password", "email": email},
+            )
             return None
 
         # Generate tokens
@@ -97,6 +128,24 @@ class AuthService:
             "isAdmin": person.isAdmin,
             "isActive": person.isActive,
         }
+
+        # Clear any failed login attempts on successful login
+        from ..security.authorization import authorization_service
+
+        authorization_service.clear_failed_attempts(person.id)
+
+        # Log successful login
+        from ..services.logging_service import logging_service, LogCategory, LogLevel
+
+        logging_service.log_authentication_event(
+            event_type="login_success",
+            user_id=person.id,
+            success=True,
+            details={
+                "email": person.email,
+                "user_roles": [],  # Will be populated by RBAC service
+            },
+        )
 
         return LoginResponse(
             accessToken=access_token,
@@ -174,3 +223,134 @@ class AuthService:
             user=user_response,
             expiresIn=self.access_token_expire_hours * 3600,
         )
+
+    def _generate_reset_token(self, user_data: Dict[str, Any]) -> str:
+        """Generate password reset token."""
+        payload = {
+            "sub": user_data["id"],
+            "email": user_data["email"],
+            "exp": datetime.utcnow()
+            + timedelta(hours=1),  # Reset token expires in 1 hour
+            "iat": datetime.utcnow(),
+            "type": "password_reset",
+        }
+        return jwt.encode(payload, self.jwt_secret, algorithm=self.jwt_algorithm)
+
+    async def initiate_password_reset(self, email: str) -> Dict[str, Any]:
+        """Initiate password reset process."""
+        # Get user by email
+        person = await self.people_repository.get_by_email(email)
+        if not person:
+            # Return success even if email doesn't exist (security best practice)
+            return {
+                "message": "If the email exists, a password reset link has been sent",
+                "email": email,
+            }
+
+        # Check if user is active
+        if not person.isActive:
+            return {
+                "message": "If the email exists, a password reset link has been sent",
+                "email": email,
+            }
+
+        # Generate reset token
+        user_data = person.model_dump()
+        reset_token = self._generate_reset_token(user_data)
+
+        # Send password reset email
+        from .email_service import EmailService
+
+        email_service = EmailService()
+
+        email_result = await email_service.send_password_reset_email(
+            email=email, first_name=person.firstName, reset_token=reset_token
+        )
+
+        if email_result["success"]:
+            return {
+                "message": "Password reset link has been sent to your email",
+                "email": email,
+            }
+        else:
+            # Log the error but still return success for security
+            return {
+                "message": "If the email exists, a password reset link has been sent",
+                "email": email,
+            }
+
+    async def validate_reset_token(self, token: str) -> bool:
+        """Validate password reset token."""
+        payload = self.verify_token(token)
+        if not payload or payload.get("type") != "password_reset":
+            return False
+
+        user_id = payload.get("sub")
+        if not user_id:
+            return False
+
+        # Verify user still exists and is active
+        person = await self.people_repository.get_by_id(user_id)
+        if not person or not person.isActive:
+            return False
+
+        return True
+
+    async def reset_password(
+        self, token: str, new_password: str, confirm_password: str
+    ) -> Dict[str, Any]:
+        """Reset user password using reset token."""
+        # Validate passwords match
+        if new_password != confirm_password:
+            raise ValueError("New password and confirmation do not match")
+
+        # Validate password strength (basic validation)
+        if len(new_password) < 8:
+            raise ValueError("Password must be at least 8 characters long")
+
+        # Validate reset token
+        payload = self.verify_token(token)
+        if not payload or payload.get("type") != "password_reset":
+            raise ValueError("Invalid or expired reset token")
+
+        user_id = payload.get("sub")
+        if not user_id:
+            raise ValueError("Invalid reset token")
+
+        # Get user
+        person = await self.people_repository.get_by_id(user_id)
+        if not person or not person.isActive:
+            raise ValueError("User not found or inactive")
+
+        # Validate and hash the new password
+        is_valid, hashed_password, validation_errors = hash_and_validate_password(
+            new_password
+        )
+
+        if not is_valid:
+            raise ValueError(
+                f"Password validation failed: {', '.join(validation_errors)}"
+            )
+
+        # Update the password in the database
+        # Note: This would require updating the person repository to support password updates
+        # For now, we'll simulate success but this needs to be implemented
+
+        # Update password in database
+        from ..models.person import PersonUpdate
+
+        update_data = PersonUpdate(
+            passwordHash=hashed_password,
+            requirePasswordChange=False,
+            lastPasswordChange=__import__("datetime").datetime.utcnow(),
+        )
+
+        updated_person = await self.people_repository.update(user_id, update_data)
+        if not updated_person:
+            raise ValueError("Failed to update password in database")
+
+        return {
+            "message": "Password has been reset successfully",
+            "userId": user_id,
+            "email": person.email,
+        }

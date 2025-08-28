@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from unittest.mock import patch
 
 from src.app import app
+from .test_utils import TestAuthUtils
 
 client = TestClient(app)
 
@@ -95,7 +96,8 @@ class TestProjectsRouter:
             "requirements": "Basic gardening knowledge helpful",
         }
 
-        response = client.post("/v2/projects/", json=valid_project)
+        headers = TestAuthUtils.get_auth_headers()
+        response = client.post("/v2/projects/", json=valid_project, headers=headers)
         assert response.status_code == 201
 
         data = response.json()

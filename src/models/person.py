@@ -30,6 +30,10 @@ class PersonCreate(BaseModel):
     address: Address
     isAdmin: bool = Field(default=False)
 
+    # Password field for creation (excluded from API responses)
+    password: Optional[str] = Field(None, min_length=8, exclude=True)
+    passwordHash: Optional[str] = Field(None, exclude=True)  # For internal use
+
 
 class PersonUpdate(BaseModel):
     """Schema for updating an existing person."""
@@ -43,6 +47,14 @@ class PersonUpdate(BaseModel):
     isAdmin: Optional[bool] = None
     isActive: Optional[bool] = None
     requirePasswordChange: Optional[bool] = None
+
+    # Security fields for admin operations
+    failedLoginAttempts: Optional[int] = None
+    accountLockedUntil: Optional[datetime] = None
+
+    # Password fields (excluded from API responses)
+    password: Optional[str] = Field(None, min_length=8, exclude=True)
+    passwordHash: Optional[str] = Field(None, exclude=True)
 
 
 class PersonResponse(BaseModel):
@@ -62,6 +74,22 @@ class PersonResponse(BaseModel):
     createdAt: datetime
     updatedAt: datetime
     lastLoginAt: Optional[datetime] = None
+
+    # Security fields (for admin use)
+    failedLoginAttempts: int = Field(default=0)
+    accountLockedUntil: Optional[datetime] = None
+    lastPasswordChange: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class PersonInternal(PersonResponse):
+    """Internal person model with sensitive fields (never exposed via API)."""
+
+    passwordHash: Optional[str] = Field(None, exclude=True)
+    passwordSalt: Optional[str] = Field(None, exclude=True)
+    passwordHistory: List[str] = Field(default_factory=list, exclude=True)
+    emailVerificationToken: Optional[str] = Field(None, exclude=True)
 
     model_config = {"from_attributes": True}
 

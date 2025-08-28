@@ -3,11 +3,21 @@ Main FastAPI application with clean, modular router architecture.
 No field mapping complexity - consistent camelCase throughout.
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .core.config import config
+from .middleware.enterprise_middleware import (
+    EnterpriseMiddleware,
+    SecurityHeadersMiddleware,
+    RateLimitingMiddleware,
+)
+from .middleware.authentication_middleware import AuthenticationMiddleware
+from .middleware.authorization_middleware import (
+    AuthorizationMiddleware,
+    InputValidationMiddleware,
+)
 from .routers import (
     people_router,
     projects_router,
@@ -44,6 +54,16 @@ def create_app() -> FastAPI:
         docs_url="/docs",
         redoc_url="/redoc",
     )
+
+    # Add enterprise middleware (order matters!)
+    app.add_middleware(SecurityHeadersMiddleware)
+    app.add_middleware(RateLimitingMiddleware, requests_per_minute=100)
+    app.add_middleware(EnterpriseMiddleware)
+
+    # Add security middleware
+    app.add_middleware(InputValidationMiddleware)
+    app.add_middleware(AuthorizationMiddleware)
+    app.add_middleware(AuthenticationMiddleware)
 
     # Add CORS middleware
     app.add_middleware(

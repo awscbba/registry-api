@@ -19,13 +19,55 @@ class PeopleRepository(BaseRepository[Person]):
         self.table_name = "people"
 
     async def create(self, person_data: PersonCreate) -> Person:
-        """Create a new person in the database."""
+        """Create a new person in the database with input validation."""
+        from ..security.input_validator import InputValidator
+        from ..services.logging_service import logging_service, LogCategory, LogLevel
+
+        # Validate inputs before database operation
+        email_result = InputValidator.validate_email(person_data.email)
+        if not email_result.is_valid:
+            logging_service.log_security_event(
+                event_type="invalid_email_format",
+                severity="medium",
+                details={"email": person_data.email, "errors": email_result.errors},
+            )
+            raise ValueError(f"Invalid email: {', '.join(email_result.errors)}")
+
+        # Validate string fields
+        for field_name, field_value in [
+            ("firstName", person_data.firstName),
+            ("lastName", person_data.lastName),
+            ("phone", person_data.phone or ""),
+        ]:
+            if field_value:
+                result = InputValidator.validate_and_sanitize_string(
+                    field_value, max_length=100
+                )
+                if not result.is_valid:
+                    raise ValueError(
+                        f"Invalid {field_name}: {', '.join(result.errors)}"
+                    )
+
         # Generate ID and timestamps
         person_id = str(uuid.uuid4())
         now = datetime.utcnow()
 
-        # Convert to database format (already camelCase - no conversion needed!)
+        # Convert to database format with sanitized data
         db_item = person_data.model_dump()
+
+        # Sanitize string fields
+        db_item["firstName"] = InputValidator.validate_and_sanitize_string(
+            person_data.firstName
+        ).sanitized_data
+        db_item["lastName"] = InputValidator.validate_and_sanitize_string(
+            person_data.lastName
+        ).sanitized_data
+        db_item["email"] = email_result.sanitized_data
+        if person_data.phone:
+            db_item["phone"] = InputValidator.validate_and_sanitize_string(
+                person_data.phone
+            ).sanitized_data
+
         db_item.update(
             {
                 "id": person_id,
@@ -37,9 +79,25 @@ class PeopleRepository(BaseRepository[Person]):
             }
         )
 
+        # Log data creation
+        logging_service.log_data_operation(
+            operation="create",
+            resource_type="person",
+            resource_id=person_id,
+            success=True,
+            details={"email": email_result.sanitized_data},
+        )
+
         # Save to database
         success = await db.put_item(self.table_name, db_item)
         if not success:
+            logging_service.log_data_operation(
+                operation="create",
+                resource_type="person",
+                resource_id=person_id,
+                success=False,
+                details={"error": "Database operation failed"},
+            )
             raise Exception("Failed to create person in database")
 
         return Person(**db_item)

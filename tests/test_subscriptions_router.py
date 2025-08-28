@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, patch
 
 from src.app import app
 from src.models.subscription import SubscriptionResponse
+from .test_utils import TestAuthUtils, patch_auth_service, patch_auth_service_admin
 
 
 class TestSubscriptionsRouter:
@@ -34,8 +35,8 @@ class TestSubscriptionsRouter:
         assert data["success"] is True
         assert data["data"] == []
 
-    @patch("src.routers.subscriptions_router.SubscriptionsService")
-    def test_list_subscriptions_with_data(self, mock_service_class):
+    @patch("src.services.service_registry_manager.service_registry")
+    def test_list_subscriptions_with_data(self, mock_service_registry):
         """Test listing subscriptions with data."""
         # Mock service
         mock_service = AsyncMock()
@@ -51,7 +52,7 @@ class TestSubscriptionsRouter:
                 "updatedAt": "2025-01-27T00:00:00Z",
             }
         ]
-        mock_service_class.return_value = mock_service
+        mock_service_registry.get_subscriptions_service.return_value = mock_service
 
         # Make request
         response = self.client.get("/v2/subscriptions")
@@ -96,8 +97,8 @@ class TestSubscriptionsRouter:
         # Should fail validation
         assert response.status_code == 422
 
-    @patch("src.routers.subscriptions_router.SubscriptionsService")
-    def test_create_subscription_success(self, mock_service_class):
+    @patch("src.services.service_registry_manager.service_registry")
+    def test_create_subscription_success(self, mock_service_registry):
         """Test creating a subscription successfully."""
         # Mock service
         mock_service = AsyncMock()
@@ -111,7 +112,7 @@ class TestSubscriptionsRouter:
             "createdAt": "2025-01-27T00:00:00Z",
             "updatedAt": "2025-01-27T00:00:00Z",
         }
-        mock_service_class.return_value = mock_service
+        mock_service_registry.get_subscriptions_service.return_value = mock_service
 
         # Valid subscription data
         valid_subscription = {

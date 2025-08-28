@@ -16,10 +16,48 @@ class PeopleService:
         self.people_repository = people_repository
 
     async def create_person(self, person_data: PersonCreate) -> PersonResponse:
-        """Create a new person with business validation."""
+        """Create a new person with enterprise security validation."""
+        from ..services.logging_service import logging_service, LogCategory, LogLevel
+        from ..security.input_validator import InputValidator
+        from ..exceptions.base_exceptions import (
+            ValidationException,
+            BusinessLogicException,
+            ErrorCode,
+        )
+
+        # Validate email format
+        email_result = InputValidator.validate_email(person_data.email)
+        if not email_result.is_valid:
+            logging_service.log_security_event(
+                event_type="invalid_email_format",
+                severity="medium",
+                details={"email": person_data.email, "errors": email_result.errors},
+            )
+            raise ValidationException(
+                message=f"Invalid email format: {', '.join(email_result.errors)}",
+                error_code=ErrorCode.VALIDATION_ERROR,
+            )
+
         # Check if email already exists
         if await self.people_repository.email_exists(person_data.email):
-            raise ValueError(f"Email {person_data.email} is already in use")
+            logging_service.log_data_operation(
+                operation="create",
+                resource_type="person",
+                success=False,
+                details={"email": person_data.email, "reason": "duplicate_email"},
+            )
+            raise BusinessLogicException(
+                message=f"Email {person_data.email} is already in use",
+                error_code=ErrorCode.DUPLICATE_RESOURCE,
+            )
+
+        # Log person creation attempt
+        logging_service.log_data_operation(
+            operation="create",
+            resource_type="person",
+            success=True,
+            details={"email": email_result.sanitized_data},
+        )
 
         # Create person
         person = await self.people_repository.create(person_data)
@@ -60,9 +98,78 @@ class PeopleService:
 
         return PersonResponse(**person.model_dump())
 
-    async def delete_person(self, person_id: str) -> bool:
-        """Delete a person."""
-        # TODO: Add business rules (e.g., check for active subscriptions)
+    async def delete_person(self, person_id: str, requesting_user_id: str) -> bool:
+        """Delete a person with business rule validation."""
+        from ..services.logging_service import logging_service, LogCategory, LogLevel
+        from ..exceptions.base_exceptions import BusinessLogicException, ErrorCode
+
+        # Check if person exists
+        person = await self.people_repository.get_by_id(person_id)
+        if not person:
+            raise BusinessLogicException(
+                message="Person not found", error_code=ErrorCode.RESOURCE_NOT_FOUND
+            )
+
+        # Business rule: Check for active subscriptions
+        try:
+            from ..services.service_registry_manager import get_subscriptions_service
+
+            subscriptions_service = get_subscriptions_service()
+
+            # Get user's subscriptions
+            subscriptions = await subscriptions_service.get_subscriptions_by_person(
+                person_id
+            )
+            active_subscriptions = [
+                sub
+                for sub in subscriptions
+                if sub.get("status", "").lower() in ["active", "pending"]
+            ]
+
+            if active_subscriptions:
+                logging_service.log_structured(
+                    level=LogLevel.WARNING,
+                    category=LogCategory.USER_OPERATIONS,
+                    message=f"Attempted to delete person {person_id} with active subscriptions",
+                    additional_data={
+                        "person_id": person_id,
+                        "requesting_user_id": requesting_user_id,
+                        "active_subscriptions_count": len(active_subscriptions),
+                    },
+                )
+
+                raise BusinessLogicException(
+                    message="Cannot delete person with active subscriptions",
+                    error_code=ErrorCode.BUSINESS_RULE_VIOLATION,
+                    details={
+                        "active_subscriptions": len(active_subscriptions),
+                        "subscription_ids": [
+                            sub.get("id") for sub in active_subscriptions
+                        ],
+                    },
+                )
+
+        except BusinessLogicException:
+            raise
+        except Exception as e:
+            # Log error but don't fail deletion for subscription check failure
+            logging_service.log_structured(
+                level=LogLevel.WARNING,
+                category=LogCategory.USER_OPERATIONS,
+                message=f"Failed to check subscriptions for person {person_id}: {str(e)}",
+                additional_data={"person_id": person_id, "error": str(e)},
+            )
+
+        # Log deletion attempt
+        logging_service.log_data_operation(
+            operation="delete",
+            resource_type="person",
+            resource_id=person_id,
+            user_id=requesting_user_id,
+            success=True,
+            details={"email": person.email},
+        )
+
         return await self.people_repository.delete(person_id)
 
     async def list_people(self, limit: Optional[int] = None) -> List[PersonResponse]:
