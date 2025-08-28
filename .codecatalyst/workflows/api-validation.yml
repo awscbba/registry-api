@@ -105,17 +105,22 @@ Actions:
                     exit 1
                 }
             fi
-                echo "💡 Current .flake8 rules:"
-                cat .flake8
-                exit 1
-            }
             
             # Check formatting
             echo "🎨 Checking formatting..."
-            black --check src/ tests/ || {
-                echo "❌ Formatting issues found"
-                exit 1
-            }
+            if [ -n "$(find scripts/ -name '*.py' 2>/dev/null)" ]; then
+                echo "Found Python files in scripts/, including in formatting check"
+                black --check src/ tests/ scripts/ || {
+                    echo "❌ Formatting issues found"
+                    exit 1
+                }
+            else
+                echo "No Python files in scripts/, checking src/ and tests/ only"
+                black --check src/ tests/ || {
+                    echo "❌ Formatting issues found"
+                    exit 1
+                }
+            fi
             
             echo "✅ Validation completed successfully"
             echo "⏱️ End: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
