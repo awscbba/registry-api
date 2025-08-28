@@ -55,7 +55,7 @@ test-critical:
 # Run critical tests that are known to pass (for CI/CD)
 test-critical-passing:
     @just print-info "Running critical integration tests (passing subset)..."
-    @uv run python -m pytest tests/test_critical_integration.py::TestCriticalIntegration::test_api_service_method_consistency tests/test_critical_integration.py::TestCriticalIntegration::test_async_sync_consistency tests/test_critical_integration.py::TestCriticalIntegration::test_v2_response_format_consistency tests/test_critical_integration.py::TestProductionHealthChecks::test_production_api_health tests/test_address_field_standardization.py tests/test_person_update_fix.py tests/test_person_update_address_fix.py tests/test_person_update_comprehensive.py -v
+    @uv run python -m pytest tests/test_critical_integration.py::TestCriticalIntegration::test_api_service_method_consistency tests/test_critical_integration.py::TestCriticalIntegration::test_async_sync_consistency tests/test_critical_integration.py::TestCriticalIntegration::test_v2_response_format_consistency tests/test_critical_integration.py::TestProductionHealthChecks::test_production_api_health tests/test_modernized_async_validation.py tests/test_router_function.py -v
     @just print-success "Critical integration tests (passing) completed"
 
 # Run modernized async/sync validation tests
@@ -431,7 +431,8 @@ setup-hooks:
     @echo "   • Async/sync consistency validation"
     @echo "   • V2 response format consistency"
     @echo "   • Production health checks"
-    @echo "   • Address field standardization (8 tests)"
+    @echo "   • Modernized async validation (9 tests)"
+    @echo "   • Router function validation (5 tests)"
     @echo ""
     @echo "💡 To run the critical tests manually: just test-critical-passing"
     @echo "🔍 To run all tests: just test-all"
