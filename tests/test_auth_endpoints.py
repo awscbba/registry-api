@@ -54,7 +54,9 @@ class TestAuthEndpoints:
         # Should return 400 for invalid token
         assert response.status_code == 400
         data = response.json()
-        assert "Invalid or expired reset token" in data["detail"]
+        assert data["success"] is False
+        assert "error" in data
+        assert "Invalid or expired reset token" in data["error"]["message"]
 
     def test_reset_password_validation(self):
         """Test password reset validation."""
@@ -70,7 +72,9 @@ class TestAuthEndpoints:
 
         assert response.status_code == 400
         data = response.json()
-        assert "do not match" in data["detail"]
+        assert data["success"] is False
+        assert "error" in data
+        assert "do not match" in data["error"]["message"]
 
     def test_existing_auth_endpoints_still_work(self):
         """Test that existing auth endpoints still work."""

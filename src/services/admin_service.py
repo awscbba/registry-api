@@ -1,6 +1,6 @@
 """
 Admin service implementation.
-Handles business logic for admin operations.
+Handles business logic for admin operations with enterprise exception handling.
 """
 
 from typing import List, Dict, Any, Optional
@@ -10,6 +10,13 @@ from ..repositories.people_repository import PeopleRepository
 from ..repositories.projects_repository import ProjectsRepository
 from ..repositories.subscriptions_repository import SubscriptionsRepository
 from ..models.person import PersonResponse
+from ..exceptions.base_exceptions import (
+    DatabaseException,
+    ValidationException,
+    BusinessLogicException,
+    ErrorCode,
+    ErrorSeverity,
+)
 
 
 class AdminService:
@@ -43,7 +50,11 @@ class AdminService:
                 "lastUpdated": datetime.utcnow().isoformat(),
             }
         except Exception as e:
-            raise Exception(f"Failed to get dashboard data: {str(e)}")
+            raise DatabaseException(
+                operation="get_dashboard_data",
+                details={"error": str(e)},
+                user_message="Unable to retrieve dashboard data at this time.",
+            )
 
     async def get_enhanced_dashboard_data(self) -> Dict[str, Any]:
         """Get enhanced dashboard data with more detailed analytics."""
@@ -90,7 +101,11 @@ class AdminService:
 
             return enhanced_data
         except Exception as e:
-            raise Exception(f"Failed to get enhanced dashboard data: {str(e)}")
+            raise DatabaseException(
+                operation="get_enhanced_dashboard_data",
+                details={"error": str(e)},
+                user_message="Unable to retrieve enhanced dashboard data at this time.",
+            )
 
     async def get_analytics_data(self) -> Dict[str, Any]:
         """Get detailed analytics data."""
@@ -142,7 +157,11 @@ class AdminService:
                 "generatedAt": datetime.utcnow().isoformat(),
             }
         except Exception as e:
-            raise Exception(f"Failed to get analytics data: {str(e)}")
+            raise DatabaseException(
+                operation="get_analytics_data",
+                details={"error": str(e)},
+                user_message="Unable to retrieve analytics data at this time.",
+            )
 
     async def execute_bulk_action(self, bulk_data: Dict[str, Any]) -> Dict[str, Any]:
         """Execute bulk actions on users."""
@@ -151,7 +170,12 @@ class AdminService:
             user_ids = bulk_data.get("userIds", [])
 
             if not action or not user_ids:
-                raise ValueError("Action and userIds are required")
+                raise ValidationException(
+                    message="Action and userIds are required for bulk operations",
+                    error_code=ErrorCode.MISSING_REQUIRED_FIELD,
+                    details={"missing_fields": ["action", "userIds"]},
+                    user_message="Please provide both action and user IDs for bulk operations.",
+                )
 
             results = {
                 "action": action,
@@ -170,7 +194,15 @@ class AdminService:
                     elif action == "delete":
                         await self.people_repository.delete(user_id)
                     else:
-                        raise ValueError(f"Unknown action: {action}")
+                        raise ValidationException(
+                            message=f"Unknown bulk action: {action}",
+                            error_code=ErrorCode.INVALID_INPUT,
+                            details={
+                                "invalid_action": action,
+                                "valid_actions": ["activate", "deactivate", "delete"],
+                            },
+                            user_message="Please provide a valid action (activate, deactivate, or delete).",
+                        )
 
                     results["successCount"] += 1
                     results["results"].append({"userId": user_id, "status": "success"})
@@ -181,5 +213,12 @@ class AdminService:
                     )
 
             return results
+        except (ValidationException, BusinessLogicException):
+            # Re-raise enterprise exceptions
+            raise
         except Exception as e:
-            raise Exception(f"Failed to execute bulk action: {str(e)}")
+            raise DatabaseException(
+                operation="execute_bulk_action",
+                details={"action": bulk_data.get("action"), "error": str(e)},
+                user_message="Unable to complete bulk operation at this time.",
+            )

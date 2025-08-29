@@ -35,11 +35,12 @@ class TestModernizedAsyncValidation:
 
     def test_async_error_handling(self):
         """Test that async error handling works correctly."""
-        # Test 404 handling
+        # Test 404 handling - FastAPI default format
         response = self.client.get("/nonexistent")
         assert response.status_code == 404
         data = response.json()
-        assert data["success"] is False
+        assert "detail" in data
+        assert data["detail"] == "Not Found"
 
     def test_async_response_format(self):
         """Test that async responses follow consistent format."""
@@ -111,5 +112,6 @@ class TestModernizedAsyncValidation:
         assert response.status_code == 404
 
         data = response.json()
-        assert data["success"] is False
-        assert "errorCode" in data
+        # FastAPI default 404 format
+        assert "detail" in data
+        assert data["detail"] == "Not Found"

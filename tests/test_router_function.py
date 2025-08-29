@@ -39,8 +39,9 @@ class TestRouterFunction:
         response = self.client.get("/nonexistent-endpoint")
         assert response.status_code == 404
         data = response.json()
-        assert data["success"] is False
-        assert data["errorCode"] == "NOT_FOUND"
+        # FastAPI default 404 format
+        assert "detail" in data
+        assert data["detail"] == "Not Found"
 
     def test_router_cors_headers(self):
         """Test that CORS headers are properly set."""

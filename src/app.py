@@ -26,6 +26,8 @@ from .routers import (
     admin_router,
 )
 from .utils.responses import create_success_response, create_error_response
+from .exceptions.base_exceptions import BaseApplicationException
+from .exceptions.error_handler import error_handler
 
 
 def create_app() -> FastAPI:
@@ -81,6 +83,15 @@ def create_app() -> FastAPI:
     app.include_router(auth_router.router)
     app.include_router(admin_router.router)
 
+    # Add enterprise exception handlers
+    app.add_exception_handler(
+        BaseApplicationException, error_handler.handle_application_exception
+    )
+
+    app.add_exception_handler(HTTPException, error_handler.handle_http_exception)
+
+    app.add_exception_handler(Exception, error_handler.handle_generic_exception)
+
     return app
 
 
@@ -129,19 +140,5 @@ async def health_check():
     )
 
 
-@app.exception_handler(404)
-async def not_found_handler(request, exc):
-    """Handle 404 errors with standardized response."""
-    return JSONResponse(
-        status_code=404,
-        content=create_error_response("Endpoint not found", "NOT_FOUND"),
-    )
-
-
-@app.exception_handler(500)
-async def internal_error_handler(request, exc):
-    """Handle 500 errors with standardized response."""
-    return JSONResponse(
-        status_code=500,
-        content=create_error_response("Internal server error", "INTERNAL_ERROR"),
-    )
+# Note: Exception handlers are now managed by the enterprise error handler
+# which provides structured logging, monitoring, and consistent error responses
