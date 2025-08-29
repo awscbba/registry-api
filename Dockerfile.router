@@ -7,12 +7,14 @@ RUN pip install uv
 COPY pyproject.toml ./
 COPY uv.lock ./
 
-# Install minimal dependencies for router (only what's needed for routing)
-# Router only needs boto3, logging, and basic Python libraries
-RUN uv pip install --system boto3 python-json-logger
+# Install ALL dependencies using uv pip install to install globally
+# Router needs full enterprise architecture: services, repositories, logging, etc.
+# This ensures Router Lambda has access to complete Service Registry pattern
+RUN uv pip install --system -r pyproject.toml
 
-# Copy router code
+# Copy complete application code including enterprise architecture
 COPY router_main.py ./
+COPY src/ ./src/
 
-# Set the CMD to the router handler
+# Set the CMD to the router handler with enterprise architecture support
 CMD ["router_main.lambda_handler"]
