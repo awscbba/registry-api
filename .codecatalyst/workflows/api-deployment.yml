@@ -43,7 +43,7 @@ Actions:
 
             echo "ℹ️ Using container-based deployment for Lambda"
             echo "🧪 Running critical pre-deployment tests..."
-            
+
             # Install just if not available
             if ! command -v just >/dev/null 2>&1; then
                 echo "📦 Installing just..."
@@ -56,7 +56,7 @@ Actions:
             echo "ℹ️ Note: Some API tests are expected to fail as they identify missing endpoints"
             echo "   This is good behavior - the tests are working as designed!"
             echo ""
-            
+
             # Run API tests that are known to pass (critical integration subset)
             echo "🔧 Running API critical integration tests..."
             if just test-critical-passing; then
@@ -65,7 +65,7 @@ Actions:
                 echo "❌ API critical integration tests failed - blocking deployment"
                 exit 1
             fi
-            
+
             # Run additional API quality checks
             echo "🔍 Running API quality checks..."
             if just lint; then
@@ -74,7 +74,7 @@ Actions:
                 echo "❌ API code quality checks failed - blocking deployment"
                 exit 1
             fi
-            
+
             echo "📊 API Test Results Summary:"
             echo "   - Critical Integration Tests: 4/4 PASSING ✅"
             echo "   - Code Quality Checks: PASSING ✅"
