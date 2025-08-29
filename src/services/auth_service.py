@@ -296,13 +296,8 @@ class AuthService:
 
         return True
 
-    async def reset_password(
-        self, token: str, new_password: str, confirm_password: str
-    ) -> Dict[str, Any]:
+    async def reset_password(self, token: str, new_password: str) -> Dict[str, Any]:
         """Reset user password using reset token."""
-        # Validate passwords match
-        if new_password != confirm_password:
-            raise ValueError("New password and confirmation do not match")
 
         # Validate password strength (basic validation)
         if len(new_password) < 8:

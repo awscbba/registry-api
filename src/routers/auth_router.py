@@ -71,12 +71,10 @@ async def refresh_token(
     """Refresh access token using refresh token."""
     try:
         result = await auth_service.refresh_access_token(refresh_data.refreshToken)
-
         if not result:
             raise HTTPException(
                 status_code=401, detail="Invalid or expired refresh token"
             )
-
         return create_success_response(result.model_dump())
     except HTTPException:
         raise
@@ -191,9 +189,15 @@ async def reset_password(
     auth_service: AuthService = Depends(get_auth_service),
 ):
     """Reset password using reset token."""
+    # Validate password confirmation in router
+    if reset_data.newPassword != reset_data.confirmPassword:
+        raise HTTPException(
+            status_code=400, detail="New password and confirmation do not match"
+        )
+
     try:
         result = await auth_service.reset_password(
-            reset_data.token, reset_data.newPassword, reset_data.confirmPassword
+            reset_data.token, reset_data.newPassword
         )
         return create_success_response(result)
     except ValueError as e:

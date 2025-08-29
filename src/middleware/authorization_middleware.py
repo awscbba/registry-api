@@ -64,6 +64,7 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
         r"^/docs.*",
         r"^/openapi.json$",
         r"^/auth/login$",
+        r"^/auth/refresh$",
         r"^/auth/forgot-password$",
         r"^/auth/reset-password$",
         r"^/auth/validate-reset-token/.*",
