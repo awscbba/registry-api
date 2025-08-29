@@ -27,6 +27,10 @@ dependencies = [
     "wrapt==1.17.2",
     "pytest-asyncio>=1.1.0",
     "psutil>=7.0.0",
+    # Testing dependencies (needed for CI/CD pipeline)
+    "moto==5.0.9",
+    "pytest==8.2.2",
+    "pytest-mock==3.14.0",
 ]
 
 [dependency-groups]
@@ -35,11 +39,6 @@ dev = [
     "black==25.1.0",
     "flake8==7.3.0",
     "pytest-asyncio==1.1.0",
-
-    # Testing dependencies
-    "moto==5.0.9",
-    "pytest==8.2.2",
-    "pytest-mock==3.14.0",
 
     # Additional development dependencies
     "httpx==0.28.1",
