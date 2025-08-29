@@ -55,7 +55,7 @@ Actions:
             echo "📦 Setting up environment..."
             uv venv --python=python3.13 --clear
             source .venv/bin/activate
-            uv pip install -r requirements.txt
+            uv pip install -e .
             uv pip install pytest flake8 black
             
             # Validate critical dependencies are installed
