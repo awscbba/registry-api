@@ -13,7 +13,11 @@ from ..models.project import (
     ProjectStatus,
 )
 from ..services.projects_service import ProjectsService
-from ..services.service_registry_manager import get_projects_service
+from ..services.subscriptions_service import SubscriptionsService
+from ..services.service_registry_manager import (
+    get_projects_service,
+    get_subscriptions_service,
+)
 from ..utils.responses import (
     create_success_response,
     create_error_response,
@@ -150,3 +154,89 @@ async def get_public_projects(
         raise HTTPException(
             status_code=500, detail=f"Failed to retrieve public projects: {str(e)}"
         )
+
+
+# Project Subscription Management Endpoints
+@router.get("/{project_id}/subscriptions", response_model=dict)
+async def get_project_subscriptions(
+    project_id: str,
+    subscriptions_service: SubscriptionsService = Depends(get_subscriptions_service),
+):
+    """Get all subscriptions for a specific project."""
+    try:
+        subscriptions = await subscriptions_service.get_project_subscriptions(
+            project_id
+        )
+        return create_success_response(subscriptions)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{project_id}/subscriptions", response_model=dict, status_code=201)
+async def subscribe_to_project(
+    project_id: str,
+    subscription_data: dict,
+    subscriptions_service: SubscriptionsService = Depends(get_subscriptions_service),
+):
+    """Subscribe a person to a project."""
+    try:
+        # Add project_id to subscription data
+        subscription_data["projectId"] = project_id
+
+        from ..models.subscription import SubscriptionCreate
+
+        subscription_create = SubscriptionCreate(**subscription_data)
+
+        subscription = await subscriptions_service.create_subscription(
+            subscription_create
+        )
+        return create_success_response(subscription)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/{project_id}/subscribers/{subscription_id}", response_model=dict)
+async def update_project_subscription(
+    project_id: str,
+    subscription_id: str,
+    subscription_data: dict,
+    subscriptions_service: SubscriptionsService = Depends(get_subscriptions_service),
+):
+    """Update a project subscription."""
+    try:
+        from ..models.subscription import SubscriptionUpdate
+
+        subscription_update = SubscriptionUpdate(**subscription_data)
+
+        subscription = await subscriptions_service.update_subscription(
+            subscription_id, subscription_update
+        )
+        if not subscription:
+            raise HTTPException(status_code=404, detail="Subscription not found")
+
+        return create_success_response(subscription)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/{project_id}/subscribers/{subscription_id}", response_model=dict)
+async def unsubscribe_from_project(
+    project_id: str,
+    subscription_id: str,
+    subscriptions_service: SubscriptionsService = Depends(get_subscriptions_service),
+):
+    """Remove a subscription from a project."""
+    try:
+        success = await subscriptions_service.delete_subscription(subscription_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Subscription not found")
+
+        return create_success_response(
+            {"deleted": True, "subscriptionId": subscription_id}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

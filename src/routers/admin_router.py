@@ -332,33 +332,6 @@ async def get_admin_registrations(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# Performance and Health Endpoints
-@router.get("/performance/health", response_model=dict)
-async def get_performance_health(
-    current_user: User = Depends(require_admin),
-    admin_service: AdminService = Depends(get_admin_service),
-):
-    """Get system performance and health status."""
-    try:
-        health_data = await admin_service.get_system_health()
-        return create_success_response(health_data)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/stats", response_model=dict)
-async def get_admin_stats(
-    current_user: User = Depends(require_admin),
-    admin_service: AdminService = Depends(get_admin_service),
-):
-    """Get comprehensive admin statistics."""
-    try:
-        stats_data = await admin_service.get_comprehensive_stats()
-        return create_success_response(stats_data)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 @router.get("/test", response_model=dict)
 async def test_admin_system(current_user: User = Depends(require_admin)):
     """Test admin system functionality."""
@@ -371,7 +344,7 @@ async def test_admin_system(current_user: User = Depends(require_admin)):
     )
 
 
-# Performance and Stats Endpoints
+# Performance and Health Endpoints
 @router.get("/performance/health", response_model=dict)
 async def get_performance_health(
     current_user: User = Depends(require_admin),
