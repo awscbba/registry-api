@@ -40,13 +40,15 @@ class TestSecurityIntegration:
 
         # Test that protected endpoints are not in public list
         assert not middleware._is_public_endpoint("/v2/people")
-        assert not middleware._is_public_endpoint("/v2/projects")
         assert not middleware._is_public_endpoint("/v2/admin/dashboard")
 
         # Test that public endpoints are properly identified
         assert middleware._is_public_endpoint("/health")
         assert middleware._is_public_endpoint("/docs")
         assert middleware._is_public_endpoint("/auth/login")
+        assert middleware._is_public_endpoint(
+            "/v2/projects"
+        )  # Projects should be publicly accessible
 
     def test_invalid_token_rejected(self):
         """Test that the auth service properly validates tokens."""

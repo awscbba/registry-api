@@ -201,6 +201,7 @@ class TestAuthenticationMiddleware:
             "/auth/forgot-password",
             "/auth/reset-password",
             "/auth/validate-reset-token/some-token",
+            "/v2/projects",
             "/v2/projects/public",
             "/v2/public/subscribe",
         ]
@@ -210,7 +211,6 @@ class TestAuthenticationMiddleware:
 
         protected_paths = [
             "/v2/people",
-            "/v2/projects",
             "/v2/subscriptions",
             "/v2/admin/dashboard",
             "/auth/validate",
