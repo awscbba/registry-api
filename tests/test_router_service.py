@@ -134,7 +134,10 @@ class TestRouterService:
             with pytest.raises(
                 ValueError, match="AUTH_FUNCTION_NAME environment variable is required"
             ):
-                RouterService(logging_service=self.logging_service)
+                RouterService(
+                    logging_service=self.logging_service,
+                    lambda_repository=self.mock_lambda_repository,
+                )
 
     def test_configuration_validation_missing_api_function(self):
         """Test that missing API_FUNCTION_NAME raises ValueError."""
@@ -142,7 +145,10 @@ class TestRouterService:
             with pytest.raises(
                 ValueError, match="API_FUNCTION_NAME environment variable is required"
             ):
-                RouterService(logging_service=self.logging_service)
+                RouterService(
+                    logging_service=self.logging_service,
+                    lambda_repository=self.mock_lambda_repository,
+                )
 
     def test_error_handling_in_route_request(self):
         """Test error handling when Lambda repository fails."""
