@@ -25,10 +25,6 @@ dependencies = [
     "typing-extensions==4.14.1",
     "urllib3>=1.25.4,<2.0.0",
     "wrapt==1.17.2",
-    # Testing dependencies (production needed)
-    "moto==5.0.9",
-    "pytest==8.2.2",
-    "pytest-mock==3.14.0",
     "pytest-asyncio>=1.1.0",
     "psutil>=7.0.0",
 ]
@@ -39,17 +35,22 @@ dev = [
     "black==25.1.0",
     "flake8==7.3.0",
     "pytest-asyncio==1.1.0",
-    
+
+    # Testing dependencies
+    "moto==5.0.9",
+    "pytest==8.2.2",
+    "pytest-mock==3.14.0",
+
     # Additional development dependencies
     "httpx==0.28.1",
     "pandas==2.3.1",
     "openpyxl==3.1.5",
     "pyyaml==6.0.2",
-    
+
     # FastAPI development tools
     "fastapi-cli==0.0.8",
     "uvicorn==0.35.0",
-    
+
     # Rich formatting and CLI tools
     "rich==14.0.0",
     "rich-toolkit==0.14.8",
