@@ -68,6 +68,7 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
         r"^/auth/forgot-password$",
         r"^/auth/reset-password$",
         r"^/auth/validate-reset-token/.*",
+        r"^/v2/projects$",  # Allow public access to projects list
         r"^/v2/projects/public$",
         r"^/v2/public/subscribe$",
     ]
