@@ -72,6 +72,9 @@ class LambdaRepository:
 
             # Log response status
             status_code = response.get("StatusCode", 0)
+            # Read payload once and store it
+            payload_data = response.get("Payload", b"").read() or b""
+
             self.logging_service.log_structured(
                 level=LogLevel.INFO,
                 category=LogCategory.SYSTEM_EVENTS,
@@ -79,16 +82,12 @@ class LambdaRepository:
                 additional_data={
                     "function_name": function_name,
                     "status_code": status_code,
-                    "response_size": len(response.get("Payload", b"").read() or b""),
+                    "response_size": len(payload_data),
                 },
             )
 
-            # Reset payload stream position for reading
-            if hasattr(response["Payload"], "seek"):
-                response["Payload"].seek(0)
-
             # Parse and return response
-            payload_response = json.loads(response["Payload"].read())
+            payload_response = json.loads(payload_data)
 
             # Log response summary for debugging
             response_summary = json.dumps(payload_response, default=str)[:200]
