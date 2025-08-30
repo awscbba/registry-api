@@ -27,6 +27,7 @@ from ..utils.responses import (
 router = APIRouter(prefix="/v2/projects", tags=["Projects"])
 
 
+@router.get("", response_model=dict)
 @router.get("/", response_model=dict)
 async def list_projects(
     limit: Optional[int] = Query(
