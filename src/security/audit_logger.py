@@ -4,7 +4,7 @@ Enterprise-grade audit logging and security monitoring.
 
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, Optional
 from enum import Enum
 
@@ -79,7 +79,7 @@ class AuditLogger:
         """Log an audit event."""
 
         audit_record = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "event_type": event_type.value,
             "user_id": user_id,
             "resource_type": resource_type,

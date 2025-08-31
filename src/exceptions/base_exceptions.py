@@ -6,7 +6,7 @@ Provides structured error handling with proper logging and user-safe messages.
 from typing import Dict, Any, Optional, List
 from enum import Enum
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class ErrorCode(str, Enum):
@@ -78,7 +78,7 @@ class BaseApplicationException(Exception):
         super().__init__(message)
 
         self.error_id = str(uuid.uuid4())
-        self.timestamp = datetime.utcnow()
+        self.timestamp = datetime.now(timezone.utc)
         self.message = message
         self.error_code = error_code
         self.severity = severity

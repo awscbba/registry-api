@@ -83,7 +83,9 @@ class EnterpriseErrorHandler:
             "error": {
                 "code": f"HTTP_{exc.status_code}",
                 "message": str(exc.detail),
-                "timestamp": __import__("datetime").datetime.utcnow().isoformat(),
+                "timestamp": __import__("datetime")
+                .datetime.now(__import__("datetime").timezone.utc)
+                .isoformat(),
             },
         }
 
@@ -124,7 +126,9 @@ class EnterpriseErrorHandler:
             "error": {
                 "code": ErrorCode.INTERNAL_ERROR.value,
                 "message": "An internal error occurred. Please try again later.",
-                "timestamp": __import__("datetime").datetime.utcnow().isoformat(),
+                "timestamp": __import__("datetime")
+                .datetime.now(__import__("datetime").timezone.utc)
+                .isoformat(),
             },
         }
 

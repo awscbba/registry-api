@@ -4,7 +4,7 @@ Implements the Service Registry pattern for system performance monitoring.
 """
 
 from typing import Dict, Any, List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import time
 import psutil
 import asyncio
@@ -102,7 +102,7 @@ class PerformanceService:
                 overall_score=overall_score,
                 components=components,
                 metrics=metrics,
-                timestamp=datetime.utcnow().isoformat() + "Z",
+                timestamp=datetime.now(timezone.utc).isoformat() + "Z",
             )
 
             # Log health check
@@ -151,9 +151,9 @@ class PerformanceService:
                     "cpuUsagePercent": 0.0,
                     "databaseConnections": 0,
                     "activeRequests": 0,
-                    "timestamp": datetime.utcnow().isoformat() + "Z",
+                    "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
                 },
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
                 "error": str(e),
             }
 
@@ -173,7 +173,7 @@ class PerformanceService:
                 cpu_usage_percent=cpu_percent,
                 database_connections=3,  # Simulated - DynamoDB doesn't have traditional connections
                 active_requests=self._request_count,
-                timestamp=datetime.utcnow().isoformat() + "Z",
+                timestamp=datetime.now(timezone.utc).isoformat() + "Z",
             )
 
         except Exception as e:
@@ -184,7 +184,7 @@ class PerformanceService:
                 cpu_usage_percent=0.0,
                 database_connections=0,
                 active_requests=0,
-                timestamp=datetime.utcnow().isoformat() + "Z",
+                timestamp=datetime.now(timezone.utc).isoformat() + "Z",
             )
 
     async def _check_component_health(self) -> Dict[str, Any]:
@@ -215,7 +215,7 @@ class PerformanceService:
             components["database"] = {
                 "status": "unhealthy",
                 "error": str(e),
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             }
 
         # Check API endpoints
@@ -223,7 +223,7 @@ class PerformanceService:
             "status": "healthy",
             "uptime_seconds": time.time() - self._start_time,
             "requests_processed": self._request_count,
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
         }
 
         # Check memory usage
@@ -234,13 +234,13 @@ class PerformanceService:
                 "status": memory_status,
                 "usage_percent": memory_info.percent,
                 "available_mb": memory_info.available / (1024 * 1024),
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             }
         except Exception as e:
             components["memory"] = {
                 "status": "unknown",
                 "error": str(e),
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             }
 
         return components
@@ -262,14 +262,14 @@ class PerformanceService:
             return {
                 "status": "healthy",
                 "response_time_ms": response_time,
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             }
 
         except Exception as e:
             return {
                 "status": "unhealthy",
                 "error": str(e),
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             }
 
     def _calculate_health_score(
@@ -340,7 +340,7 @@ class PerformanceService:
                 "total_requests": self._request_count,
                 "average_response_time_ms": avg_response_time,
                 "requests_per_second": self._request_count / max(uptime_seconds, 1),
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             }
 
         except Exception as e:
@@ -351,4 +351,7 @@ class PerformanceService:
                 additional_data={"error": str(e)},
             )
 
-            return {"error": str(e), "timestamp": datetime.utcnow().isoformat() + "Z"}
+            return {
+                "error": str(e),
+                "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
+            }

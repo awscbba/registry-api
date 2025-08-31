@@ -4,7 +4,7 @@ Implements comprehensive permission management with audit trails.
 """
 
 from typing import List, Optional, Dict, Any, Set
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import uuid
 
 from ..models.rbac import (
@@ -56,7 +56,7 @@ class RBACService:
 
             # Filter active and non-expired roles
             active_roles = []
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
 
             for user_role in user_roles:
                 if user_role.is_active and (
@@ -333,7 +333,7 @@ class RBACService:
             for user_role in user_roles:
                 if user_role.role_type == role_type and user_role.is_active:
                     user_role.is_active = False
-                    user_role.updated_at = datetime.utcnow()
+                    user_role.updated_at = datetime.now(timezone.utc)
                     role_found = True
                     break
 

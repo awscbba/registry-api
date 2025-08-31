@@ -192,20 +192,10 @@ class InputValidationMiddleware(BaseHTTPMiddleware):
     """Middleware to validate and sanitize all inputs."""
 
     async def dispatch(self, request: Request, call_next: Callable):
-        """Validate request inputs."""
+        """Validate request inputs with context-aware security."""
 
         # Skip validation for GET requests (no body)
         if request.method == "GET":
-            return await call_next(request)
-
-        # Skip validation for authentication endpoints (passwords may contain special chars)
-        auth_endpoints = [
-            "/auth/login",
-            "/auth/refresh",
-            "/auth/forgot-password",
-            "/auth/reset-password",
-        ]
-        if any(endpoint in request.url.path for endpoint in auth_endpoints):
             return await call_next(request)
 
         try:
@@ -217,14 +207,19 @@ class InputValidationMiddleware(BaseHTTPMiddleware):
                 request._body = body
 
             if body:
-                # Basic validation - check for malicious patterns
+                # Context-aware validation based on endpoint
                 body_str = body.decode("utf-8")
 
-                from ..security.input_validator import InputValidator
+                from ..security.enterprise_input_validator import (
+                    EnterpriseInputValidator,
+                )
 
-                # Check for injection patterns
-                validation_result = InputValidator.validate_and_sanitize_string(
-                    body_str, max_length=10000
+                # Validate with context awareness
+                validation_result = EnterpriseInputValidator.validate_request_body(
+                    body_str=body_str,
+                    endpoint_path=request.url.path,
+                    http_method=request.method,
+                    max_length=10000,
                 )
 
                 if not validation_result.is_valid:
@@ -236,6 +231,7 @@ class InputValidationMiddleware(BaseHTTPMiddleware):
                             "path": request.url.path,
                             "method": request.method,
                             "errors": validation_result.errors,
+                            "validation_context": validation_result.context,
                         },
                     )
 
