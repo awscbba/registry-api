@@ -198,6 +198,16 @@ class InputValidationMiddleware(BaseHTTPMiddleware):
         if request.method == "GET":
             return await call_next(request)
 
+        # Skip validation for authentication endpoints (passwords may contain special chars)
+        auth_endpoints = [
+            "/auth/login",
+            "/auth/refresh",
+            "/auth/forgot-password",
+            "/auth/reset-password",
+        ]
+        if any(endpoint in request.url.path for endpoint in auth_endpoints):
+            return await call_next(request)
+
         try:
             # Read and validate request body
             if hasattr(request, "_body"):
