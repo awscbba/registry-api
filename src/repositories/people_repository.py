@@ -116,19 +116,27 @@ class PeopleRepository(BaseRepository[Person]):
 
     async def get_by_email(self, email: str) -> Optional[Person]:
         """Get a person by their email address."""
-        # Scan for person with matching email
+        # Normalize email to lowercase for case-insensitive comparison
+        email_lower = email.lower().strip()
+
+        # Scan for person with matching email (case-insensitive)
         all_people = await db.scan_table(self.table_name)
         for person_data in all_people:
-            if person_data.get("email") == email:
+            stored_email = person_data.get("email", "").lower().strip()
+            if stored_email == email_lower:
                 return Person(**person_data)
         return None
 
     async def get_by_email_for_auth(self, email: str) -> Optional[dict]:
         """Get a person by email with password hash for authentication."""
-        # Scan for person with matching email
+        # Normalize email to lowercase for case-insensitive comparison
+        email_lower = email.lower().strip()
+
+        # Scan for person with matching email (case-insensitive)
         all_people = await db.scan_table(self.table_name)
         for person_data in all_people:
-            if person_data.get("email") == email:
+            stored_email = person_data.get("email", "").lower().strip()
+            if stored_email == email_lower:
                 return person_data  # Return raw dict with passwordHash
         return None
 
