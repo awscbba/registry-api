@@ -119,9 +119,12 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
                     },
                 )
 
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid or expired token",
+                # Return proper JSON response instead of HTTPException to avoid CORS issues
+                from fastapi.responses import JSONResponse
+
+                return JSONResponse(
+                    status_code=401,
+                    content={"detail": "Invalid or expired token"},
                     headers={"WWW-Authenticate": "Bearer"},
                 )
 
