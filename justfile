@@ -415,20 +415,29 @@ help:
     @echo "  - API contract validation and endpoint testing"
     @echo "  - Cascade deletion analysis and fixes"
     @echo ""
+    @echo "👤 User Management:"
+    @echo "  check-user <email>                    - Check if a user exists in the database"
+    @echo "  create-admin <email> <password> <first_name> <last_name> - Create an admin user"
+    @echo "  list-users                            - List all users in the database"
+    @echo "  cleanup-test-users                    - Remove test users from API tables"
+    @echo "  cleanup-test-users                    - Preview test user cleanup (dry-run)"
+    @echo "  cleanup-test-users-execute            - Remove test users from database"
+    @echo ""
     @echo "🔐 RBAC & Database Scripts:"
     @echo "  rbac-full-implementation   - Complete RBAC implementation workflow"
     @echo "  db-full-setup              - Complete database setup & maintenance"
-    @echo "  admin-create <email>       - Create admin user"
     @echo "  production-ready-check     - Complete production readiness check"
     @echo "  field-standardize-complete - Complete field standardization workflow"
     @echo "  help-all-scripts           - Show all script tasks (detailed)"
     @echo ""
     @echo "💡 Quick Start Examples:"
-    @echo "  just rbac-full-implementation          # Complete RBAC setup"
-    @echo "  just admin-create admin@example.com    # Create admin user"
-    @echo "  just db-full-setup                     # Database maintenance"
-    @echo "  just field-standardize-complete        # Fix field naming issues"
-    @echo "  just production-ready-check            # Check production readiness"
+    @echo "  just check-user admin@example.com                           # Check if user exists"
+    @echo "  just create-admin admin@example.com mypass Admin User       # Create admin user"
+    @echo "  just list-users                                             # List all users"
+    @echo "  just rbac-full-implementation                               # Complete RBAC setup"
+    @echo "  just db-full-setup                                          # Database maintenance"
+    @echo "  just field-standardize-complete                             # Fix field naming issues"
+    @echo "  just production-ready-check                                 # Check production readiness"
     @echo ""
     @echo "ℹ️ Frontend tests are handled in the registry-frontend repo"
 
@@ -667,11 +676,42 @@ db-maintenance:
 # Admin User Management Scripts
 # ============================================================================
 
-# Create admin user
+# 👤 User Management Tasks
+# Check if a user exists in the database
+check-user email:
+    @echo "🔍 Checking user: {{email}}"
+    @uv run python scripts/check_user.py "{{email}}"
+
+# Create an admin user
+create-admin email password first_name last_name:
+    @echo "👤 Creating admin user: {{email}}"
+    @uv run python scripts/create_admin_user.py "{{email}}" "{{password}}" "{{first_name}}" "{{last_name}}"
+
+# List all users in the database
+list-users:
+    @echo "📋 Listing all users..."
+    @uv run python scripts/list_users.py
+
+# Clean up test users from all API tables
+cleanup-test-users:
+    @echo "🧹 Cleaning up test users from API tables..."
+    @echo "⚠️  This will remove users with test-like emails from:"
+    @echo "   - PeopleTableV2"
+    @echo "   - ProjectsTableV2" 
+    @echo "   - SubscriptionsTableV2"
+    @echo ""
+    @uv run python scripts/cleanup_test_users.py
+
+# Verify that API tables are empty
+verify-tables-empty:
+    @echo "🔍 Verifying API tables are empty..."
+    @uv run python scripts/verify_tables_empty.py
+
+# Legacy admin-create task (for backward compatibility)
 admin-create email:
-    @just print-info "Creating admin user: {{email}}"
-    @uv run python scripts/create_admin_user.py --email "{{email}}"
-    @just print-success "Admin user created successfully"
+    @just print-warning "⚠️  This task requires additional parameters. Use 'create-admin' instead."
+    @echo "Usage: just create-admin <email> <password> <first_name> <last_name>"
+    @echo "Example: just create-admin admin@example.com mypassword Admin User"
 
 # Set initial admin user
 admin-set-initial email:

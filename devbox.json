@@ -9,7 +9,7 @@
     "init_hook": [
       "echo 'Welcome to the AWS UG Cochabamba!'",
       "uv venv --python=python@3.13 --clear --prompt=venv",
-      "source .venv/bin/activate"
+      "source  /Users/sergio.rodriguez/Projects/Community/AWS/UserGroupCbba/CodeCatalyst/people-registry-03/registry-api/.venv/bin/activate"
     ],
     "scripts": {
       "test": [

@@ -79,6 +79,10 @@ class PeopleRepository(BaseRepository[Person]):
             }
         )
 
+        # Handle password hash if provided
+        if hasattr(person_data, "passwordHash") and person_data.passwordHash:
+            db_item["passwordHash"] = person_data.passwordHash
+
         # Log data creation
         logging_service.log_data_operation(
             operation="create",
@@ -117,6 +121,15 @@ class PeopleRepository(BaseRepository[Person]):
         for person_data in all_people:
             if person_data.get("email") == email:
                 return Person(**person_data)
+        return None
+
+    async def get_by_email_for_auth(self, email: str) -> Optional[dict]:
+        """Get a person by email with password hash for authentication."""
+        # Scan for person with matching email
+        all_people = await db.scan_table(self.table_name)
+        for person_data in all_people:
+            if person_data.get("email") == email:
+                return person_data  # Return raw dict with passwordHash
         return None
 
     async def update(self, person_id: str, updates: PersonUpdate) -> Optional[Person]:

@@ -63,21 +63,22 @@ class AuthService:
         self, email: str, password: str
     ) -> Optional[LoginResponse]:
         """Authenticate a user with email and password."""
-        # Get user by email
-        person = await self.people_repository.get_by_email(email)
-        if not person:
+        # Get user data with password hash for authentication
+        person_data = await self.people_repository.get_by_email_for_auth(email)
+        if not person_data:
             return None
 
         # Check if user is active
-        if not person.isActive:
+        if not person_data.get("isActive", False):
             return None
 
-        # Verify password hash
-        if not hasattr(person, "passwordHash") or not person.passwordHash:
+        # Verify password hash exists
+        password_hash = person_data.get("passwordHash")
+        if not password_hash:
             # Log failed login attempt
             from ..security.authorization import authorization_service
 
-            authorization_service.record_failed_login(person.id)
+            authorization_service.record_failed_login(person_data.get("id"))
 
             from ..services.logging_service import (
                 logging_service,
@@ -87,18 +88,18 @@ class AuthService:
 
             logging_service.log_authentication_event(
                 event_type="login_failed",
-                user_id=person.id,
+                user_id=person_data.get("id"),
                 success=False,
                 details={"reason": "no_password_hash", "email": email},
             )
             return None
 
         # Verify password against hash
-        if not self._verify_password(password, person.passwordHash):
+        if not self._verify_password(password, password_hash):
             # Record failed login attempt
             from ..security.authorization import authorization_service
 
-            authorization_service.record_failed_login(person.id)
+            authorization_service.record_failed_login(person_data.get("id"))
 
             from ..services.logging_service import (
                 logging_service,
@@ -108,41 +109,42 @@ class AuthService:
 
             logging_service.log_authentication_event(
                 event_type="login_failed",
-                user_id=person.id,
+                user_id=person_data.get("id"),
                 success=False,
                 details={"reason": "invalid_password", "email": email},
             )
             return None
 
         # Generate tokens
-        user_data = person.model_dump()
-        access_token = self._generate_access_token(user_data)
-        refresh_token = self._generate_refresh_token(user_data)
+        # Create clean user data without password hash for token generation
+        clean_user_data = {k: v for k, v in person_data.items() if k != "passwordHash"}
+        access_token = self._generate_access_token(clean_user_data)
+        refresh_token = self._generate_refresh_token(clean_user_data)
 
         # Create user response
         user_response = {
-            "id": person.id,
-            "email": person.email,
-            "firstName": person.firstName,
-            "lastName": person.lastName,
-            "isAdmin": person.isAdmin,
-            "isActive": person.isActive,
+            "id": person_data.get("id"),
+            "email": person_data.get("email"),
+            "firstName": person_data.get("firstName"),
+            "lastName": person_data.get("lastName"),
+            "isAdmin": person_data.get("isAdmin", False),
+            "isActive": person_data.get("isActive", True),
         }
 
         # Clear any failed login attempts on successful login
         from ..security.authorization import authorization_service
 
-        authorization_service.clear_failed_attempts(person.id)
+        authorization_service.clear_failed_attempts(person_data.get("id"))
 
         # Log successful login
         from ..services.logging_service import logging_service, LogCategory, LogLevel
 
         logging_service.log_authentication_event(
             event_type="login_success",
-            user_id=person.id,
+            user_id=person_data.get("id"),
             success=True,
             details={
-                "email": person.email,
+                "email": person_data.get("email"),
                 "user_roles": [],  # Will be populated by RBAC service
             },
         )
