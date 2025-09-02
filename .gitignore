@@ -60,6 +60,15 @@ simple_main.py
 ultra_simple_main.py
 workflow-validation-report.txt
 
+# Debug and test scripts (temporary)
+debug_*.py
+scripts/debug_*.py
+scripts/test_*.py
+scripts/diagnose_*.py
+scripts/compare_*.py
+scripts/check_*.py
+scripts/quick_*.py
+
 # Environment variables
 .env
 .env.local
