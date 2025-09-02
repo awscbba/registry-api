@@ -4,6 +4,17 @@ Manages service instances and their dependencies following clean architecture.
 """
 
 from typing import Dict, Any, Optional
+from ..exceptions.base_exceptions import BaseApplicationException
+
+
+class ServiceRegistryError(BaseApplicationException):
+    """Exception raised when service registry operations fail."""
+
+    def __init__(self, message: str, user_message: str = None, error_code: str = None):
+        super().__init__(message, user_message, error_code)
+        self.status_code = 500
+
+
 from functools import lru_cache
 
 from ..repositories.people_repository import PeopleRepository
@@ -113,9 +124,30 @@ class ServiceRegistryManager:
         return self._services["logging"]
 
     def get_performance_service(self):
-        """Get the performance service instance."""
+        """Get the performance service instance with validation."""
         self.initialize()
-        return self._services["performance"]
+
+        # Validate service exists and is properly initialized
+        if "performance" not in self._services:
+            raise ServiceRegistryError(
+                message="Performance service not registered",
+                user_message="Performance monitoring is not available",
+                error_code="SERVICE_NOT_REGISTERED",
+            )
+
+        service = self._services["performance"]
+
+        # Validate service has required methods
+        required_methods = ["get_health_status", "get_performance_stats"]
+        for method in required_methods:
+            if not hasattr(service, method):
+                raise ServiceRegistryError(
+                    message=f"Performance service missing required method: {method}",
+                    user_message="Performance monitoring is not properly configured",
+                    error_code="SERVICE_INCOMPLETE",
+                )
+
+        return service
 
     def reset(self):
         """Reset all services and repositories (useful for testing)."""
