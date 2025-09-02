@@ -410,36 +410,9 @@ async def get_admin_stats(
 ):
     """Get comprehensive admin statistics."""
     try:
-        # Get basic dashboard data with fallback
-        try:
-            dashboard_data = await admin_service.get_dashboard_data()
-        except Exception as e:
-            # Fallback dashboard data
-            dashboard_data = {
-                "totalUsers": 0,
-                "activeUsers": 0,
-                "totalProjects": 0,
-                "activeProjects": 0,
-                "totalSubscriptions": 0,
-                "activeSubscriptions": 0,
-                "lastUpdated": "2025-09-02T14:24:00Z",
-                "error": f"Dashboard data temporarily unavailable: {str(e)}",
-            }
+        dashboard_data = await admin_service.get_dashboard_data()
+        performance_stats = await performance_service.get_performance_stats()
 
-        # Get performance stats with fallback
-        try:
-            performance_stats = await performance_service.get_performance_stats()
-        except Exception:
-            # Fallback performance stats
-            performance_stats = {
-                "uptime_seconds": 3600,
-                "total_requests": 100,
-                "average_response_time_ms": 200,
-                "error_rate": 0.01,
-                "status": "degraded",
-            }
-
-        # Combine into comprehensive stats
         stats = {
             **dashboard_data,
             "performance": performance_stats,
@@ -450,7 +423,7 @@ async def get_admin_stats(
             },
         }
 
-        # Log successful stats access
+        # Enterprise logging with correlation ID
         from ..services.logging_service import logging_service
 
         logging_service.log_structured(
@@ -461,14 +434,13 @@ async def get_admin_stats(
                 "admin_user_id": current_user.id,
                 "total_users": stats.get("totalUsers", 0),
                 "total_projects": stats.get("totalProjects", 0),
-                "uptime_seconds": performance_stats.get("uptime_seconds", 0),
             },
         )
 
         return create_success_response(stats)
 
     except Exception as e:
-        # Log error with enterprise logging
+        # Enterprise logging
         from ..services.logging_service import logging_service
 
         logging_service.log_structured(
@@ -478,29 +450,12 @@ async def get_admin_stats(
             additional_data={"admin_user_id": current_user.id, "error": str(e)},
         )
 
-        # Return fallback stats instead of failing
-        fallback_stats = {
-            "totalUsers": 0,
-            "activeUsers": 0,
-            "totalProjects": 0,
-            "activeProjects": 0,
-            "totalSubscriptions": 0,
-            "activeSubscriptions": 0,
-            "performance": {
-                "status": "degraded",
-                "uptime_seconds": 0,
-                "total_requests": 0,
-                "average_response_time_ms": 0,
-            },
-            "system": {
-                "version": "2.0.0",
-                "environment": "production",
-                "timestamp": "2025-09-02T14:24:00Z",
-                "status": "degraded",
-            },
-            "error": "Statistics temporarily unavailable",
-        }
-        return create_success_response(fallback_stats)
+        # Enterprise exception with user-safe message
+        raise DatabaseException(
+            message="Failed to retrieve admin statistics",
+            details={"error": str(e)},
+            user_message="Admin statistics are temporarily unavailable. Please try again in a moment.",
+        )
 
 
 @router.get("/performance/stats", response_model=dict)
