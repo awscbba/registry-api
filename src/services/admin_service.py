@@ -35,10 +35,12 @@ class AdminService:
             projects = await self.projects_repository.list_all()
             subscriptions = await self.subscriptions_repository.list_all()
 
-            # Calculate basic stats
-            active_people = len([p for p in people if p.isActive])
-            active_projects = len([p for p in projects if p.isActive])
-            active_subscriptions = len([s for s in subscriptions if s.isActive])
+            # Calculate basic stats - handle missing attributes safely
+            active_people = len([p for p in people if getattr(p, "isActive", True)])
+            active_projects = len([p for p in projects if getattr(p, "isActive", True)])
+            active_subscriptions = len(
+                [s for s in subscriptions if getattr(s, "isActive", True)]
+            )
 
             return {
                 "totalUsers": len(people),
@@ -66,13 +68,15 @@ class AdminService:
             projects = await self.projects_repository.list_all()
             subscriptions = await self.subscriptions_repository.list_all()
 
-            # Calculate enhanced stats
-            admin_count = len([p for p in people if p.isAdmin])
+            # Calculate enhanced stats - handle missing attributes safely
+            admin_count = len([p for p in people if getattr(p, "isAdmin", False)])
             recent_signups = len(
                 [
                     p
                     for p in people
-                    if datetime.fromisoformat(p.createdAt.replace("Z", "+00:00"))
+                    if hasattr(p, "createdAt")
+                    and p.createdAt
+                    and datetime.fromisoformat(p.createdAt.replace("Z", "+00:00"))
                     > datetime.utcnow().replace(tzinfo=None) - timedelta(days=30)
                 ]
             )
