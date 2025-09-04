@@ -20,7 +20,7 @@ class ProjectsRepository(BaseRepository[Project]):
 
         self.table_name = config.database.projects_table
 
-    async def create(self, project_data: ProjectCreate) -> Project:
+    def create(self, project_data: ProjectCreate) -> Project:
         """Create a new project in the database."""
         # Generate ID and timestamps
         project_id = str(uuid.uuid4())
@@ -62,7 +62,7 @@ class ProjectsRepository(BaseRepository[Project]):
 
         return Project(**db_item)
 
-    async def get_by_id(self, project_id: str) -> Optional[Project]:
+    def get_by_id(self, project_id: str) -> Optional[Project]:
         """Get a project by its ID."""
         project_data = db.get_item(self.table_name, {"id": project_id})
         if not project_data:
@@ -70,12 +70,10 @@ class ProjectsRepository(BaseRepository[Project]):
 
         return Project(**project_data)
 
-    async def update(
-        self, project_id: str, updates: ProjectUpdate
-    ) -> Optional[Project]:
+    def update(self, project_id: str, updates: ProjectUpdate) -> Optional[Project]:
         """Update an existing project."""
         # Check if project exists
-        existing_project = await self.get_by_id(project_id)
+        existing_project = self.get_by_id(project_id)
         if not existing_project:
             return None
 
@@ -90,50 +88,50 @@ class ProjectsRepository(BaseRepository[Project]):
                 raise Exception("Failed to update project in database")
 
         # Return updated project
-        return await self.get_by_id(project_id)
+        return self.get_by_id(project_id)
 
-    async def delete(self, project_id: str) -> bool:
+    def delete(self, project_id: str) -> bool:
         """Delete a project by its ID."""
         return db.delete_item(self.table_name, {"id": project_id})
 
-    async def list_all(self, limit: Optional[int] = None) -> List[Project]:
+    def list_all(self, limit: Optional[int] = None) -> List[Project]:
         """List all projects with optional limit."""
         projects_data = db.scan_table(self.table_name, limit=limit)
         return [Project(**project_data) for project_data in projects_data]
 
-    async def exists(self, project_id: str) -> bool:
+    def exists(self, project_id: str) -> bool:
         """Check if a project exists."""
-        project = await self.get_by_id(project_id)
+        project = self.get_by_id(project_id)
         return project is not None
 
-    async def list_by_status(
+    def list_by_status(
         self, status: ProjectStatus, limit: Optional[int] = None
     ) -> List[Project]:
         """List projects by status."""
-        all_projects = await self.list_all(limit)
+        all_projects = self.list_all(limit)
         return [project for project in all_projects if project.status == status]
 
-    async def list_by_category(
+    def list_by_category(
         self, category: str, limit: Optional[int] = None
     ) -> List[Project]:
         """List projects by category."""
-        all_projects = await self.list_all(limit)
+        all_projects = self.list_all(limit)
         return [
             project
             for project in all_projects
             if project.category and project.category.lower() == category.lower()
         ]
 
-    async def list_public_projects(self, limit: Optional[int] = None) -> List[Project]:
+    def list_public_projects(self, limit: Optional[int] = None) -> List[Project]:
         """List public/active projects."""
-        all_projects = await self.list_all(limit)
+        all_projects = self.list_all(limit)
         return [
             project
             for project in all_projects
             if project.status in [ProjectStatus.ACTIVE, ProjectStatus.PENDING]
         ]
 
-    async def update_participant_count(
+    def update_participant_count(
         self, project_id: str, count: int
     ) -> Optional[Project]:
         """Update the current participant count for a project."""
@@ -144,4 +142,4 @@ class ProjectsRepository(BaseRepository[Project]):
         success = db.update_item(self.table_name, {"id": project_id}, update_data)
         if not success:
             return None
-        return await self.get_by_id(project_id)
+        return self.get_by_id(project_id)

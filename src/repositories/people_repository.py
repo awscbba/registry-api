@@ -20,7 +20,7 @@ class PeopleRepository(BaseRepository[Person]):
 
         self.table_name = config.database.people_table
 
-    async def create(self, person_data: PersonCreate) -> Person:
+    def create(self, person_data: PersonCreate) -> Person:
         """Create a new person in the database with input validation."""
         from ..security.input_validator import InputValidator
         from ..services.logging_service import logging_service, LogCategory, LogLevel
@@ -108,7 +108,7 @@ class PeopleRepository(BaseRepository[Person]):
 
         return Person(**db_item)
 
-    async def get_by_id(self, person_id: str) -> Optional[Person]:
+    def get_by_id(self, person_id: str) -> Optional[Person]:
         """Get a person by their ID."""
         person_data = db.get_item(self.table_name, {"id": person_id})
         if not person_data:
@@ -116,7 +116,7 @@ class PeopleRepository(BaseRepository[Person]):
 
         return Person(**person_data)
 
-    async def get_by_email(self, email: str) -> Optional[Person]:
+    def get_by_email(self, email: str) -> Optional[Person]:
         """Get a person by their email address."""
         # Normalize email to lowercase for case-insensitive comparison
         email_lower = email.lower().strip()
@@ -129,7 +129,7 @@ class PeopleRepository(BaseRepository[Person]):
                 return Person(**person_data)
         return None
 
-    async def get_by_email_for_auth(self, email: str) -> Optional[dict]:
+    def get_by_email_for_auth(self, email: str) -> Optional[dict]:
         """Get a person by email with password hash for authentication."""
         # Normalize email to lowercase for case-insensitive comparison
         email_lower = email.lower().strip()
@@ -142,10 +142,10 @@ class PeopleRepository(BaseRepository[Person]):
                 return person_data  # Return raw dict with passwordHash
         return None
 
-    async def update(self, person_id: str, updates: PersonUpdate) -> Optional[Person]:
+    def update(self, person_id: str, updates: PersonUpdate) -> Optional[Person]:
         """Update an existing person."""
         # Check if person exists
-        existing_person = await self.get_by_id(person_id)
+        existing_person = self.get_by_id(person_id)
         if not existing_person:
             return None
 
@@ -160,40 +160,38 @@ class PeopleRepository(BaseRepository[Person]):
                 raise Exception("Failed to update person in database")
 
         # Return updated person
-        return await self.get_by_id(person_id)
+        return self.get_by_id(person_id)
 
-    async def delete(self, person_id: str) -> bool:
+    def delete(self, person_id: str) -> bool:
         """Delete a person by their ID."""
         return db.delete_item(self.table_name, {"id": person_id})
 
-    async def list_all(self, limit: Optional[int] = None) -> List[Person]:
+    def list_all(self, limit: Optional[int] = None) -> List[Person]:
         """List all people with optional limit."""
         people_data = db.scan_table(self.table_name, limit=limit)
         return [Person(**person_data) for person_data in people_data]
 
-    async def exists(self, person_id: str) -> bool:
+    def exists(self, person_id: str) -> bool:
         """Check if a person exists."""
-        person = await self.get_by_id(person_id)
+        person = self.get_by_id(person_id)
         return person is not None
 
-    async def email_exists(self, email: str) -> bool:
+    def email_exists(self, email: str) -> bool:
         """Check if an email address is already in use."""
-        person = await self.get_by_email(email)
+        person = self.get_by_email(email)
         return person is not None
 
-    async def update_admin_status(
-        self, person_id: str, is_admin: bool
-    ) -> Optional[Person]:
+    def update_admin_status(self, person_id: str, is_admin: bool) -> Optional[Person]:
         """Update a person's admin status."""
         update_data = PersonUpdate(isAdmin=is_admin)
-        return await self.update(person_id, update_data)
+        return self.update(person_id, update_data)
 
-    async def activate_person(self, person_id: str) -> Optional[Person]:
+    def activate_person(self, person_id: str) -> Optional[Person]:
         """Activate a person's account."""
         update_data = PersonUpdate(isActive=True)
-        return await self.update(person_id, update_data)
+        return self.update(person_id, update_data)
 
-    async def deactivate_person(self, person_id: str) -> Optional[Person]:
+    def deactivate_person(self, person_id: str) -> Optional[Person]:
         """Deactivate a person's account."""
         update_data = PersonUpdate(isActive=False)
-        return await self.update(person_id, update_data)
+        return self.update(person_id, update_data)

@@ -64,7 +64,7 @@ class AuthService:
     ) -> Optional[LoginResponse]:
         """Authenticate a user with email and password."""
         # Get user data with password hash for authentication
-        person_data = self.people_repository.get_by_email_for_auth(email)
+        person_data = await self.people_repository.get_by_email_for_auth(email)
         if not person_data:
             return None
 
@@ -178,7 +178,7 @@ class AuthService:
         if not user_id:
             return None
 
-        person = self.people_repository.get_by_id(user_id)
+        person = await self.people_repository.get_by_id(user_id)
         if not person:
             return None
 
@@ -201,7 +201,7 @@ class AuthService:
         if not user_id:
             return None
 
-        person = self.people_repository.get_by_id(user_id)
+        person = await self.people_repository.get_by_id(user_id)
         if not person or not person.isActive:
             return None
 
@@ -292,7 +292,7 @@ class AuthService:
             return False
 
         # Verify user still exists and is active
-        person = self.people_repository.get_by_id(user_id)
+        person = await self.people_repository.get_by_id(user_id)
         if not person or not person.isActive:
             return False
 
@@ -315,7 +315,7 @@ class AuthService:
             raise ValueError("Invalid reset token")
 
         # Get user
-        person = self.people_repository.get_by_id(user_id)
+        person = await self.people_repository.get_by_id(user_id)
         if not person or not person.isActive:
             raise ValueError("User not found or inactive")
 
@@ -342,7 +342,7 @@ class AuthService:
             lastPasswordChange=__import__("datetime").datetime.utcnow(),
         )
 
-        updated_person = self.people_repository.update(user_id, update_data)
+        updated_person = await self.people_repository.update(user_id, update_data)
         if not updated_person:
             raise ValueError("Failed to update password in database")
 

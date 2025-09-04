@@ -20,7 +20,7 @@ class SubscriptionsRepository(BaseRepository[Subscription]):
 
         self.table_name = config.database.subscriptions_table
 
-    async def create(self, subscription_data: SubscriptionCreate) -> Subscription:
+    def create(self, subscription_data: SubscriptionCreate) -> Subscription:
         """Create a new subscription in the database."""
         # Generate ID and timestamps
         subscription_id = str(uuid.uuid4())
@@ -45,7 +45,7 @@ class SubscriptionsRepository(BaseRepository[Subscription]):
 
         return Subscription(**db_item)
 
-    async def get_by_id(self, subscription_id: str) -> Optional[Subscription]:
+    def get_by_id(self, subscription_id: str) -> Optional[Subscription]:
         """Get a subscription by its ID."""
         subscription_data = db.get_item(self.table_name, {"id": subscription_id})
         if not subscription_data:
@@ -53,7 +53,7 @@ class SubscriptionsRepository(BaseRepository[Subscription]):
 
         return Subscription(**subscription_data)
 
-    async def get_by_person_and_project(
+    def get_by_person_and_project(
         self, person_id: str, project_id: str
     ) -> Optional[Subscription]:
         """Get a subscription by person and project IDs."""
@@ -67,7 +67,7 @@ class SubscriptionsRepository(BaseRepository[Subscription]):
                 return Subscription(**subscription_data)
         return None
 
-    async def get_by_person(self, person_id: str) -> List[Subscription]:
+    def get_by_person(self, person_id: str) -> List[Subscription]:
         """Get all subscriptions for a person."""
         all_subscriptions = db.scan_table(self.table_name)
         person_subscriptions = []
@@ -76,7 +76,7 @@ class SubscriptionsRepository(BaseRepository[Subscription]):
                 person_subscriptions.append(Subscription(**subscription_data))
         return person_subscriptions
 
-    async def get_by_project(self, project_id: str) -> List[Subscription]:
+    def get_by_project(self, project_id: str) -> List[Subscription]:
         """Get all subscriptions for a project."""
         all_subscriptions = db.scan_table(self.table_name)
         project_subscriptions = []
@@ -85,12 +85,12 @@ class SubscriptionsRepository(BaseRepository[Subscription]):
                 project_subscriptions.append(Subscription(**subscription_data))
         return project_subscriptions
 
-    async def update(
+    def update(
         self, subscription_id: str, updates: SubscriptionUpdate
     ) -> Optional[Subscription]:
         """Update an existing subscription."""
         # Check if subscription exists
-        existing_subscription = await self.get_by_id(subscription_id)
+        existing_subscription = self.get_by_id(subscription_id)
         if not existing_subscription:
             return None
 
@@ -107,13 +107,13 @@ class SubscriptionsRepository(BaseRepository[Subscription]):
                 raise Exception("Failed to update subscription in database")
 
         # Return updated subscription
-        return await self.get_by_id(subscription_id)
+        return self.get_by_id(subscription_id)
 
-    async def delete(self, subscription_id: str) -> bool:
+    def delete(self, subscription_id: str) -> bool:
         """Delete a subscription by its ID."""
         return db.delete_item(self.table_name, {"id": subscription_id})
 
-    async def list_all(self, limit: Optional[int] = None) -> List[Subscription]:
+    def list_all(self, limit: Optional[int] = None) -> List[Subscription]:
         """List all subscriptions with optional limit."""
         subscriptions_data = db.scan_table(self.table_name, limit=limit)
         return [
@@ -121,12 +121,12 @@ class SubscriptionsRepository(BaseRepository[Subscription]):
             for subscription_data in subscriptions_data
         ]
 
-    async def exists(self, subscription_id: str) -> bool:
+    def exists(self, subscription_id: str) -> bool:
         """Check if a subscription exists."""
-        subscription = await self.get_by_id(subscription_id)
+        subscription = self.get_by_id(subscription_id)
         return subscription is not None
 
-    async def subscription_exists(self, person_id: str, project_id: str) -> bool:
+    def subscription_exists(self, person_id: str, project_id: str) -> bool:
         """Check if a subscription exists for a person and project."""
-        subscription = await self.get_by_person_and_project(person_id, project_id)
+        subscription = self.get_by_person_and_project(person_id, project_id)
         return subscription is not None

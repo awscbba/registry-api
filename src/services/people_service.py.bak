@@ -39,7 +39,7 @@ class PeopleService:
             )
 
         # Check if email already exists
-        if self.people_repository.email_exists(person_data.email):
+        if await self.people_repository.email_exists(person_data.email):
             logging_service.log_data_operation(
                 operation="create",
                 resource_type="person",
@@ -60,14 +60,14 @@ class PeopleService:
         )
 
         # Create person
-        person = self.people_repository.create(person_data)
+        person = await self.people_repository.create(person_data)
 
         # Convert to response model
         return PersonResponse(**person.model_dump())
 
     async def get_person(self, person_id: str) -> Optional[PersonResponse]:
         """Get a person by ID."""
-        person = self.people_repository.get_by_id(person_id)
+        person = await self.people_repository.get_by_id(person_id)
         if not person:
             return None
 
@@ -75,7 +75,7 @@ class PeopleService:
 
     async def get_person_by_email(self, email: str) -> Optional[PersonResponse]:
         """Get a person by email address."""
-        person = self.people_repository.get_by_email(email)
+        person = await self.people_repository.get_by_email(email)
         if not person:
             return None
 
@@ -87,12 +87,12 @@ class PeopleService:
         """Update a person with business validation."""
         # If updating email, check for duplicates
         if updates.email:
-            existing_person = self.people_repository.get_by_email(updates.email)
+            existing_person = await self.people_repository.get_by_email(updates.email)
             if existing_person and existing_person.id != person_id:
                 raise ValueError(f"Email {updates.email} is already in use")
 
         # Update person
-        person = self.people_repository.update(person_id, updates)
+        person = await self.people_repository.update(person_id, updates)
         if not person:
             return None
 
@@ -104,7 +104,7 @@ class PeopleService:
         from ..exceptions.base_exceptions import BusinessLogicException, ErrorCode
 
         # Check if person exists
-        person = self.people_repository.get_by_id(person_id)
+        person = await self.people_repository.get_by_id(person_id)
         if not person:
             raise BusinessLogicException(
                 message="Person not found", error_code=ErrorCode.RESOURCE_NOT_FOUND
@@ -170,22 +170,22 @@ class PeopleService:
             details={"email": person.email},
         )
 
-        return self.people_repository.delete(person_id)
+        return await self.people_repository.delete(person_id)
 
     async def list_people(self, limit: Optional[int] = None) -> List[PersonResponse]:
         """List all people."""
-        people = self.people_repository.list_all(limit)
+        people = await self.people_repository.list_all(limit)
         return [PersonResponse(**person.model_dump()) for person in people]
 
     async def check_email_exists(self, email: str) -> bool:
         """Check if an email address is already in use."""
-        return self.people_repository.email_exists(email)
+        return await self.people_repository.email_exists(email)
 
     async def update_admin_status(
         self, person_id: str, is_admin: bool
     ) -> Optional[PersonResponse]:
         """Update a person's admin status."""
-        person = self.people_repository.update_admin_status(person_id, is_admin)
+        person = await self.people_repository.update_admin_status(person_id, is_admin)
         if not person:
             return None
 
@@ -193,7 +193,7 @@ class PeopleService:
 
     async def activate_person(self, person_id: str) -> Optional[PersonResponse]:
         """Activate a person's account."""
-        person = self.people_repository.activate_person(person_id)
+        person = await self.people_repository.activate_person(person_id)
         if not person:
             return None
 
@@ -201,7 +201,7 @@ class PeopleService:
 
     async def deactivate_person(self, person_id: str) -> Optional[PersonResponse]:
         """Deactivate a person's account."""
-        person = self.people_repository.deactivate_person(person_id)
+        person = await self.people_repository.deactivate_person(person_id)
         if not person:
             return None
 
@@ -209,7 +209,7 @@ class PeopleService:
 
     async def unlock_account(self, person_id: str) -> dict:
         """Unlock a person's account."""
-        person = self.people_repository.activate_person(person_id)
+        person = await self.people_repository.activate_person(person_id)
         if not person:
             raise ValueError("Person not found")
 
