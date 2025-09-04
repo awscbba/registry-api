@@ -116,8 +116,14 @@ def create_app() -> FastAPI:
             },
         )
 
-        return create_error_response(
-            message="Request validation failed", details=exc.errors(), status_code=422
+        return JSONResponse(
+            status_code=422,
+            content={
+                "success": False,
+                "message": "Request validation failed",
+                "details": exc.errors(),
+                "version": "v2",
+            },
         )
 
     return app
