@@ -26,7 +26,9 @@ class LoginResponse(BaseModel):
 class TokenRefreshRequest(BaseModel):
     """Schema for token refresh request."""
 
-    refreshToken: str = Field(..., description="Refresh token")
+    refreshToken: str = Field(..., description="Refresh token", alias="refresh_token")
+
+    model_config = {"populate_by_name": True}  # Allow both field name and alias
 
 
 class PasswordChangeRequest(BaseModel):
