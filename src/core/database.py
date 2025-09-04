@@ -38,7 +38,7 @@ class DatabaseClient:
             logger.error(f"Error getting item from {table_name}: {e}")
             return None
 
-    async def put_item(self, table_name: str, item: Dict[str, Any]) -> bool:
+    def put_item(self, table_name: str, item: Dict[str, Any]) -> bool:
         """Put an item into DynamoDB."""
         try:
             table = self._get_table(table_name)

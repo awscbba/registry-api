@@ -48,7 +48,7 @@ class ProjectsRepository(BaseRepository[Project]):
 
         # Save to database
         try:
-            success = await db.put_item(self.table_name, db_item)
+            success = db.put_item(self.table_name, db_item)
             if not success:
                 raise Exception("Failed to create project in database")
         except Exception as e:
