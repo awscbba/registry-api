@@ -39,9 +39,18 @@ class ProjectsRepository(BaseRepository[Project]):
         )
 
         # Save to database
-        success = await db.put_item(self.table_name, db_item)
-        if not success:
-            raise Exception("Failed to create project in database")
+        try:
+            success = await db.put_item(self.table_name, db_item)
+            if not success:
+                raise Exception("Failed to create project in database")
+        except Exception as e:
+            # Log the actual error for debugging
+            import logging
+
+            logging.error(
+                f"DynamoDB put_item failed for table {self.table_name}: {str(e)}"
+            )
+            raise Exception(f"Failed to create project in database: {str(e)}")
 
         return Project(**db_item)
 

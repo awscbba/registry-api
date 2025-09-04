@@ -46,7 +46,11 @@ class DatabaseClient:
             return True
         except ClientError as e:
             logger.error(f"Error putting item to {table_name}: {e}")
-            return False
+            # Re-raise the error so we can see what's actually wrong
+            raise e
+        except Exception as e:
+            logger.error(f"Unexpected error putting item to {table_name}: {e}")
+            raise e
 
     async def update_item(
         self, table_name: str, key: Dict[str, Any], update_data: Dict[str, Any]
