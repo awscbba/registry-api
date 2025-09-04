@@ -17,18 +17,21 @@ class DatabaseClient:
 
     def __init__(self):
         self.dynamodb = boto3.resource("dynamodb", region_name=config.database.region)
-        self.tables = {
-            "people": self.dynamodb.Table(config.database.people_table),
-            "projects": self.dynamodb.Table(config.database.projects_table),
-            "subscriptions": self.dynamodb.Table(config.database.subscriptions_table),
-        }
+        # Cache for table objects to avoid recreating them
+        self._table_cache = {}
+
+    def _get_table(self, table_name: str):
+        """Get or create a table object with caching."""
+        if table_name not in self._table_cache:
+            self._table_cache[table_name] = self.dynamodb.Table(table_name)
+        return self._table_cache[table_name]
 
     async def get_item(
         self, table_name: str, key: Dict[str, Any]
     ) -> Optional[Dict[str, Any]]:
         """Get a single item from DynamoDB."""
         try:
-            table = self.tables[table_name]
+            table = self._get_table(table_name)
             response = table.get_item(Key=key)
             return response.get("Item")
         except ClientError as e:
@@ -38,7 +41,7 @@ class DatabaseClient:
     async def put_item(self, table_name: str, item: Dict[str, Any]) -> bool:
         """Put an item into DynamoDB."""
         try:
-            table = self.tables[table_name]
+            table = self._get_table(table_name)
             table.put_item(Item=item)
             return True
         except ClientError as e:
@@ -50,7 +53,7 @@ class DatabaseClient:
     ) -> bool:
         """Update an item in DynamoDB."""
         try:
-            table = self.tables[table_name]
+            table = self._get_table(table_name)
 
             # Build update expression
             update_expression = "SET "
@@ -82,7 +85,7 @@ class DatabaseClient:
     async def delete_item(self, table_name: str, key: Dict[str, Any]) -> bool:
         """Delete an item from DynamoDB."""
         try:
-            table = self.tables[table_name]
+            table = self._get_table(table_name)
             table.delete_item(Key=key)
             return True
         except ClientError as e:
@@ -94,7 +97,7 @@ class DatabaseClient:
     ) -> List[Dict[str, Any]]:
         """Scan a table and return all items."""
         try:
-            table = self.tables[table_name]
+            table = self._get_table(table_name)
 
             if limit:
                 response = table.scan(Limit=limit)
@@ -111,7 +114,7 @@ class DatabaseClient:
     ) -> List[Dict[str, Any]]:
         """Query a table by GSI."""
         try:
-            table = self.tables[table_name]
+            table = self._get_table(table_name)
 
             # Build key condition expression
             key_condition_expression = ""
