@@ -70,6 +70,21 @@ async def refresh_token(
 ):
     """Refresh access token using refresh token."""
     try:
+        # Log the refresh attempt for debugging
+        from ..services.logging_service import logging_service, LogLevel, LogCategory
+
+        logging_service.log_structured(
+            level=LogLevel.INFO,
+            category=LogCategory.AUTHENTICATION,
+            message="Token refresh attempt",
+            additional_data={
+                "has_refresh_token": bool(refresh_data.refreshToken),
+                "token_length": (
+                    len(refresh_data.refreshToken) if refresh_data.refreshToken else 0
+                ),
+            },
+        )
+
         result = await auth_service.refresh_access_token(refresh_data.refreshToken)
         if not result:
             raise HTTPException(
@@ -79,6 +94,13 @@ async def refresh_token(
     except HTTPException:
         raise
     except Exception as e:
+        # Log the error for debugging
+        logging_service.log_structured(
+            level=LogLevel.ERROR,
+            category=LogCategory.AUTHENTICATION,
+            message=f"Token refresh error: {str(e)}",
+            additional_data={"error": str(e)},
+        )
         raise HTTPException(status_code=500, detail=str(e))
 
 

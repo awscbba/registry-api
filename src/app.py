@@ -3,9 +3,10 @@ Main FastAPI application with clean, modular router architecture.
 No field mapping complexity - consistent camelCase throughout.
 """
 
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 
 from .core.config import config
 from .middleware.enterprise_middleware import (
@@ -93,6 +94,31 @@ def create_app() -> FastAPI:
     app.add_exception_handler(HTTPException, error_handler.handle_http_exception)
 
     app.add_exception_handler(Exception, error_handler.handle_generic_exception)
+
+    # Add validation error handler for debugging 422 errors
+    @app.exception_handler(RequestValidationError)
+    async def validation_exception_handler(
+        request: Request, exc: RequestValidationError
+    ):
+        """Handle validation errors with detailed logging."""
+        from .services.logging_service import logging_service, LogLevel, LogCategory
+
+        # Log validation error details
+        logging_service.log_structured(
+            level=LogLevel.WARNING,
+            category=LogCategory.API_ACCESS,
+            message=f"Validation error on {request.method} {request.url.path}",
+            additional_data={
+                "method": request.method,
+                "path": request.url.path,
+                "errors": exc.errors(),
+                "body": await request.body() if hasattr(request, "body") else None,
+            },
+        )
+
+        return create_error_response(
+            message="Request validation failed", details=exc.errors(), status_code=422
+        )
 
     return app
 
