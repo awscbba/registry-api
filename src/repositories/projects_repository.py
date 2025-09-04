@@ -38,6 +38,14 @@ class ProjectsRepository(BaseRepository[Project]):
             }
         )
 
+        # Remove None values as DynamoDB doesn't accept them
+        db_item = {k: v for k, v in db_item.items() if v is not None}
+
+        # Debug: Log the data being sent
+        import logging
+
+        logging.info(f"Sending to DynamoDB table {self.table_name}: {db_item}")
+
         # Save to database
         try:
             success = await db.put_item(self.table_name, db_item)
