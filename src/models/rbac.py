@@ -204,6 +204,8 @@ DEFAULT_ROLES: Dict[RoleType, Role] = {
             Permission.ROLE_READ,
             Permission.ROLE_ASSIGN,
             Permission.SYSTEM_MONITOR,
+            Permission.SYSTEM_AUDIT,  # Required for admin dashboard access
+            Permission.SECURITY_AUDIT,  # Required for admin security operations
         },
     ),
     RoleType.SUPER_ADMIN: Role(
