@@ -26,7 +26,7 @@ class DatabaseClient:
             self._table_cache[table_name] = self.dynamodb.Table(table_name)
         return self._table_cache[table_name]
 
-    async def get_item(
+    def get_item(
         self, table_name: str, key: Dict[str, Any]
     ) -> Optional[Dict[str, Any]]:
         """Get a single item from DynamoDB."""
@@ -52,7 +52,7 @@ class DatabaseClient:
             logger.error(f"Unexpected error putting item to {table_name}: {e}")
             raise e
 
-    async def update_item(
+    def update_item(
         self, table_name: str, key: Dict[str, Any], update_data: Dict[str, Any]
     ) -> bool:
         """Update an item in DynamoDB."""
@@ -86,7 +86,7 @@ class DatabaseClient:
             logger.error(f"Error updating item in {table_name}: {e}")
             return False
 
-    async def delete_item(self, table_name: str, key: Dict[str, Any]) -> bool:
+    def delete_item(self, table_name: str, key: Dict[str, Any]) -> bool:
         """Delete an item from DynamoDB."""
         try:
             table = self._get_table(table_name)
@@ -96,7 +96,7 @@ class DatabaseClient:
             logger.error(f"Error deleting item from {table_name}: {e}")
             return False
 
-    async def scan_table(
+    def scan_table(
         self, table_name: str, limit: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """Scan a table and return all items."""
@@ -113,7 +113,7 @@ class DatabaseClient:
             logger.error(f"Error scanning table {table_name}: {e}")
             return []
 
-    async def query_by_index(
+    def query_by_index(
         self, table_name: str, index_name: str, key_condition: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
         """Query a table by GSI."""

@@ -95,7 +95,7 @@ class PeopleRepository(BaseRepository[Person]):
         )
 
         # Save to database
-        success = db.put_item(self.table_name, db_item)
+        success = await db.put_item(self.table_name, db_item)
         if not success:
             logging_service.log_data_operation(
                 operation="create",
@@ -110,7 +110,7 @@ class PeopleRepository(BaseRepository[Person]):
 
     async def get_by_id(self, person_id: str) -> Optional[Person]:
         """Get a person by their ID."""
-        person_data = db.get_item(self.table_name, {"id": person_id})
+        person_data = await db.get_item(self.table_name, {"id": person_id})
         if not person_data:
             return None
 
@@ -122,7 +122,7 @@ class PeopleRepository(BaseRepository[Person]):
         email_lower = email.lower().strip()
 
         # Scan for person with matching email (case-insensitive)
-        all_people = db.scan_table(self.table_name)
+        all_people = await db.scan_table(self.table_name)
         for person_data in all_people:
             stored_email = person_data.get("email", "").lower().strip()
             if stored_email == email_lower:
@@ -135,7 +135,7 @@ class PeopleRepository(BaseRepository[Person]):
         email_lower = email.lower().strip()
 
         # Scan for person with matching email (case-insensitive)
-        all_people = db.scan_table(self.table_name)
+        all_people = await db.scan_table(self.table_name)
         for person_data in all_people:
             stored_email = person_data.get("email", "").lower().strip()
             if stored_email == email_lower:
@@ -155,7 +155,9 @@ class PeopleRepository(BaseRepository[Person]):
             update_data["updatedAt"] = datetime.utcnow().isoformat()
 
             # Update in database (no field conversion needed!)
-            success = db.update_item(self.table_name, {"id": person_id}, update_data)
+            success = await db.update_item(
+                self.table_name, {"id": person_id}, update_data
+            )
             if not success:
                 raise Exception("Failed to update person in database")
 
@@ -164,11 +166,11 @@ class PeopleRepository(BaseRepository[Person]):
 
     async def delete(self, person_id: str) -> bool:
         """Delete a person by their ID."""
-        return db.delete_item(self.table_name, {"id": person_id})
+        return await db.delete_item(self.table_name, {"id": person_id})
 
     async def list_all(self, limit: Optional[int] = None) -> List[Person]:
         """List all people with optional limit."""
-        people_data = db.scan_table(self.table_name, limit=limit)
+        people_data = await db.scan_table(self.table_name, limit=limit)
         return [Person(**person_data) for person_data in people_data]
 
     async def exists(self, person_id: str) -> bool:
