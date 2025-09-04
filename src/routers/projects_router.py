@@ -73,6 +73,7 @@ async def get_project(
         )
 
 
+@router.post("", response_model=dict, status_code=201)
 @router.post("/", response_model=dict, status_code=201)
 async def create_project(
     project_data: ProjectCreate,
