@@ -16,7 +16,9 @@ class PeopleRepository(BaseRepository[Person]):
     """Repository for people/users data access operations."""
 
     def __init__(self):
-        self.table_name = "people"
+        from ..core.config import config
+
+        self.table_name = config.database.people_table
 
     async def create(self, person_data: PersonCreate) -> Person:
         """Create a new person in the database with input validation."""

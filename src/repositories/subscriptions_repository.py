@@ -16,7 +16,9 @@ class SubscriptionsRepository(BaseRepository[Subscription]):
     """Repository for subscriptions data access operations."""
 
     def __init__(self):
-        self.table_name = "subscriptions"
+        from ..core.config import config
+
+        self.table_name = config.database.subscriptions_table
 
     async def create(self, subscription_data: SubscriptionCreate) -> Subscription:
         """Create a new subscription in the database."""
