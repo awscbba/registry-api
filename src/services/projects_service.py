@@ -23,10 +23,7 @@ class ProjectsService:
 
     async def create_project(self, project_data: ProjectCreate) -> ProjectResponse:
         """Create a new project with business validation."""
-        # Business validation
-        if project_data.endDate <= project_data.startDate:
-            raise ValueError("End date must be after start date")
-
+        # Business validation (dates are already validated by Pydantic model)
         if project_data.maxParticipants <= 0:
             raise ValueError("Maximum participants must be greater than 0")
 
