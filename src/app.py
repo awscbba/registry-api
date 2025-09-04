@@ -121,6 +121,7 @@ def create_app() -> FastAPI:
             content={
                 "success": False,
                 "message": "Request validation failed",
+                "detail": exc.errors(),
                 "details": exc.errors(),
                 "version": "v2",
             },
