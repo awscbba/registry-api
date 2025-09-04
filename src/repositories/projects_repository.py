@@ -16,7 +16,9 @@ class ProjectsRepository(BaseRepository[Project]):
     """Repository for projects data access operations."""
 
     def __init__(self):
-        self.table_name = "projects"
+        from ..core.config import config
+
+        self.table_name = config.database.projects_table_v2
 
     async def create(self, project_data: ProjectCreate) -> Project:
         """Create a new project in the database."""
