@@ -31,9 +31,9 @@ class AdminService:
         """Get basic dashboard data."""
         try:
             # Get counts
-            people = self.people_repository.list_all()
-            projects = self.projects_repository.list_all()
-            subscriptions = self.subscriptions_repository.list_all()
+            people = await self.people_repository.list_all()
+            projects = await self.projects_repository.list_all()
+            subscriptions = await self.subscriptions_repository.list_all()
 
             # Calculate basic stats - handle missing attributes safely
             active_people = len([p for p in people if getattr(p, "isActive", True)])
@@ -61,12 +61,12 @@ class AdminService:
     async def get_enhanced_dashboard_data(self) -> Dict[str, Any]:
         """Get enhanced dashboard data with more detailed analytics."""
         try:
-            basic_data = self.get_dashboard_data()
+            basic_data = await self.get_dashboard_data()
 
             # Get additional analytics
-            people = self.people_repository.list_all()
-            projects = self.projects_repository.list_all()
-            subscriptions = self.subscriptions_repository.list_all()
+            people = await self.people_repository.list_all()
+            projects = await self.projects_repository.list_all()
+            subscriptions = await self.subscriptions_repository.list_all()
 
             # Calculate enhanced stats - handle missing attributes safely
             admin_count = len([p for p in people if getattr(p, "isAdmin", False)])
@@ -114,9 +114,9 @@ class AdminService:
     async def get_analytics_data(self) -> Dict[str, Any]:
         """Get detailed analytics data."""
         try:
-            people = self.people_repository.list_all()
-            projects = self.projects_repository.list_all()
-            subscriptions = self.subscriptions_repository.list_all()
+            people = await self.people_repository.list_all()
+            projects = await self.projects_repository.list_all()
+            subscriptions = await self.subscriptions_repository.list_all()
 
             # User analytics
             user_analytics = {
@@ -192,11 +192,11 @@ class AdminService:
             for user_id in user_ids:
                 try:
                     if action == "activate":
-                        self.people_repository.activate_person(user_id)
+                        await self.people_repository.activate_person(user_id)
                     elif action == "deactivate":
-                        self.people_repository.deactivate_person(user_id)
+                        await self.people_repository.deactivate_person(user_id)
                     elif action == "delete":
-                        self.people_repository.delete(user_id)
+                        await self.people_repository.delete(user_id)
                     else:
                         raise ValidationException(
                             message=f"Unknown bulk action: {action}",
