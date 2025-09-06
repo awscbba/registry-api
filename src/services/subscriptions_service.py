@@ -16,10 +16,12 @@ from ..models.subscription import (
 class SubscriptionsService:
     """Service for subscription business logic."""
 
-    def __init__(self):
-        self.subscriptions_repository = SubscriptionsRepository()
+    def __init__(self, subscriptions_repository: SubscriptionsRepository = None):
+        self.subscriptions_repository = (
+            subscriptions_repository or SubscriptionsRepository()
+        )
 
-    async def create_subscription(
+    def create_subscription(
         self, subscription_data: SubscriptionCreate
     ) -> SubscriptionResponse:
         """Create a new subscription."""
@@ -36,9 +38,7 @@ class SubscriptionsService:
         # Convert to response format
         return SubscriptionResponse(**subscription.model_dump())
 
-    async def get_subscription(
-        self, subscription_id: str
-    ) -> Optional[SubscriptionResponse]:
+    def get_subscription(self, subscription_id: str) -> Optional[SubscriptionResponse]:
         """Get a subscription by ID."""
         subscription = self.subscriptions_repository.get_by_id(subscription_id)
         if not subscription:
@@ -46,28 +46,24 @@ class SubscriptionsService:
 
         return SubscriptionResponse(**subscription.model_dump())
 
-    async def list_subscriptions(
+    def list_subscriptions(
         self, limit: Optional[int] = None
     ) -> List[SubscriptionResponse]:
         """List all subscriptions."""
         subscriptions = self.subscriptions_repository.list_all(limit=limit)
         return [SubscriptionResponse(**sub.model_dump()) for sub in subscriptions]
 
-    async def get_person_subscriptions(
-        self, person_id: str
-    ) -> List[SubscriptionResponse]:
+    def get_person_subscriptions(self, person_id: str) -> List[SubscriptionResponse]:
         """Get all subscriptions for a person."""
         subscriptions = self.subscriptions_repository.get_by_person(person_id)
         return [SubscriptionResponse(**sub.model_dump()) for sub in subscriptions]
 
-    async def get_project_subscriptions(
-        self, project_id: str
-    ) -> List[SubscriptionResponse]:
+    def get_project_subscriptions(self, project_id: str) -> List[SubscriptionResponse]:
         """Get all subscriptions for a project."""
         subscriptions = self.subscriptions_repository.get_by_project(project_id)
         return [SubscriptionResponse(**sub.model_dump()) for sub in subscriptions]
 
-    async def update_subscription(
+    def update_subscription(
         self, subscription_id: str, updates: SubscriptionUpdate
     ) -> Optional[SubscriptionResponse]:
         """Update a subscription."""
@@ -77,10 +73,10 @@ class SubscriptionsService:
 
         return SubscriptionResponse(**subscription.model_dump())
 
-    async def delete_subscription(self, subscription_id: str) -> bool:
+    def delete_subscription(self, subscription_id: str) -> bool:
         """Delete a subscription."""
         return self.subscriptions_repository.delete(subscription_id)
 
-    async def check_subscription_exists(self, person_id: str, project_id: str) -> bool:
+    def check_subscription_exists(self, person_id: str, project_id: str) -> bool:
         """Check if a subscription exists for a person and project."""
         return self.subscriptions_repository.subscription_exists(person_id, project_id)

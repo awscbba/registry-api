@@ -4,7 +4,7 @@ Tests for subscriptions router.
 
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock, patch
+from unittest.mock import Mock, patch
 
 from src.app import app
 from src.models.subscription import SubscriptionResponse
@@ -22,7 +22,7 @@ class TestSubscriptionsRouter:
     def test_list_subscriptions_empty(self, mock_service_class):
         """Test listing subscriptions when none exist."""
         # Mock service
-        mock_service = AsyncMock()
+        mock_service = Mock()
         mock_service.list_subscriptions.return_value = []
         mock_service_class.return_value = mock_service
 
@@ -39,7 +39,7 @@ class TestSubscriptionsRouter:
     def test_list_subscriptions_with_data(self, mock_service_registry):
         """Test listing subscriptions with data."""
         # Mock service
-        mock_service = AsyncMock()
+        mock_service = Mock()
         mock_service.list_subscriptions.return_value = [
             {
                 "id": "123",
@@ -69,7 +69,7 @@ class TestSubscriptionsRouter:
     def test_get_subscription_not_found(self, mock_service_class):
         """Test getting a subscription that doesn't exist."""
         # Mock service
-        mock_service = AsyncMock()
+        mock_service = Mock()
         mock_service.get_subscription.return_value = None
         mock_service_class.return_value = mock_service
 
@@ -83,7 +83,7 @@ class TestSubscriptionsRouter:
     def test_create_subscription_validation(self, mock_service_class):
         """Test creating a subscription with invalid data."""
         # Mock service
-        mock_service = AsyncMock()
+        mock_service = Mock()
         mock_service_class.return_value = mock_service
 
         # Test invalid data
@@ -101,7 +101,7 @@ class TestSubscriptionsRouter:
     def test_create_subscription_success(self, mock_service_registry):
         """Test creating a subscription successfully."""
         # Mock service
-        mock_service = AsyncMock()
+        mock_service = Mock()
         mock_service.create_subscription.return_value = {
             "id": "123",
             "personId": "person-1",

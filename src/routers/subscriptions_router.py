@@ -27,7 +27,7 @@ async def list_subscriptions(
 ):
     """List all subscriptions."""
     try:
-        subscriptions = await subscriptions_service.list_subscriptions(limit=limit)
+        subscriptions = subscriptions_service.list_subscriptions(limit=limit)
         return create_success_response(subscriptions)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -40,7 +40,7 @@ async def get_subscription(
 ):
     """Get a subscription by ID."""
     try:
-        subscription = await subscriptions_service.get_subscription(subscription_id)
+        subscription = subscriptions_service.get_subscription(subscription_id)
         if not subscription:
             raise HTTPException(status_code=404, detail="Subscription not found")
 
@@ -58,9 +58,7 @@ async def create_subscription(
 ):
     """Create a new subscription."""
     try:
-        subscription = await subscriptions_service.create_subscription(
-            subscription_data
-        )
+        subscription = subscriptions_service.create_subscription(subscription_data)
         return create_success_response(subscription)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -76,7 +74,7 @@ async def update_subscription(
 ):
     """Update a subscription."""
     try:
-        subscription = await subscriptions_service.update_subscription(
+        subscription = subscriptions_service.update_subscription(
             subscription_id, updates
         )
         if not subscription:
@@ -96,7 +94,7 @@ async def delete_subscription(
 ):
     """Delete a subscription."""
     try:
-        success = await subscriptions_service.delete_subscription(subscription_id)
+        success = subscriptions_service.delete_subscription(subscription_id)
         if not success:
             raise HTTPException(status_code=404, detail="Subscription not found")
 
@@ -122,9 +120,7 @@ async def check_subscription_exists(
                 status_code=400, detail="personId and projectId are required"
             )
 
-        exists = await subscriptions_service.check_subscription_exists(
-            person_id, project_id
-        )
+        exists = subscriptions_service.check_subscription_exists(person_id, project_id)
         return create_success_response({"exists": exists})
     except HTTPException:
         raise
@@ -139,7 +135,7 @@ async def get_person_subscriptions(
 ):
     """Get all subscriptions for a person."""
     try:
-        subscriptions = await subscriptions_service.get_person_subscriptions(person_id)
+        subscriptions = subscriptions_service.get_person_subscriptions(person_id)
         return create_success_response(subscriptions)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -152,9 +148,7 @@ async def get_project_subscriptions(
 ):
     """Get all subscriptions for a project."""
     try:
-        subscriptions = await subscriptions_service.get_project_subscriptions(
-            project_id
-        )
+        subscriptions = subscriptions_service.get_project_subscriptions(project_id)
         return create_success_response(subscriptions)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

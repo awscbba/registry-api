@@ -48,7 +48,9 @@ class ServiceRegistryManager:
         # Initialize services with dependency injection
         self._services["people"] = PeopleService(self._repositories["people"])
         self._services["projects"] = ProjectsService(self._repositories["projects"])
-        self._services["subscriptions"] = SubscriptionsService()
+        self._services["subscriptions"] = SubscriptionsService(
+            self._repositories["subscriptions"]
+        )
         self._services["auth"] = AuthService()
         self._services["admin"] = AdminService()
 
