@@ -194,19 +194,19 @@ class PerformanceService:
         # Check database connectivity
         try:
             # Test people repository
-            people_health = self._check_repository_health(
+            people_health = await self._check_repository_health(
                 self.people_repository, "people"
             )
             components["database_people"] = people_health
 
             # Test projects repository
-            projects_health = self._check_repository_health(
+            projects_health = await self._check_repository_health(
                 self.projects_repository, "projects"
             )
             components["database_projects"] = projects_health
 
             # Test subscriptions repository
-            subscriptions_health = self._check_repository_health(
+            subscriptions_health = await self._check_repository_health(
                 self.subscriptions_repository, "subscriptions"
             )
             components["database_subscriptions"] = subscriptions_health
