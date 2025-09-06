@@ -103,7 +103,7 @@ class RBACService:
 
         try:
             # Get user roles
-            user_roles = self.get_user_roles(user_id)
+            user_roles = await self.get_user_roles(user_id)
 
             # Check permission
             has_perm = has_permission(user_roles, permission)
@@ -216,7 +216,7 @@ class RBACService:
 
         try:
             # Get assigner's roles
-            assigner_roles = self.get_user_roles(assigned_by)
+            assigner_roles = await self.get_user_roles(assigned_by)
 
             # Check if assigner can assign this role
             if not can_assign_role(assigner_roles, request.role_type):
@@ -233,7 +233,7 @@ class RBACService:
                 )
 
             # Check if role already assigned
-            existing_roles = self.get_user_roles(target_user.id)
+            existing_roles = await self.get_user_roles(target_user.id)
             if request.role_type in existing_roles:
                 raise BusinessLogicException(
                     message=f"User already has role {request.role_type.value}",
@@ -315,7 +315,7 @@ class RBACService:
 
         try:
             # Get revoker's roles
-            revoker_roles = self.get_user_roles(revoked_by)
+            revoker_roles = await self.get_user_roles(revoked_by)
 
             # Check if revoker can revoke this role
             if not can_assign_role(revoker_roles, role_type):
@@ -383,12 +383,12 @@ class RBACService:
 
     async def user_is_admin(self, user_id: str) -> bool:
         """Check if user has admin privileges."""
-        user_roles = self.get_user_roles(user_id)
+        user_roles = await self.get_user_roles(user_id)
         return any(is_admin_role(role) for role in user_roles)
 
     async def user_is_super_admin(self, user_id: str) -> bool:
         """Check if user has super admin privileges."""
-        user_roles = self.get_user_roles(user_id)
+        user_roles = await self.get_user_roles(user_id)
         return any(is_super_admin_role(role) for role in user_roles)
 
     async def get_all_roles(self) -> Dict[str, Any]:

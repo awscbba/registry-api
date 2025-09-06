@@ -34,7 +34,7 @@ class TestProjectsRepository:
         assert "Table" in repo.table_name or "table" in repo.table_name
 
     @patch("src.core.database.db.put_item")
-    async def test_create_project_uses_repository_table_name(self, mock_put_item):
+    def test_create_project_uses_repository_table_name(self, mock_put_item):
         """Test that create method uses the repository's configured table name."""
         mock_put_item.return_value = True
 
@@ -55,7 +55,7 @@ class TestProjectsRepository:
             requirements="None",
         )
 
-        await repo.create(project_data)
+        repo.create(project_data)
 
         # Verify put_item was called with the repository's table name
         mock_put_item.assert_called_once()
