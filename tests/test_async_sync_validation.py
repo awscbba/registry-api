@@ -61,8 +61,8 @@ class TestAsyncSyncConsistency:
         assert isinstance(subs_service, SubscriptionsService)
 
         # Test service has repository dependency
-        assert hasattr(subs_service, "repository")
-        assert subs_service.repository is not None
+        assert hasattr(subs_service, "subscriptions_repository")
+        assert subs_service.subscriptions_repository is not None
 
     @patch(
         "src.repositories.subscriptions_repository.SubscriptionsRepository.list_subscriptions"
@@ -72,8 +72,8 @@ class TestAsyncSyncConsistency:
         mock_repo_method.return_value = []
 
         service = SubscriptionsService(Mock())
-        service.repository = Mock()
-        service.repository.list_subscriptions = mock_repo_method
+        service.subscriptions_repository = Mock()
+        service.subscriptions_repository.list_subscriptions = mock_repo_method
 
         # This should not raise any async-related errors
         result = service.list_subscriptions()
@@ -130,8 +130,8 @@ class TestRegressionPrevention:
         subs_service = service_registry.get_subscriptions_service()
 
         # Test service has required attributes
-        assert hasattr(subs_service, "repository")
-        assert subs_service.repository is not None
+        assert hasattr(subs_service, "subscriptions_repository")
+        assert subs_service.subscriptions_repository is not None
 
         # Test service methods are callable
         assert callable(subs_service.list_subscriptions)
