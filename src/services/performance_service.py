@@ -79,10 +79,10 @@ class PerformanceService:
             start_time = time.time()
 
             # Collect system metrics
-            metrics = self._collect_system_metrics()
+            metrics = await self._collect_system_metrics()
 
             # Check component health
-            components = self._check_component_health()
+            components = await self._check_component_health()
 
             # Calculate overall health score
             overall_score = self._calculate_health_score(components, metrics)

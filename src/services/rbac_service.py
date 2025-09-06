@@ -110,7 +110,7 @@ class RBACService:
 
             # Additional context-based checks
             if has_perm and resource_id:
-                has_perm = self._check_resource_access(
+                has_perm = await self._check_resource_access(
                     user_id, user_roles, permission, resource_id
                 )
 
@@ -171,7 +171,9 @@ class RBACService:
 
         # Check ownership for "own" permissions
         if "own" in permission.value:
-            return self._check_resource_ownership(user_id, permission, resource_id)
+            return await self._check_resource_ownership(
+                user_id, permission, resource_id
+            )
 
         return True
 

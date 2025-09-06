@@ -61,7 +61,7 @@ class AdminService:
     async def get_enhanced_dashboard_data(self) -> Dict[str, Any]:
         """Get enhanced dashboard data with more detailed analytics."""
         try:
-            basic_data = self.get_dashboard_data()
+            basic_data = await self.get_dashboard_data()
 
             # Get additional analytics
             people = self.people_repository.list_all()
