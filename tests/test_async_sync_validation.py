@@ -64,28 +64,24 @@ class TestAsyncSyncConsistency:
         assert hasattr(subs_service, "subscriptions_repository")
         assert subs_service.subscriptions_repository is not None
 
-    @patch(
-        "src.repositories.subscriptions_repository.SubscriptionsRepository.list_subscriptions"
-    )
-    def test_service_calls_repository_without_await(self, mock_repo_method):
+    def test_service_calls_repository_without_await(self):
         """Test that service calls repository methods without await."""
-        mock_repo_method.return_value = []
+        mock_repo = Mock()
+        mock_repo.list_all.return_value = []
 
-        service = SubscriptionsService(Mock())
-        service.subscriptions_repository = Mock()
-        service.subscriptions_repository.list_subscriptions = mock_repo_method
+        service = SubscriptionsService(mock_repo)
 
         # This should not raise any async-related errors
         result = service.list_subscriptions()
 
-        mock_repo_method.assert_called_once()
+        mock_repo.list_all.assert_called_once()
         assert result == []
 
     def test_no_coroutine_objects_in_responses(self):
         """Test that service methods don't return coroutine objects."""
         mock_repo = Mock()
-        mock_repo.list_subscriptions.return_value = []
-        mock_repo.get_subscription.return_value = None
+        mock_repo.list_all.return_value = []
+        mock_repo.get_by_id.return_value = None
 
         service = SubscriptionsService(mock_repo)
 
@@ -174,13 +170,25 @@ class TestCriticalPathValidation:
         common_methods = set(service_methods) & set(repo_methods)
 
         # Should have at least basic CRUD methods in common
-        expected_common = {
+        service_crud_methods = {
             "list_subscriptions",
             "get_subscription",
             "create_subscription",
         }
-        actual_common = expected_common & common_methods
+        repo_crud_methods = {
+            "list_all",
+            "get_by_id",
+            "create",
+        }
 
+        # Verify service has its expected methods
+        actual_service_methods = set(service_methods) & service_crud_methods
         assert (
-            len(actual_common) >= 3
-        ), f"Missing common methods: {expected_common - actual_common}"
+            len(actual_service_methods) >= 3
+        ), f"Service missing methods: {service_crud_methods - actual_service_methods}"
+
+        # Verify repo has its expected methods
+        actual_repo_methods = set(repo_methods) & repo_crud_methods
+        assert (
+            len(actual_repo_methods) >= 3
+        ), f"Repository missing methods: {repo_crud_methods - actual_repo_methods}"
