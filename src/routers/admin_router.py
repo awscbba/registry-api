@@ -21,6 +21,7 @@ from ..exceptions.base_exceptions import (
     ValidationException,
     AuthorizationException,
     DatabaseException,
+    BusinessLogicException,
 )
 from ..models.auth import User
 from ..models.person import PersonCreate, PersonUpdate, PersonResponse
@@ -303,6 +304,15 @@ async def delete_user(
         return create_success_response({"deleted": True, "userId": user_id})
     except HTTPException:
         raise
+    except BusinessLogicException as e:
+        # Handle business logic violations with user-friendly messages
+        if "active subscriptions" in e.message.lower():
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot delete user who has active project subscriptions. Please cancel their subscriptions first, then try again.",
+            )
+        else:
+            raise HTTPException(status_code=400, detail=e.message)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
