@@ -117,13 +117,11 @@ class PeopleService:
             subscriptions_service = get_subscriptions_service()
 
             # Get user's subscriptions
-            subscriptions = await subscriptions_service.get_subscriptions_by_person(
-                person_id
-            )
+            subscriptions = subscriptions_service.get_person_subscriptions(person_id)
             active_subscriptions = [
                 sub
                 for sub in subscriptions
-                if sub.get("status", "").lower() in ["active", "pending"]
+                if sub.status.lower() in ["active", "pending"]
             ]
 
             if active_subscriptions:
@@ -176,6 +174,78 @@ class PeopleService:
         """List all people."""
         people = self.people_repository.list_all(limit)
         return [PersonResponse(**person.model_dump()) for person in people]
+
+    async def list_people_paginated(
+        self,
+        page: int = 1,
+        page_size: int = 10,
+        sort_by: Optional[str] = None,
+        sort_direction: str = "asc",
+        search: Optional[str] = None,
+        filters: Optional[dict] = None,
+    ) -> tuple[List[PersonResponse], int]:
+        """
+        List people with enterprise pagination, sorting, and filtering.
+
+        Returns:
+            tuple: (people_responses, total_count)
+        """
+        from ..services.logging_service import logging_service, LogCategory, LogLevel
+
+        # Log pagination request
+        logging_service.log_structured(
+            level=LogLevel.INFO,
+            category=LogCategory.USER_OPERATIONS,
+            message="Paginated people list requested",
+            additional_data={
+                "page": page,
+                "page_size": page_size,
+                "sort_by": sort_by,
+                "sort_direction": sort_direction,
+                "has_search": search is not None,
+                "has_filters": filters is not None and len(filters) > 0,
+            },
+        )
+
+        try:
+            people, total_count = self.people_repository.list_paginated(
+                page=page,
+                page_size=page_size,
+                sort_by=sort_by,
+                sort_direction=sort_direction,
+                search=search,
+                filters=filters,
+            )
+
+            # Convert to response format
+            people_responses = [
+                PersonResponse(**person.model_dump()) for person in people
+            ]
+
+            # Log successful pagination
+            logging_service.log_structured(
+                level=LogLevel.INFO,
+                category=LogCategory.USER_OPERATIONS,
+                message="Paginated people list retrieved successfully",
+                additional_data={
+                    "page": page,
+                    "page_size": page_size,
+                    "returned_items": len(people_responses),
+                    "total_items": total_count,
+                },
+            )
+
+            return people_responses, total_count
+
+        except Exception as e:
+            # Log pagination error
+            logging_service.log_structured(
+                level=LogLevel.ERROR,
+                category=LogCategory.ERROR_HANDLING,
+                message=f"Paginated people list failed: {str(e)}",
+                additional_data={"page": page, "page_size": page_size, "error": str(e)},
+            )
+            raise
 
     async def check_email_exists(self, email: str) -> bool:
         """Check if an email address is already in use."""

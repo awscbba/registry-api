@@ -171,6 +171,93 @@ class PeopleRepository(BaseRepository[Person]):
         people_data = db.scan_table(self.table_name, limit=limit)
         return [Person(**person_data) for person_data in people_data]
 
+    def list_paginated(
+        self,
+        page: int = 1,
+        page_size: int = 10,
+        sort_by: Optional[str] = None,
+        sort_direction: str = "asc",
+        search: Optional[str] = None,
+        filters: Optional[dict] = None,
+    ) -> tuple[List[Person], int]:
+        """
+        List people with pagination, sorting, and filtering.
+
+        Returns:
+            tuple: (people_list, total_count)
+        """
+        # Get all people data
+        all_people_data = db.scan_table(self.table_name)
+
+        # Apply search filter
+        if search:
+            search_lower = search.lower().strip()
+            filtered_data = []
+            for person_data in all_people_data:
+                if (
+                    search_lower in person_data.get("firstName", "").lower()
+                    or search_lower in person_data.get("lastName", "").lower()
+                    or search_lower in person_data.get("email", "").lower()
+                ):
+                    filtered_data.append(person_data)
+            all_people_data = filtered_data
+
+        # Apply additional filters
+        if filters:
+            filtered_data = []
+            for person_data in all_people_data:
+                include_item = True
+
+                # Filter by admin status
+                if "isAdmin" in filters and filters["isAdmin"] is not None:
+                    if person_data.get("isAdmin", False) != filters["isAdmin"]:
+                        include_item = False
+
+                # Filter by active status
+                if "isActive" in filters and filters["isActive"] is not None:
+                    if person_data.get("isActive", True) != filters["isActive"]:
+                        include_item = False
+
+                # Filter by email verification
+                if "emailVerified" in filters and filters["emailVerified"] is not None:
+                    if (
+                        person_data.get("emailVerified", False)
+                        != filters["emailVerified"]
+                    ):
+                        include_item = False
+
+                if include_item:
+                    filtered_data.append(person_data)
+
+            all_people_data = filtered_data
+
+        # Apply sorting
+        if sort_by:
+            reverse_sort = sort_direction.lower() == "desc"
+            try:
+                all_people_data.sort(
+                    key=lambda x: x.get(sort_by, ""), reverse=reverse_sort
+                )
+            except (TypeError, KeyError):
+                # Fallback to default sorting if sort field is invalid
+                all_people_data.sort(key=lambda x: x.get("firstName", ""))
+        else:
+            # Default sort by firstName
+            all_people_data.sort(key=lambda x: x.get("firstName", ""))
+
+        # Calculate pagination
+        total_count = len(all_people_data)
+        start_index = (page - 1) * page_size
+        end_index = start_index + page_size
+
+        # Get page data
+        page_data = all_people_data[start_index:end_index]
+
+        # Convert to Person objects
+        people = [Person(**person_data) for person_data in page_data]
+
+        return people, total_count
+
     def exists(self, person_id: str) -> bool:
         """Check if a person exists."""
         person = self.get_by_id(person_id)

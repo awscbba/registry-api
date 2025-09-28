@@ -130,6 +130,57 @@ async def list_users(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/users/paginated", response_model=dict)
+async def list_users_paginated(
+    page: int = Query(1, ge=1, description="Page number (1-based)"),
+    pageSize: int = Query(10, ge=1, le=100, description="Items per page (max 100)"),
+    sortBy: Optional[str] = Query(None, description="Field to sort by"),
+    sortDirection: str = Query(
+        "asc", pattern="^(asc|desc)$", description="Sort direction"
+    ),
+    search: Optional[str] = Query(None, description="Search term"),
+    isAdmin: Optional[bool] = Query(None, description="Filter by admin status"),
+    isActive: Optional[bool] = Query(None, description="Filter by active status"),
+    emailVerified: Optional[bool] = Query(
+        None, description="Filter by email verification"
+    ),
+    current_user: User = Depends(require_admin),
+    people_service: PeopleService = Depends(get_people_service),
+):
+    """List users with enterprise pagination, sorting, and filtering."""
+    try:
+        from ..models.pagination import PaginatedResponse
+
+        # Build filters
+        filters = {}
+        if isAdmin is not None:
+            filters["isAdmin"] = isAdmin
+        if isActive is not None:
+            filters["isActive"] = isActive
+        if emailVerified is not None:
+            filters["emailVerified"] = emailVerified
+
+        # Get paginated results
+        users, total_count = await people_service.list_people_paginated(
+            page=page,
+            page_size=pageSize,
+            sort_by=sortBy,
+            sort_direction=sortDirection,
+            search=search,
+            filters=filters if filters else None,
+        )
+
+        # Create paginated response
+        paginated_response = PaginatedResponse.create(
+            items=users, total_items=total_count, page=page, page_size=pageSize
+        )
+
+        return create_success_response(paginated_response.model_dump())
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/users/{user_id}", response_model=dict)
 async def get_user(
     user_id: str,
@@ -245,7 +296,7 @@ async def delete_user(
 ):
     """Delete user (admin endpoint)."""
     try:
-        success = await people_service.delete_person(user_id)
+        success = await people_service.delete_person(user_id, current_user.id)
         if not success:
             raise HTTPException(status_code=404, detail="User not found")
 
