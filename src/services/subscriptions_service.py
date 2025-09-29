@@ -66,10 +66,67 @@ class SubscriptionsService:
     def update_subscription(
         self, subscription_id: str, updates: SubscriptionUpdate
     ) -> Optional[SubscriptionResponse]:
-        """Update a subscription."""
+        """Update a subscription and send welcome email if approved."""
+        # Get current subscription to check status change
+        current_subscription = self.subscriptions_repository.get_by_id(subscription_id)
+        if not current_subscription:
+            return None
+
+        # Update the subscription
         subscription = self.subscriptions_repository.update(subscription_id, updates)
         if not subscription:
             return None
+
+        # Check if status changed from pending to active (approval)
+        if current_subscription.status == "pending" and updates.status == "active":
+
+            # Send welcome email asynchronously
+            import asyncio
+            from ..services.service_registry_manager import (
+                get_email_service,
+                get_people_service,
+                get_projects_service,
+            )
+
+            async def send_welcome_email():
+                try:
+                    email_service = get_email_service()
+                    people_service = get_people_service()
+                    projects_service = get_projects_service()
+
+                    # Get person and project details
+                    person = await people_service.get_person(subscription.personId)
+                    project = await projects_service.get_project(subscription.projectId)
+
+                    if person and project:
+                        await email_service.send_project_welcome_email(
+                            person.email, person.firstName, project.name
+                        )
+                except Exception as e:
+                    # Log error but don't fail the subscription update
+                    from ..services.logging_service import (
+                        logging_service,
+                        LogCategory,
+                        LogLevel,
+                    )
+
+                    logging_service.log(
+                        LogLevel.ERROR,
+                        LogCategory.BUSINESS_LOGIC,
+                        "Failed to send welcome email on subscription approval",
+                        event_type="welcome_email_failed",
+                        details={"subscription_id": subscription_id, "error": str(e)},
+                    )
+
+            # Run email sending in background
+            try:
+                asyncio.create_task(send_welcome_email())
+            except Exception:
+                # If we can't create task, try to run it directly
+                try:
+                    asyncio.run(send_welcome_email())
+                except Exception:
+                    pass  # Fail silently to not break subscription update
 
         return SubscriptionResponse(**subscription.model_dump())
 
