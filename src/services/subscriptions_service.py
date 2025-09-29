@@ -95,7 +95,9 @@ class SubscriptionsService:
                     projects_service = get_projects_service()
 
                     # Get person and project details
-                    person = await people_service.get_person(subscription.personId)
+                    person = people_service.get_person(
+                        subscription.personId
+                    )  # Not async
                     project = await projects_service.get_project(subscription.projectId)
 
                     if person and project:
