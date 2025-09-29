@@ -78,6 +78,14 @@ scripts/quick_*.py
 *.log
 logs/
 
+# Backup files
+*.bak
+*.bak*
+*.orig
+*.tmp
+*.temp
+*~
+
 # OS
 .DS_Store
 Thumbs.db
