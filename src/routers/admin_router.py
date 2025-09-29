@@ -278,7 +278,7 @@ async def update_user(
 ):
     """Update user (admin endpoint)."""
     try:
-        user = await people_service.update_person(user_id, user_data)
+        user = people_service.update_person(user_id, user_data)
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
@@ -356,7 +356,7 @@ async def edit_admin_person(
 ):
     """Edit person (admin endpoint)."""
     try:
-        person = await people_service.update_person(person_id, person_data)
+        person = people_service.update_person(person_id, person_data)
         if not person:
             raise HTTPException(status_code=404, detail="Person not found")
 

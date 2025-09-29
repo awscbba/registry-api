@@ -81,7 +81,7 @@ class PeopleService:
 
         return PersonResponse(**person.model_dump())
 
-    async def update_person(
+    def update_person(
         self, person_id: str, updates: PersonUpdate
     ) -> Optional[PersonResponse]:
         """Update a person with business validation."""

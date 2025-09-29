@@ -83,7 +83,7 @@ async def update_person(
 ) -> dict:
     """Update an existing person."""
     try:
-        person = await people_service.update_person(person_id, person_data)
+        person = people_service.update_person(person_id, person_data)
 
         if not person:
             raise HTTPException(status_code=404, detail="Person not found")
