@@ -83,21 +83,28 @@ async def public_subscribe(
                     detail=f"You are already subscribed to this project. Please check your email for project updates.",
                 )
 
-            # For existing users, create active subscription and send welcome email
+            # For existing users, create PENDING subscription (admin approval required)
             subscription_create = SubscriptionCreate(
                 personId=person_id,
                 projectId=subscription_data.projectId,
-                status="active",  # Existing users get immediate active subscription
+                status="pending",  # ALL public subscriptions need admin approval
             )
             subscription = subscriptions_service.create_subscription(
                 subscription_create
             )
 
-            # Send welcome email to existing user
-            email_result = await email_service.send_project_welcome_email(
+            # Send pending approval email to existing user
+            email_result = await email_service.send_subscription_pending_email(
                 subscription_data.email, existing_person.firstName, project_name
             )
             email_sent = email_result.get("success", False)
+
+            # Send admin notification email
+            await email_service.send_admin_notification_email(
+                subscription_data.email,
+                f"{existing_person.firstName} {existing_person.lastName}",
+                project_name,
+            )
 
         else:
             # Create new person
@@ -165,23 +172,32 @@ async def public_subscribe(
                                 detail=f"You are already subscribed to this project. Please check your email for project updates.",
                             )
 
-                        # Create active subscription for existing user (race condition case)
+                        # Create pending subscription for existing user (race condition case)
                         subscription_create = SubscriptionCreate(
                             personId=person_id,
                             projectId=subscription_data.projectId,
-                            status="active",
+                            status="pending",  # ALL public subscriptions need admin approval
                         )
                         subscription = subscriptions_service.create_subscription(
                             subscription_create
                         )
 
-                        # Send welcome email
-                        email_result = await email_service.send_project_welcome_email(
-                            subscription_data.email,
-                            existing_person.firstName,
-                            project_name,
+                        # Send pending approval email
+                        email_result = (
+                            await email_service.send_subscription_pending_email(
+                                subscription_data.email,
+                                existing_person.firstName,
+                                project_name,
+                            )
                         )
                         email_sent = email_result.get("success", False)
+
+                        # Send admin notification email
+                        await email_service.send_admin_notification_email(
+                            subscription_data.email,
+                            f"{existing_person.firstName} {existing_person.lastName}",
+                            project_name,
+                        )
                     else:
                         raise HTTPException(status_code=400, detail=str(e))
                 else:
