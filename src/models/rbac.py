@@ -203,6 +203,7 @@ DEFAULT_ROLES: Dict[RoleType, Role] = {
             Permission.SUBSCRIPTION_ADMIN,
             Permission.ROLE_READ,
             Permission.ROLE_ASSIGN,
+            Permission.SYSTEM_CONFIG,  # Required for admin endpoint access
             Permission.SYSTEM_MONITOR,
             Permission.SYSTEM_AUDIT,  # Required for admin dashboard access
             Permission.SECURITY_AUDIT,  # Required for admin security operations
