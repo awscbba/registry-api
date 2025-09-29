@@ -15,7 +15,7 @@ class PeopleService:
     def __init__(self, people_repository: PeopleRepository):
         self.people_repository = people_repository
 
-    async def create_person(self, person_data: PersonCreate) -> PersonResponse:
+    def create_person(self, person_data: PersonCreate) -> PersonResponse:
         """Create a new person with enterprise security validation."""
         from ..services.logging_service import logging_service, LogCategory, LogLevel
         from ..security.input_validator import InputValidator
@@ -65,7 +65,7 @@ class PeopleService:
         # Convert to response model
         return PersonResponse(**person.model_dump())
 
-    async def get_person(self, person_id: str) -> Optional[PersonResponse]:
+    def get_person(self, person_id: str) -> Optional[PersonResponse]:
         """Get a person by ID."""
         person = self.people_repository.get_by_id(person_id)
         if not person:
@@ -98,7 +98,7 @@ class PeopleService:
 
         return PersonResponse(**person.model_dump())
 
-    async def delete_person(self, person_id: str, requesting_user_id: str) -> bool:
+    def delete_person(self, person_id: str, requesting_user_id: str) -> bool:
         """Delete a person with business rule validation."""
         from ..services.logging_service import logging_service, LogCategory, LogLevel
         from ..exceptions.base_exceptions import BusinessLogicException, ErrorCode
@@ -170,12 +170,12 @@ class PeopleService:
 
         return self.people_repository.delete(person_id)
 
-    async def list_people(self, limit: Optional[int] = None) -> List[PersonResponse]:
+    def list_people(self, limit: Optional[int] = None) -> List[PersonResponse]:
         """List all people."""
         people = self.people_repository.list_all(limit)
         return [PersonResponse(**person.model_dump()) for person in people]
 
-    async def list_people_paginated(
+    def list_people_paginated(
         self,
         page: int = 1,
         page_size: int = 10,
@@ -247,7 +247,7 @@ class PeopleService:
             )
             raise
 
-    async def check_email_exists(self, email: str) -> bool:
+    def check_email_exists(self, email: str) -> bool:
         """Check if an email address is already in use."""
         return self.people_repository.email_exists(email)
 

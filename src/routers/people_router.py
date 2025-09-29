@@ -27,7 +27,7 @@ async def list_people(
 ) -> dict:
     """Get all people."""
     try:
-        people = await people_service.list_people(limit=limit)
+        people = people_service.list_people(limit=limit)
         return create_list_response(people)
 
     except Exception as e:
@@ -42,7 +42,7 @@ async def get_person(
 ) -> dict:
     """Get a specific person by ID."""
     try:
-        person = await people_service.get_person(person_id)
+        person = people_service.get_person(person_id)
 
         if not person:
             raise HTTPException(status_code=404, detail="Person not found")
@@ -64,7 +64,7 @@ async def create_person(
 ) -> dict:
     """Create a new person."""
     try:
-        person = await people_service.create_person(person_data)
+        person = people_service.create_person(person_data)
         return create_success_response(person, "Person created successfully")
 
     except ValueError as e:
@@ -106,7 +106,7 @@ async def delete_person(
 ) -> dict:
     """Delete a person."""
     try:
-        success = await people_service.delete_person(person_id)
+        success = people_service.delete_person(person_id)
 
         if not success:
             raise HTTPException(status_code=404, detail="Person not found")
@@ -131,7 +131,7 @@ async def check_email_exists(
         if not email:
             raise HTTPException(status_code=400, detail="Email is required")
 
-        exists = await people_service.check_email_exists(email)
+        exists = people_service.check_email_exists(email)
         return create_success_response({"exists": exists})
 
     except HTTPException:

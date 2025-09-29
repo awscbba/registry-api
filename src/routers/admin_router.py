@@ -111,7 +111,7 @@ async def list_users(
 ):
     """List all users (admin endpoint)."""
     try:
-        users = await people_service.list_people(limit=limit)
+        users = people_service.list_people(limit=limit)
 
         # Apply search filter if provided
         if search:
@@ -162,7 +162,7 @@ async def list_users_paginated(
             filters["emailVerified"] = emailVerified
 
         # Get paginated results
-        users, total_count = await people_service.list_people_paginated(
+        users, total_count = people_service.list_people_paginated(
             page=page,
             page_size=pageSize,
             sort_by=sortBy,
@@ -190,7 +190,7 @@ async def get_user(
 ):
     """Get user by ID (admin endpoint)."""
     try:
-        user = await people_service.get_person(user_id)
+        user = people_service.get_person(user_id)
         if not user:
             # Log user not found
             from ..services.logging_service import logging_service
@@ -261,7 +261,7 @@ async def create_user(
 ):
     """Create new user (admin endpoint)."""
     try:
-        user = await people_service.create_person(user_data)
+        user = people_service.create_person(user_data)
         return create_success_response(user)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -297,7 +297,7 @@ async def delete_user(
 ):
     """Delete user (admin endpoint)."""
     try:
-        success = await people_service.delete_person(user_id, current_user.id)
+        success = people_service.delete_person(user_id, current_user.id)
         if not success:
             raise HTTPException(status_code=404, detail="User not found")
 
@@ -341,7 +341,7 @@ async def get_admin_people(
 ):
     """Get all people (admin alias)."""
     try:
-        people = await people_service.list_people()
+        people = people_service.list_people()
         return create_success_response(people)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
