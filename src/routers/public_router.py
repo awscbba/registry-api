@@ -135,6 +135,13 @@ async def public_subscribe(
                 )
                 email_sent = email_result.get("success", False)
 
+                # Send admin notification email
+                await email_service.send_admin_notification_email(
+                    subscription_data.email,
+                    f"{subscription_data.firstName} {subscription_data.lastName}",
+                    project_name,
+                )
+
             except Exception as e:
                 # If person creation fails due to email already existing,
                 # it means there's a race condition - try to get the person again
