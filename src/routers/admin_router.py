@@ -375,7 +375,7 @@ async def get_admin_subscriptions(
 ):
     """Get all subscriptions (admin endpoint)."""
     try:
-        subscriptions = await subscriptions_service.list_subscriptions()
+        subscriptions = subscriptions_service.list_subscriptions()  # Not async
         return create_success_response(subscriptions)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -444,7 +444,7 @@ async def get_admin_registrations(
 ):
     """Get all registrations (alias for subscriptions)."""
     try:
-        subscriptions = await subscriptions_service.list_subscriptions()
+        subscriptions = subscriptions_service.list_subscriptions()  # Not async
         return create_success_response(subscriptions)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

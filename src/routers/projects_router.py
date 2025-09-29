@@ -166,9 +166,9 @@ async def get_project_subscriptions(
 ):
     """Get all subscriptions for a specific project."""
     try:
-        subscriptions = await subscriptions_service.get_project_subscriptions(
+        subscriptions = subscriptions_service.get_project_subscriptions(
             project_id
-        )
+        )  # Not async
         return create_success_response(subscriptions)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -189,9 +189,9 @@ async def subscribe_to_project(
 
         subscription_create = SubscriptionCreate(**subscription_data)
 
-        subscription = await subscriptions_service.create_subscription(
+        subscription = subscriptions_service.create_subscription(
             subscription_create
-        )
+        )  # Not async
         return create_success_response(subscription)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -212,9 +212,9 @@ async def update_project_subscription(
 
         subscription_update = SubscriptionUpdate(**subscription_data)
 
-        subscription = await subscriptions_service.update_subscription(
+        subscription = subscriptions_service.update_subscription(
             subscription_id, subscription_update
-        )
+        )  # Not async
         if not subscription:
             raise HTTPException(status_code=404, detail="Subscription not found")
 
@@ -233,7 +233,9 @@ async def unsubscribe_from_project(
 ):
     """Remove a subscription from a project."""
     try:
-        success = await subscriptions_service.delete_subscription(subscription_id)
+        success = subscriptions_service.delete_subscription(
+            subscription_id
+        )  # Not async
         if not success:
             raise HTTPException(status_code=404, detail="Subscription not found")
 
