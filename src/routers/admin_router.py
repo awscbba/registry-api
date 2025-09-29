@@ -3,6 +3,7 @@ Admin router with clean, standardized endpoints.
 All fields use camelCase - no mapping complexity.
 """
 
+from datetime import datetime
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query, Depends
 
@@ -380,7 +381,32 @@ async def get_admin_subscriptions(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/debug/permissions", response_model=dict)
+@router.get("/debug/session", response_model=dict)
+async def debug_current_session(
+    current_user: User = Depends(require_admin),
+):
+    """Debug endpoint to check current session information."""
+    try:
+        return create_success_response(
+            {
+                "session_user": {
+                    "id": current_user.id,
+                    "email": current_user.email,
+                    "firstName": getattr(current_user, "firstName", "N/A"),
+                    "lastName": getattr(current_user, "lastName", "N/A"),
+                    "isAdmin": getattr(current_user, "isAdmin", False),
+                    "isActive": getattr(current_user, "isActive", False),
+                },
+                "expected_user": "sergio.rodriguez@cbba.cloud.org.bo",
+                "is_expected_user": current_user.email
+                == "sergio.rodriguez@cbba.cloud.org.bo",
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+        )
+    except Exception as e:
+        return create_error_response(f"Session debug failed: {str(e)}")
+
+
 async def debug_user_permissions(
     current_user: User = Depends(require_admin),
 ):
