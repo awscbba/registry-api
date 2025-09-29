@@ -122,7 +122,7 @@ async def public_subscribe(
                     password="temp_password_123",  # Temporary password for public subscriptions
                     isAdmin=False,
                 )
-                new_person = await people_service.create_person(person_create)
+                new_person = people_service.create_person(person_create)  # Not async
                 person_id = new_person.id
                 person_created = True
 
