@@ -380,7 +380,38 @@ async def get_admin_subscriptions(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/registrations", response_model=dict)
+@router.get("/debug/permissions", response_model=dict)
+async def debug_user_permissions(
+    current_user: User = Depends(require_admin),
+):
+    """Debug endpoint to check current user permissions."""
+    from ..services.rbac_service import rbac_service
+    from ..models.rbac import Permission
+
+    try:
+        # Get user roles
+        user_roles = await rbac_service.get_user_roles(current_user.id)
+
+        # Check specific permission
+        permission_result = await rbac_service.user_has_permission(
+            user_id=current_user.id, permission=Permission.SUBSCRIPTION_DELETE_ALL
+        )
+
+        return create_success_response(
+            {
+                "user_id": current_user.id,
+                "user_email": current_user.email,
+                "is_admin_flag": getattr(current_user, "isAdmin", False),
+                "user_roles": [role.value for role in user_roles],
+                "has_subscription_delete_all": permission_result.has_permission,
+                "permission_reason": permission_result.reason,
+                "user_object": current_user.model_dump(),
+            }
+        )
+    except Exception as e:
+        return create_error_response(f"Debug failed: {str(e)}")
+
+
 async def get_admin_registrations(
     current_user: User = Depends(require_admin),
     subscriptions_service: SubscriptionsService = Depends(get_subscriptions_service),
