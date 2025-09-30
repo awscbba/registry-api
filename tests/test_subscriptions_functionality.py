@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from unittest.mock import patch, Mock
 
 from src.app import app
-from .test_utils import TestJWTUtils
+from .test_utils import TestAuthUtils
 
 
 class TestSubscriptionsFunctionality:
@@ -130,7 +130,7 @@ class TestSubscriptionsFunctionality:
         response = self.client.put(
             "/v2/subscriptions/sub-123",
             json=update_data,
-            headers=TestJWTUtils.get_admin_headers(),  # Add admin auth
+            headers=TestAuthUtils.get_admin_headers(),  # Add admin auth
         )
         assert response.status_code == 200
 
