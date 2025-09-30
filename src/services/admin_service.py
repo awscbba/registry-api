@@ -28,7 +28,7 @@ class AdminService:
         self.subscriptions_repository = SubscriptionsRepository()
 
     async def get_dashboard_data(self) -> Dict[str, Any]:
-        """Get basic dashboard data with fallback for AWS credential issues."""
+        """Get basic dashboard data."""
         try:
             # Get counts
             people = self.people_repository.list_all()
@@ -50,22 +50,13 @@ class AdminService:
                 "totalSubscriptions": len(subscriptions),
                 "activeSubscriptions": active_subscriptions,
                 "lastUpdated": datetime.utcnow().isoformat(),
-                "dataSource": "live",
             }
         except Exception as e:
-            # Return fallback data when database is unavailable
-            return {
-                "totalUsers": 3,
-                "activeUsers": 3,
-                "totalProjects": 2,
-                "activeProjects": 2,
-                "totalSubscriptions": 1,
-                "activeSubscriptions": 1,
-                "lastUpdated": datetime.utcnow().isoformat(),
-                "dataSource": "fallback",
-                "error": "Database temporarily unavailable",
-                "message": "Showing cached metrics - database connection issue detected",
-            }
+            raise DatabaseException(
+                operation="get_dashboard_data",
+                details={"error": str(e)},
+                user_message="Unable to retrieve dashboard data - database service unavailable.",
+            )
 
     async def get_enhanced_dashboard_data(self) -> Dict[str, Any]:
         """Get enhanced dashboard data with more detailed analytics."""

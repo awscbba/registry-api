@@ -57,22 +57,44 @@ async def get_dashboard_data(
 
         return create_success_response(dashboard_data)
 
-    except Exception as e:
-        # Log error with enterprise logging
+    except DatabaseException as e:
+        # Log database error
         from ..services.logging_service import logging_service
 
         logging_service.log_structured(
             level=LogLevel.ERROR,
             category=LogCategory.SYSTEM_EVENTS,
-            message=f"Failed to get dashboard data: {str(e)}",
+            message=f"Database unavailable for dashboard: {str(e)}",
             additional_data={"admin_user_id": current_user.id, "error": str(e)},
         )
 
-        # Raise appropriate enterprise exception
-        raise DatabaseException(
+        # Return proper error response for database unavailability
+        return create_error_response(
+            message="Database service unavailable",
+            details={
+                "error_type": "database_unavailable",
+                "user_message": "Dashboard data cannot be retrieved - database service is currently unavailable",
+                "retry_after": "Please try again in a few minutes",
+            },
+            status_code=503,
+        )
+
+    except Exception as e:
+        # Log unexpected error
+        from ..services.logging_service import logging_service
+
+        logging_service.log_structured(
+            level=LogLevel.ERROR,
+            category=LogCategory.SYSTEM_EVENTS,
+            message=f"Unexpected error getting dashboard data: {str(e)}",
+            additional_data={"admin_user_id": current_user.id, "error": str(e)},
+        )
+
+        # Return generic error response
+        return create_error_response(
             message="Failed to retrieve dashboard data",
             details={"error": str(e)},
-            user_message="Unable to retrieve dashboard information at this time",
+            status_code=500,
         )
 
 
