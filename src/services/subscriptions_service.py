@@ -58,10 +58,54 @@ class SubscriptionsService:
         subscriptions = self.subscriptions_repository.get_by_person(person_id)
         return [SubscriptionResponse(**sub.model_dump()) for sub in subscriptions]
 
-    def get_project_subscriptions(self, project_id: str) -> List[SubscriptionResponse]:
-        """Get all subscriptions for a project."""
+    def get_project_subscriptions(self, project_id: str) -> List[dict]:
+        """Get all subscriptions for a project with person details."""
         subscriptions = self.subscriptions_repository.get_by_project(project_id)
-        return [SubscriptionResponse(**sub.model_dump()) for sub in subscriptions]
+
+        # Enrich subscriptions with person details
+        enriched_subscriptions = []
+        for sub in subscriptions:
+            subscription_dict = sub.model_dump()
+
+            # Get person details
+            try:
+                from ..services.service_registry_manager import service_registry
+
+                people_service = service_registry.get_people_service()
+                person = people_service.get_person(sub.personId)
+
+                if person:
+                    subscription_dict.update(
+                        {
+                            "personName": f"{person.firstName} {person.lastName}".strip(),
+                            "personEmail": person.email,
+                            "personFirstName": person.firstName,
+                            "personLastName": person.lastName,
+                        }
+                    )
+                else:
+                    subscription_dict.update(
+                        {
+                            "personName": "Unknown User",
+                            "personEmail": "unknown@example.com",
+                            "personFirstName": "Unknown",
+                            "personLastName": "User",
+                        }
+                    )
+            except Exception:
+                # Fallback if person lookup fails
+                subscription_dict.update(
+                    {
+                        "personName": "Unknown User",
+                        "personEmail": "unknown@example.com",
+                        "personFirstName": "Unknown",
+                        "personLastName": "User",
+                    }
+                )
+
+            enriched_subscriptions.append(subscription_dict)
+
+        return enriched_subscriptions
 
     def update_subscription(
         self, subscription_id: str, updates: SubscriptionUpdate
