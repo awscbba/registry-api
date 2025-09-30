@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from unittest.mock import patch, Mock
 
 from src.app import app
+from .test_utils import TestJWTUtils
 
 
 class TestSubscriptionsFunctionality:
@@ -124,9 +125,13 @@ class TestSubscriptionsFunctionality:
         }
         mock_service_registry.get_subscriptions_service.return_value = mock_service
 
-        # Test update
+        # Test update with admin authentication
         update_data = {"status": "inactive"}
-        response = self.client.put("/v2/subscriptions/sub-123", json=update_data)
+        response = self.client.put(
+            "/v2/subscriptions/sub-123",
+            json=update_data,
+            headers=TestJWTUtils.get_admin_headers(),  # Add admin auth
+        )
         assert response.status_code == 200
 
         data = response.json()
