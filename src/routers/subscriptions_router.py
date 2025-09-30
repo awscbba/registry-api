@@ -14,7 +14,7 @@ from ..models.subscription import (
     SubscriptionResponse,
 )
 from ..models.auth import User
-from ..security.auth_dependencies import require_admin
+from ..routers.auth_router import require_admin
 from ..utils.responses import create_success_response, create_error_response
 
 router = APIRouter(prefix="/v2/subscriptions", tags=["subscriptions"])
