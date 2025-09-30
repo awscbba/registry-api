@@ -45,7 +45,7 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
         },
         r"^/v2/subscriptions/[^/]+$": {
             "GET": Permission.SUBSCRIPTION_READ_OWN,  # Will check ownership
-            "PUT": Permission.SUBSCRIPTION_UPDATE_OWN,  # Will check ownership
+            "PUT": Permission.SUBSCRIPTION_UPDATE_ALL,  # Admin can update any subscription
             "DELETE": Permission.SUBSCRIPTION_DELETE_ALL,  # Admins can delete any subscription
         },
         # Admin endpoints
