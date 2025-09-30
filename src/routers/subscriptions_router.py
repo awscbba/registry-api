@@ -72,7 +72,7 @@ async def create_subscription(
 async def update_subscription(
     subscription_id: str,
     updates: SubscriptionUpdate,
-    current_user: User = Depends(require_admin),  # Add admin authentication
+    current_user: User = Depends(require_admin),  # Add admin authentication back
     subscriptions_service: SubscriptionsService = Depends(get_subscriptions_service),
 ):
     """Update a subscription."""
