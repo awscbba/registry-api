@@ -13,6 +13,8 @@ from ..models.subscription import (
     SubscriptionUpdate,
     SubscriptionResponse,
 )
+from ..models.user import User
+from ..security.auth_dependencies import require_admin
 from ..utils.responses import create_success_response, create_error_response
 
 router = APIRouter(prefix="/v2/subscriptions", tags=["subscriptions"])
@@ -70,6 +72,7 @@ async def create_subscription(
 async def update_subscription(
     subscription_id: str,
     updates: SubscriptionUpdate,
+    current_user: User = Depends(require_admin),  # Add admin authentication
     subscriptions_service: SubscriptionsService = Depends(get_subscriptions_service),
 ):
     """Update a subscription."""
