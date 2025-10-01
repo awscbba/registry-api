@@ -30,10 +30,28 @@ class AdminService:
     async def get_dashboard_data(self) -> Dict[str, Any]:
         """Get basic dashboard data."""
         try:
-            # Get counts
-            people = self.people_repository.list_all()
-            projects = self.projects_repository.list_all()
-            subscriptions = self.subscriptions_repository.list_all()
+            # Get counts with detailed logging for debugging
+            people = []
+            projects = []
+            subscriptions = []
+
+            try:
+                people = self.people_repository.list_all()
+                print(f"DEBUG: Fetched {len(people)} people")
+            except Exception as e:
+                print(f"ERROR: Could not fetch people: {e}")
+
+            try:
+                projects = self.projects_repository.list_all()
+                print(f"DEBUG: Fetched {len(projects)} projects")
+            except Exception as e:
+                print(f"ERROR: Could not fetch projects: {e}")
+
+            try:
+                subscriptions = self.subscriptions_repository.list_all()
+                print(f"DEBUG: Fetched {len(subscriptions)} subscriptions")
+            except Exception as e:
+                print(f"ERROR: Could not fetch subscriptions: {e}")
 
             # Calculate basic stats - handle missing attributes safely
             active_people = len([p for p in people if getattr(p, "isActive", True)])
@@ -42,7 +60,7 @@ class AdminService:
                 [s for s in subscriptions if getattr(s, "isActive", True)]
             )
 
-            return {
+            result = {
                 "totalUsers": len(people),
                 "activeUsers": active_people,
                 "totalProjects": len(projects),
@@ -51,7 +69,12 @@ class AdminService:
                 "activeSubscriptions": active_subscriptions,
                 "lastUpdated": datetime.utcnow().isoformat(),
             }
+
+            print(f"DEBUG: Returning dashboard data: {result}")
+            return result
+
         except Exception as e:
+            print(f"FATAL ERROR in get_dashboard_data: {e}")
             raise DatabaseException(
                 operation="get_dashboard_data",
                 details={"error": str(e)},
