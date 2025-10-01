@@ -111,7 +111,11 @@ class DatabaseClient:
             return response.get("Items", [])
         except ClientError as e:
             logger.error(f"Error scanning table {table_name}: {e}")
-            return []
+            # Instead of silently returning [], raise the exception so we can debug
+            raise Exception(f"Database scan failed for table {table_name}: {str(e)}")
+        except Exception as e:
+            logger.error(f"Unexpected error scanning table {table_name}: {e}")
+            raise Exception(f"Database scan failed for table {table_name}: {str(e)}")
 
     def query_by_index(
         self, table_name: str, index_name: str, key_condition: Dict[str, Any]

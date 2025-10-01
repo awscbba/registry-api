@@ -40,18 +40,34 @@ class AdminService:
                 print(f"DEBUG: Fetched {len(people)} people")
             except Exception as e:
                 print(f"ERROR: Could not fetch people: {e}")
+                # Re-raise the exception instead of continuing with empty list
+                raise DatabaseException(
+                    operation="fetch_people",
+                    details={"error": str(e), "table": "PeopleTableV2"},
+                    user_message="Unable to fetch user data from database.",
+                )
 
             try:
                 projects = self.projects_repository.list_all()
                 print(f"DEBUG: Fetched {len(projects)} projects")
             except Exception as e:
                 print(f"ERROR: Could not fetch projects: {e}")
+                raise DatabaseException(
+                    operation="fetch_projects",
+                    details={"error": str(e), "table": "ProjectsTableV2"},
+                    user_message="Unable to fetch project data from database.",
+                )
 
             try:
                 subscriptions = self.subscriptions_repository.list_all()
                 print(f"DEBUG: Fetched {len(subscriptions)} subscriptions")
             except Exception as e:
                 print(f"ERROR: Could not fetch subscriptions: {e}")
+                raise DatabaseException(
+                    operation="fetch_subscriptions",
+                    details={"error": str(e), "table": "SubscriptionsTableV2"},
+                    user_message="Unable to fetch subscription data from database.",
+                )
 
             # Calculate basic stats - handle missing attributes safely
             active_people = len([p for p in people if getattr(p, "isActive", True)])
