@@ -27,7 +27,7 @@ class AdminService:
         self.projects_repository = ProjectsRepository()
         self.subscriptions_repository = SubscriptionsRepository()
 
-    async def get_dashboard_data(self) -> Dict[str, Any]:
+    def get_dashboard_data(self) -> Dict[str, Any]:
         """Get basic dashboard data."""
         try:
             # Get counts with detailed logging for debugging
@@ -81,10 +81,10 @@ class AdminService:
                 user_message="Unable to retrieve dashboard data - database service unavailable.",
             )
 
-    async def get_enhanced_dashboard_data(self) -> Dict[str, Any]:
+    def get_enhanced_dashboard_data(self) -> Dict[str, Any]:
         """Get enhanced dashboard data with more detailed analytics."""
         try:
-            basic_data = await self.get_dashboard_data()
+            basic_data = self.get_dashboard_data()
 
             # Get additional analytics
             people = self.people_repository.list_all()
@@ -134,7 +134,7 @@ class AdminService:
                 user_message="Unable to retrieve enhanced dashboard data at this time.",
             )
 
-    async def get_analytics_data(self) -> Dict[str, Any]:
+    def get_analytics_data(self) -> Dict[str, Any]:
         """Get detailed analytics data."""
         try:
             people = self.people_repository.list_all()
@@ -190,7 +190,7 @@ class AdminService:
                 user_message="Unable to retrieve analytics data at this time.",
             )
 
-    async def execute_bulk_action(self, bulk_data: Dict[str, Any]) -> Dict[str, Any]:
+    def execute_bulk_action(self, bulk_data: Dict[str, Any]) -> Dict[str, Any]:
         """Execute bulk actions on users."""
         try:
             action = bulk_data.get("action")

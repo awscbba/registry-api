@@ -39,7 +39,7 @@ async def get_dashboard_data(
 ):
     """Get admin dashboard data."""
     try:
-        dashboard_data = await admin_service.get_dashboard_data()
+        dashboard_data = admin_service.get_dashboard_data()
 
         # Log successful dashboard access
         from ..services.logging_service import logging_service
@@ -550,7 +550,7 @@ async def get_admin_stats(
 ):
     """Get comprehensive admin statistics."""
     try:
-        dashboard_data = await admin_service.get_dashboard_data()
+        dashboard_data = admin_service.get_dashboard_data()
         performance_stats = await performance_service.get_performance_stats()
 
         stats = {
