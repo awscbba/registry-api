@@ -542,6 +542,30 @@ async def get_performance_health(
         return create_success_response(fallback_health)
 
 
+@router.get("/debug-stats", response_model=dict)
+async def debug_admin_stats(
+    admin_service: AdminService = Depends(get_admin_service),
+):
+    """Debug endpoint to test admin stats without authentication."""
+    try:
+        dashboard_data = admin_service.get_dashboard_data()
+        return create_success_response(dashboard_data)
+    except Exception as e:
+        from ..services.logging_service import logging_service
+
+        logging_service.log_structured(
+            level=LogLevel.ERROR,
+            category=LogCategory.ERROR_HANDLING,
+            message=f"Debug admin stats failed: {str(e)}",
+            additional_data={"error_type": type(e).__name__, "error_details": str(e)},
+        )
+        return create_error_response(
+            message="Debug admin stats failed",
+            error_code="DEBUG_ERROR",
+            details={"error": str(e)},
+        )
+
+
 @router.get("/stats", response_model=dict)
 async def get_admin_stats(
     current_user: User = Depends(require_admin),
