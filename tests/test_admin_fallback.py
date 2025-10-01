@@ -23,13 +23,12 @@ class TestAdminErrorHandling:
             "list_all",
             side_effect=Exception("Database unavailable"),
         ):
-            # Should return zeros instead of raising exception (current behavior)
-            dashboard_data = admin_service.get_dashboard_data()
+            # Should now raise exception instead of returning zeros (improved behavior)
+            with pytest.raises(Exception) as exc_info:
+                dashboard_data = admin_service.get_dashboard_data()
 
-            # Should return zero metrics when repositories fail
-            assert dashboard_data["totalUsers"] == 0
-            assert dashboard_data["totalProjects"] == 0  # Other repos might still work
-            assert dashboard_data["totalSubscriptions"] == 0
+            # Verify it's a database exception with proper error details
+            assert "Database error" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_admin_dashboard_live_data_when_available(self):
@@ -109,8 +108,8 @@ class TestCurrentBehaviorDocumentation:
     """Document current behavior for debugging production issues."""
 
     @pytest.mark.asyncio
-    async def test_admin_panel_shows_zeros_on_database_issues(self):
-        """Test that admin panel shows zeros when database is unavailable (current behavior)."""
+    async def test_admin_panel_shows_errors_on_database_issues(self):
+        """Test that admin panel shows proper errors when database is unavailable (improved behavior)."""
         admin_service = AdminService()
 
         # Mock database failure
@@ -119,9 +118,12 @@ class TestCurrentBehaviorDocumentation:
             "list_all",
             side_effect=Exception("Database connection failed"),
         ):
-            # Should return zeros, not raise exception (current behavior due to try/catch per repo)
-            dashboard_data = admin_service.get_dashboard_data()
-            assert dashboard_data["totalUsers"] == 0
+            # Should now raise exception with proper error details (improved behavior)
+            with pytest.raises(Exception) as exc_info:
+                dashboard_data = admin_service.get_dashboard_data()
+
+            # Verify it's a database exception with proper error details
+            assert "Database error" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_performance_service_shows_real_status(self):
@@ -135,6 +137,13 @@ class TestCurrentBehaviorDocumentation:
         assert health_status["status"] in ["healthy", "degraded", "unhealthy"]
         assert isinstance(health_status["overallScore"], (int, float))
 
-        # If there's an error, it should be clearly indicated
+        # If there's an error, it should be clearly indicated in components
         if health_status["status"] == "unhealthy":
-            assert "error" in health_status
+            # Check that error details are available in components
+            components = health_status.get("components", {})
+            has_error_details = any(
+                "error" in component for component in components.values()
+            )
+            assert (
+                has_error_details
+            ), "Unhealthy status should include error details in components"
