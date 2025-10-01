@@ -24,7 +24,7 @@ class TestAdminErrorHandling:
             side_effect=Exception("Database unavailable"),
         ):
             # Should return zeros instead of raising exception (current behavior)
-            dashboard_data = await admin_service.get_dashboard_data()
+            dashboard_data = admin_service.get_dashboard_data()
 
             # Should return zero metrics when repositories fail
             assert dashboard_data["totalUsers"] == 0
@@ -57,7 +57,7 @@ class TestAdminErrorHandling:
             ),
         ):
 
-            dashboard_data = await admin_service.get_dashboard_data()
+            dashboard_data = admin_service.get_dashboard_data()
 
             # Should return live data
             assert dashboard_data["totalUsers"] == 3
@@ -120,7 +120,7 @@ class TestCurrentBehaviorDocumentation:
             side_effect=Exception("Database connection failed"),
         ):
             # Should return zeros, not raise exception (current behavior due to try/catch per repo)
-            dashboard_data = await admin_service.get_dashboard_data()
+            dashboard_data = admin_service.get_dashboard_data()
             assert dashboard_data["totalUsers"] == 0
 
     @pytest.mark.asyncio
