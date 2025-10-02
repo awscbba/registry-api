@@ -685,6 +685,71 @@ async def get_cache_stats(
     )
 
 
+@router.get("/performance/dashboard", response_model=dict)
+async def get_performance_dashboard(
+    current_user: User = Depends(require_admin),
+    performance_service=Depends(get_performance_service),
+):
+    """Get performance dashboard data."""
+    try:
+        dashboard_data = await performance_service.get_dashboard_data()
+        return create_success_response(dashboard_data)
+    except Exception as e:
+        from ..services.logging_service import logging_service
+
+        logging_service.log_structured(
+            level=LogLevel.ERROR,
+            category=LogCategory.ERROR_HANDLING,
+            message=f"Performance dashboard failed: {str(e)}",
+            additional_data={"admin_user_id": current_user.id, "error": str(e)},
+        )
+        raise HTTPException(status_code=500, detail="Performance dashboard unavailable")
+
+
+@router.get("/performance/analytics", response_model=dict)
+async def get_performance_analytics(
+    current_user: User = Depends(require_admin),
+    performance_service=Depends(get_performance_service),
+):
+    """Get performance analytics data."""
+    try:
+        analytics_data = await performance_service.get_analytics_data()
+        return create_success_response(analytics_data)
+    except Exception as e:
+        from ..services.logging_service import logging_service
+
+        logging_service.log_structured(
+            level=LogLevel.ERROR,
+            category=LogCategory.ERROR_HANDLING,
+            message=f"Performance analytics failed: {str(e)}",
+            additional_data={"admin_user_id": current_user.id, "error": str(e)},
+        )
+        raise HTTPException(status_code=500, detail="Performance analytics unavailable")
+
+
+@router.get("/performance/slowest-endpoints", response_model=dict)
+async def get_slowest_endpoints(
+    current_user: User = Depends(require_admin),
+    performance_service=Depends(get_performance_service),
+):
+    """Get slowest endpoints data."""
+    try:
+        endpoints_data = await performance_service.get_slowest_endpoints()
+        return create_success_response({"endpoints": endpoints_data})
+    except Exception as e:
+        from ..services.logging_service import logging_service
+
+        logging_service.log_structured(
+            level=LogLevel.ERROR,
+            category=LogCategory.ERROR_HANDLING,
+            message=f"Slowest endpoints query failed: {str(e)}",
+            additional_data={"admin_user_id": current_user.id, "error": str(e)},
+        )
+        raise HTTPException(
+            status_code=500, detail="Slowest endpoints data unavailable"
+        )
+
+
 # Database Performance Endpoints
 @router.get("/database/performance/metrics", response_model=dict)
 async def get_database_metrics(

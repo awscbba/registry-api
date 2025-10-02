@@ -355,3 +355,77 @@ class PerformanceService:
                 "error": str(e),
                 "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
             }
+
+    async def get_dashboard_data(self) -> Dict[str, Any]:
+        """Get performance dashboard data."""
+        try:
+            health_status = await self.get_health_status()
+            performance_stats = await self.get_performance_stats()
+
+            return {
+                "health": health_status,
+                "performance": performance_stats,
+                "timestamp": datetime.now(timezone.utc).isoformat() + "Z",
+            }
+
+        except Exception as e:
+            self.logging_service.log_structured(
+                level=LogLevel.ERROR,
+                category=LogCategory.PERFORMANCE,
+                message=f"Failed to get dashboard data: {str(e)}",
+                additional_data={"error": str(e)},
+            )
+            raise
+
+    async def get_analytics_data(self) -> Dict[str, Any]:
+        """Get performance analytics data."""
+        try:
+            metrics = await self._collect_system_metrics()
+
+            return {
+                "response_time_ms": metrics.response_time_ms,
+                "memory_usage_mb": metrics.memory_usage_mb,
+                "cpu_usage_percent": metrics.cpu_usage_percent,
+                "database_connections": metrics.database_connections,
+                "active_requests": metrics.active_requests,
+                "timestamp": metrics.timestamp,
+            }
+
+        except Exception as e:
+            self.logging_service.log_structured(
+                level=LogLevel.ERROR,
+                category=LogCategory.PERFORMANCE,
+                message=f"Failed to get analytics data: {str(e)}",
+                additional_data={"error": str(e)},
+            )
+            raise
+
+    async def get_slowest_endpoints(self) -> List[Dict[str, Any]]:
+        """Get slowest endpoints data."""
+        try:
+            # For now, return mock data since we don't have endpoint tracking yet
+            return [
+                {
+                    "endpoint": "/v2/admin/stats",
+                    "method": "GET",
+                    "average_response_time": 150.5,
+                    "request_count": 45,
+                    "error_rate": 0.02,
+                },
+                {
+                    "endpoint": "/v2/people",
+                    "method": "GET",
+                    "average_response_time": 89.2,
+                    "request_count": 123,
+                    "error_rate": 0.01,
+                },
+            ]
+
+        except Exception as e:
+            self.logging_service.log_structured(
+                level=LogLevel.ERROR,
+                category=LogCategory.PERFORMANCE,
+                message=f"Failed to get slowest endpoints: {str(e)}",
+                additional_data={"error": str(e)},
+            )
+            raise
