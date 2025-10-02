@@ -24,9 +24,18 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
             "POST": Permission.USER_CREATE,
         },
         r"^/v2/people/[^/]+$": {
-            "GET": Permission.USER_READ_OWN,  # Will check ownership
-            "PUT": Permission.USER_UPDATE_OWN,  # Will check ownership
-            "DELETE": Permission.USER_DELETE_OWN,  # Will check ownership
+            "GET": [
+                Permission.USER_READ_OWN,
+                Permission.USER_READ_ALL,
+            ],  # Users can read own, admins can read all
+            "PUT": [
+                Permission.USER_UPDATE_OWN,
+                Permission.USER_UPDATE_ALL,
+            ],  # Users can update own, admins can update all
+            "DELETE": [
+                Permission.USER_DELETE_OWN,
+                Permission.USER_DELETE_ALL,
+            ],  # Users can delete own, admins can delete all
         },
         # Project endpoints
         r"^/v2/projects$": {
@@ -50,9 +59,18 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
             "POST": Permission.SUBSCRIPTION_CREATE,
         },
         r"^/v2/subscriptions/[^/]+$": {
-            "GET": Permission.SUBSCRIPTION_READ_OWN,  # Will check ownership
-            "PUT": Permission.SUBSCRIPTION_UPDATE_ALL,  # Admin can update any subscription
-            "DELETE": Permission.SUBSCRIPTION_DELETE_ALL,  # Admins can delete any subscription
+            "GET": [
+                Permission.SUBSCRIPTION_READ_OWN,
+                Permission.SUBSCRIPTION_READ_ALL,
+            ],  # Users can read own, admins can read all
+            "PUT": [
+                Permission.SUBSCRIPTION_UPDATE_OWN,
+                Permission.SUBSCRIPTION_UPDATE_ALL,
+            ],  # Users can update own, admins can update all
+            "DELETE": [
+                Permission.SUBSCRIPTION_DELETE_OWN,
+                Permission.SUBSCRIPTION_DELETE_ALL,
+            ],  # Users can delete own, admins can delete all
         },
         # Admin endpoints
         r"^/v2/admin/.*": {
