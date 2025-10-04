@@ -62,3 +62,4 @@ class User(BaseModel):
     lastName: str
     isAdmin: bool
     isActive: bool
+    roles: list[str] = Field(default_factory=list, description="User RBAC roles")

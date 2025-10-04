@@ -121,6 +121,13 @@ class AuthService:
         access_token = self._generate_access_token(clean_user_data)
         refresh_token = self._generate_refresh_token(clean_user_data)
 
+        # Get user roles from RBAC service
+        from ..services.service_registry_manager import get_rbac_service
+
+        rbac_service = get_rbac_service()
+        user_roles = await rbac_service.get_user_roles(person_data.get("id"))
+        role_names = [role.value for role in user_roles]
+
         # Create user response
         user_response = {
             "id": person_data.get("id"),
@@ -129,6 +136,7 @@ class AuthService:
             "lastName": person_data.get("lastName"),
             "isAdmin": person_data.get("isAdmin", False),
             "isActive": person_data.get("isActive", True),
+            "roles": role_names,
         }
 
         # Clear any failed login attempts on successful login
@@ -182,6 +190,13 @@ class AuthService:
         if not person:
             return None
 
+        # Get user roles from RBAC service
+        from ..services.service_registry_manager import get_rbac_service
+
+        rbac_service = get_rbac_service()
+        user_roles = await rbac_service.get_user_roles(person.id)
+        role_names = [role.value for role in user_roles]
+
         return User(
             id=person.id,
             email=person.email,
@@ -189,6 +204,7 @@ class AuthService:
             lastName=person.lastName,
             isAdmin=person.isAdmin,
             isActive=person.isActive,
+            roles=role_names,
         )
 
     async def refresh_access_token(self, refresh_token: str) -> Optional[LoginResponse]:
@@ -210,6 +226,13 @@ class AuthService:
         access_token = self._generate_access_token(user_data)
         new_refresh_token = self._generate_refresh_token(user_data)
 
+        # Get user roles from RBAC service
+        from ..services.service_registry_manager import get_rbac_service
+
+        rbac_service = get_rbac_service()
+        user_roles = await rbac_service.get_user_roles(person.id)
+        role_names = [role.value for role in user_roles]
+
         user_response = {
             "id": person.id,
             "email": person.email,
@@ -217,6 +240,7 @@ class AuthService:
             "lastName": person.lastName,
             "isAdmin": person.isAdmin,
             "isActive": person.isActive,
+            "roles": role_names,
         }
 
         return LoginResponse(
