@@ -1,6 +1,6 @@
 """Repository for managing user roles in DynamoDB."""
 
-from typing import List, Optional
+from typing import List, Optional, Any, Dict
 from datetime import datetime
 import boto3
 from botocore.exceptions import ClientError
@@ -52,3 +52,28 @@ class RolesRepository(BaseRepository):
         except ClientError as e:
             print(f"Error fetching user roles: {e}")
             return []
+
+    # Required abstract method implementations
+    def create(self, data: Dict[str, Any]) -> Any:
+        """Create a role assignment."""
+        pass
+
+    def get_by_id(self, role_id: str) -> Optional[Any]:
+        """Get role by ID."""
+        pass
+
+    def update(self, role_id: str, data: Dict[str, Any]) -> Optional[Any]:
+        """Update role assignment."""
+        pass
+
+    def delete(self, role_id: str) -> bool:
+        """Delete role assignment."""
+        pass
+
+    def list_all(self) -> List[Any]:
+        """List all role assignments."""
+        pass
+
+    def exists(self, role_id: str) -> bool:
+        """Check if role exists."""
+        pass
