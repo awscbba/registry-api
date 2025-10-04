@@ -28,24 +28,35 @@ class RolesRepository(BaseRepository):
 
             roles = []
             for item in response.get("Items", []):
-                role = UserRole(
-                    user_id=item["user_id"]["S"],
-                    role_type=RoleType(item["role_type"]["S"]),
-                    assigned_at=datetime.fromisoformat(
-                        item["assigned_at"]["S"].replace("Z", "+00:00")
-                    ),
-                    assigned_by=item["assigned_by"]["S"],
-                    is_active=item.get("is_active", {"BOOL": True})["BOOL"],
-                    expires_at=(
-                        None
-                        if item.get("expires_at", {}).get("NULL")
-                        else datetime.fromisoformat(
-                            item["expires_at"]["S"].replace("Z", "+00:00")
-                        )
-                    ),
-                    notes=item.get("notes", {}).get("S"),
-                )
-                roles.append(role)
+                try:
+                    # Parse datetime safely
+                    assigned_at_str = item["assigned_at"]["S"]
+                    if assigned_at_str.endswith("Z"):
+                        assigned_at_str = assigned_at_str[:-1] + "+00:00"
+                    assigned_at = datetime.fromisoformat(assigned_at_str)
+
+                    # Parse expires_at safely
+                    expires_at = None
+                    if not item.get("expires_at", {}).get("NULL"):
+                        expires_at_str = item["expires_at"]["S"]
+                        if expires_at_str.endswith("Z"):
+                            expires_at_str = expires_at_str[:-1] + "+00:00"
+                        expires_at = datetime.fromisoformat(expires_at_str)
+
+                    # Create UserRole with safe parsing
+                    role = UserRole(
+                        user_id=item["user_id"]["S"],
+                        role_type=RoleType(item["role_type"]["S"]),
+                        assigned_at=assigned_at,
+                        assigned_by=item["assigned_by"]["S"],
+                        is_active=item.get("is_active", {"BOOL": True})["BOOL"],
+                        expires_at=expires_at,
+                        notes=item.get("notes", {}).get("S"),
+                    )
+                    roles.append(role)
+                except (ValueError, KeyError) as e:
+                    print(f"Error parsing role item: {e}, item: {item}")
+                    continue
 
             return roles
 
