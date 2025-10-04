@@ -29,73 +29,51 @@ class AdminService:
 
     def get_dashboard_data(self) -> Dict[str, Any]:
         """Get basic dashboard data."""
+        # Get counts with detailed logging for debugging
+        people = []
+        projects = []
+        subscriptions = []
+
         try:
-            # Get counts with detailed logging for debugging
+            people = self.people_repository.list_all()
+            print(f"DEBUG: Fetched {len(people)} people")
+        except Exception as e:
+            print(f"ERROR: Could not fetch people: {e}")
             people = []
+
+        try:
+            projects = self.projects_repository.list_all()
+            print(f"DEBUG: Fetched {len(projects)} projects")
+        except Exception as e:
+            print(f"ERROR: Could not fetch projects: {e}")
             projects = []
+
+        try:
+            subscriptions = self.subscriptions_repository.list_all()
+            print(f"DEBUG: Fetched {len(subscriptions)} subscriptions")
+        except Exception as e:
+            print(f"ERROR: Could not fetch subscriptions: {e}")
             subscriptions = []
 
-            try:
-                people = self.people_repository.list_all()
-                print(f"DEBUG: Fetched {len(people)} people")
-            except Exception as e:
-                print(f"ERROR: Could not fetch people: {e}")
-                # Re-raise the exception instead of continuing with empty list
-                raise DatabaseException(
-                    operation="fetch_people",
-                    details={"error": str(e), "table": "PeopleTableV2"},
-                    user_message="Unable to fetch user data from database.",
-                )
+        # Calculate basic stats - handle missing attributes safely
+        active_people = len([p for p in people if getattr(p, "isActive", True)])
+        active_projects = len([p for p in projects if getattr(p, "isActive", True)])
+        active_subscriptions = len(
+            [s for s in subscriptions if getattr(s, "isActive", True)]
+        )
 
-            try:
-                projects = self.projects_repository.list_all()
-                print(f"DEBUG: Fetched {len(projects)} projects")
-            except Exception as e:
-                print(f"ERROR: Could not fetch projects: {e}")
-                raise DatabaseException(
-                    operation="fetch_projects",
-                    details={"error": str(e), "table": "ProjectsTableV2"},
-                    user_message="Unable to fetch project data from database.",
-                )
+        result = {
+            "totalUsers": len(people),
+            "activeUsers": active_people,
+            "totalProjects": len(projects),
+            "activeProjects": active_projects,
+            "totalSubscriptions": len(subscriptions),
+            "activeSubscriptions": active_subscriptions,
+            "lastUpdated": datetime.utcnow().isoformat(),
+        }
 
-            try:
-                subscriptions = self.subscriptions_repository.list_all()
-                print(f"DEBUG: Fetched {len(subscriptions)} subscriptions")
-            except Exception as e:
-                print(f"ERROR: Could not fetch subscriptions: {e}")
-                raise DatabaseException(
-                    operation="fetch_subscriptions",
-                    details={"error": str(e), "table": "SubscriptionsTableV2"},
-                    user_message="Unable to fetch subscription data from database.",
-                )
-
-            # Calculate basic stats - handle missing attributes safely
-            active_people = len([p for p in people if getattr(p, "isActive", True)])
-            active_projects = len([p for p in projects if getattr(p, "isActive", True)])
-            active_subscriptions = len(
-                [s for s in subscriptions if getattr(s, "isActive", True)]
-            )
-
-            result = {
-                "totalUsers": len(people),
-                "activeUsers": active_people,
-                "totalProjects": len(projects),
-                "activeProjects": active_projects,
-                "totalSubscriptions": len(subscriptions),
-                "activeSubscriptions": active_subscriptions,
-                "lastUpdated": datetime.utcnow().isoformat(),
-            }
-
-            print(f"DEBUG: Returning dashboard data: {result}")
-            return result
-
-        except Exception as e:
-            print(f"FATAL ERROR in get_dashboard_data: {e}")
-            raise DatabaseException(
-                operation="get_dashboard_data",
-                details={"error": str(e)},
-                user_message="Unable to retrieve dashboard data - database service unavailable.",
-            )
+        print(f"DEBUG: Returning dashboard data: {result}")
+        return result
 
     def get_enhanced_dashboard_data(self) -> Dict[str, Any]:
         """Get enhanced dashboard data with more detailed analytics."""
