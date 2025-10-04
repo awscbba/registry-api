@@ -38,8 +38,9 @@ class RBACService:
 
     def __init__(self):
         self.people_repository = PeopleRepository()
-        # In a real implementation, this would be a dedicated RBAC repository
-        self._user_roles: Dict[str, List[UserRole]] = {}
+        from ..repositories.roles_repository import RolesRepository
+
+        self.roles_repository = RolesRepository()
         self._initialize_default_roles()
 
     def _initialize_default_roles(self):
@@ -51,8 +52,8 @@ class RBACService:
     async def get_user_roles(self, user_id: str) -> List[RoleType]:
         """Get all active roles for a user."""
         try:
-            # Get user roles from storage
-            user_roles = self._user_roles.get(user_id, [])
+            # Get user roles from database
+            user_roles = self.roles_repository.get_user_roles(user_id)
 
             # Filter active and non-expired roles
             active_roles = []
