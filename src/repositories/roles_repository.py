@@ -37,11 +37,13 @@ class RolesRepository(BaseRepository):
 
                     # Parse expires_at safely
                     expires_at = None
-                    if not item.get("expires_at", {}).get("NULL"):
-                        expires_at_str = item["expires_at"]["S"]
-                        if expires_at_str.endswith("Z"):
-                            expires_at_str = expires_at_str[:-1] + "+00:00"
-                        expires_at = datetime.fromisoformat(expires_at_str)
+                    expires_at_item = item.get("expires_at")
+                    if expires_at_item and not expires_at_item.get("NULL"):
+                        expires_at_str = expires_at_item.get("S")
+                        if expires_at_str:
+                            if expires_at_str.endswith("Z"):
+                                expires_at_str = expires_at_str[:-1] + "+00:00"
+                            expires_at = datetime.fromisoformat(expires_at_str)
 
                     # Create UserRole with safe parsing
                     role = UserRole(
