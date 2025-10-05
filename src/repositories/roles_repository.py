@@ -20,9 +20,9 @@ class RolesRepository(BaseRepository):
     def get_user_roles(self, user_id: str) -> List[UserRole]:
         """Get all roles for a user."""
         try:
-            response = self.dynamodb.scan(
+            response = self.dynamodb.query(
                 TableName=self.table_name,
-                FilterExpression="user_id = :user_id",
+                KeyConditionExpression="user_id = :user_id",
                 ExpressionAttributeValues={":user_id": {"S": user_id}},
             )
 
