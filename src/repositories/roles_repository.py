@@ -48,6 +48,7 @@ class RolesRepository(BaseRepository):
                     # Create UserRole with safe parsing
                     role = UserRole(
                         user_id=item["user_id"]["S"],
+                        user_email=item.get("email", {}).get("S", ""),
                         role_type=RoleType(item["role_type"]["S"]),
                         assigned_at=assigned_at,
                         assigned_by=item["assigned_by"]["S"],
