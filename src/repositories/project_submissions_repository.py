@@ -118,6 +118,26 @@ class ProjectSubmissionsRepository:
         except ClientError:
             return []
 
+    def get_by_person_and_project(
+        self, person_id: str, project_id: str
+    ) -> Optional[Dict[str, Any]]:
+        """Get submission by person and project"""
+        if not self.table:
+            return None
+
+        try:
+            response = self.table.scan(
+                FilterExpression="personId = :person_id AND projectId = :project_id",
+                ExpressionAttributeValues={
+                    ":person_id": person_id,
+                    ":project_id": project_id,
+                },
+            )
+            items = response.get("Items", [])
+            return items[0] if items else None
+        except ClientError:
+            return None
+
     def exists(self, submission_id: str) -> bool:
         """Check if submission exists"""
         return self.get_by_id(submission_id) is not None
