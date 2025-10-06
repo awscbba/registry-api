@@ -28,8 +28,13 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         r"^/auth/reset-password$",
         r"^/auth/validate-reset-token/.*",
         r"^/v2/projects$",  # Allow public access to projects list
+        r"^/v2/projects/.*",  # Allow public access to individual projects
         r"^/v2/projects/public$",
         r"^/v2/public/subscribe$",
+        # Dynamic Form Builder endpoints
+        r"^/v2/form-submissions$",  # Allow form submissions
+        r"^/v2/form-submissions/.*",  # Allow form submission queries
+        r"^/v2/images/upload-url$",  # Allow image upload URL generation
     ]
 
     def __init__(self, app):
