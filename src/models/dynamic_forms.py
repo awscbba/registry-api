@@ -129,3 +129,19 @@ class EnhancedProject(EnhancedProjectCreate):
     createdAt: datetime = Field(..., description="Creation timestamp")
     updatedAt: datetime = Field(..., description="Update timestamp")
     currentParticipants: int = Field(default=0, description="Current participant count")
+
+
+class ImageUploadRequest(BaseModel):
+    """Model for image upload requests"""
+
+    filename: str = Field(..., min_length=1, max_length=255)
+    content_type: str = Field(..., pattern=r"^image/(jpeg|jpg|png|gif|webp)$")
+    file_size: int = Field(..., gt=0, le=10 * 1024 * 1024)  # Max 10MB
+
+
+class ImageUploadResponse(BaseModel):
+    """Model for image upload responses"""
+
+    uploadUrl: str
+    imageId: str
+    cloudFrontUrl: str

@@ -12,6 +12,7 @@ from ..models.project import (
     ProjectResponse,
     ProjectStatus,
 )
+from ..models.dynamic_forms import EnhancedProjectCreate, FormSchema
 from ..services.projects_service import ProjectsService
 from ..services.subscriptions_service import SubscriptionsService
 from ..services.service_registry_manager import (
@@ -242,5 +243,60 @@ async def unsubscribe_from_project(
         return create_success_response(
             {"deleted": True, "subscriptionId": subscription_id}
         )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Enhanced Dynamic Forms Endpoints
+@router.post("/enhanced", response_model=dict)
+async def create_project_with_dynamic_fields(
+    project_data: EnhancedProjectCreate,
+    projects_service: ProjectsService = Depends(get_projects_service),
+):
+    """Create a project with dynamic form fields and rich text description."""
+    try:
+        project = projects_service.create_with_dynamic_fields(project_data)
+        return create_success_response(project.model_dump())
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{project_id}/enhanced", response_model=dict)
+async def get_project_with_dynamic_fields(
+    project_id: str,
+    projects_service: ProjectsService = Depends(get_projects_service),
+):
+    """Get a project with its dynamic form schema and custom fields."""
+    try:
+        project = projects_service.get_with_dynamic_fields(project_id)
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found")
+
+        return create_success_response(project.model_dump())
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/{project_id}/form-schema", response_model=dict)
+async def update_project_form_schema(
+    project_id: str,
+    form_schema: FormSchema,
+    projects_service: ProjectsService = Depends(get_projects_service),
+):
+    """Update the form schema for a project."""
+    try:
+        # Validate schema first
+        projects_service.validate_form_schema(form_schema)
+
+        # Update the schema
+        project = projects_service.update_form_schema(project_id, form_schema)
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found")
+
+        return create_success_response(project.model_dump())
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

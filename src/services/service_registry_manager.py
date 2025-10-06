@@ -20,9 +20,11 @@ from functools import lru_cache
 from ..repositories.people_repository import PeopleRepository
 from ..repositories.projects_repository import ProjectsRepository
 from ..repositories.subscriptions_repository import SubscriptionsRepository
+from ..repositories.project_submissions_repository import ProjectSubmissionsRepository
 from .people_service import PeopleService
 from .projects_service import ProjectsService
 from .subscriptions_service import SubscriptionsService
+from .form_submission_service import FormSubmissionService
 from .auth_service import AuthService
 from .admin_service import AdminService
 
@@ -44,12 +46,16 @@ class ServiceRegistryManager:
         self._repositories["people"] = PeopleRepository()
         self._repositories["projects"] = ProjectsRepository()
         self._repositories["subscriptions"] = SubscriptionsRepository()
+        self._repositories["project_submissions"] = ProjectSubmissionsRepository()
 
         # Initialize services with dependency injection
         self._services["people"] = PeopleService(self._repositories["people"])
         self._services["projects"] = ProjectsService(self._repositories["projects"])
         self._services["subscriptions"] = SubscriptionsService(
             self._repositories["subscriptions"]
+        )
+        self._services["form_submission"] = FormSubmissionService(
+            self._repositories["project_submissions"]
         )
         self._services["auth"] = AuthService()
         self._services["admin"] = AdminService()
@@ -99,6 +105,11 @@ class ServiceRegistryManager:
         """Get the subscriptions service instance."""
         self.initialize()
         return self._services["subscriptions"]
+
+    def get_form_submission_service(self) -> FormSubmissionService:
+        """Get the form submission service instance."""
+        self.initialize()
+        return self._services["form_submission"]
 
     def get_auth_service(self) -> AuthService:
         """Get the auth service instance."""
@@ -227,3 +238,8 @@ def get_logging_service():
 def get_performance_service():
     """FastAPI dependency for performance service."""
     return service_registry.get_performance_service()
+
+
+def get_form_submission_service() -> FormSubmissionService:
+    """FastAPI dependency for form submission service."""
+    return service_registry.get_form_submission_service()

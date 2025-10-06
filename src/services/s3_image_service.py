@@ -13,8 +13,14 @@ class S3ImageService:
     """Service for S3 image operations"""
 
     def __init__(self):
-        self.bucket_name = "project-images-bucket"  # Will be configurable
-        self.cloudfront_domain = "d1234567890.cloudfront.net"  # Will be configurable
+        import os
+
+        self.bucket_name = os.getenv(
+            "PROJECT_IMAGES_BUCKET_NAME", "project-images-bucket"
+        )
+        self.cloudfront_domain = os.getenv(
+            "PROJECT_IMAGES_CLOUDFRONT_DOMAIN", "d1234567890.cloudfront.net"
+        )
         self.s3_client = None  # Lazy initialization
 
     def _get_s3_client(self):

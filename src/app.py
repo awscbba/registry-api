@@ -26,6 +26,8 @@ from .routers import (
     auth_router,
     admin_router,
     public_router,
+    form_submissions_router,
+    image_upload_router,
 )
 from .utils.responses import create_success_response, create_error_response
 from .exceptions.base_exceptions import BaseApplicationException
@@ -85,6 +87,8 @@ def create_app() -> FastAPI:
     app.include_router(auth_router.router)
     app.include_router(admin_router.router)
     app.include_router(public_router.router)
+    app.include_router(form_submissions_router.router)
+    app.include_router(image_upload_router.router)
 
     # Add enterprise exception handlers
     app.add_exception_handler(
