@@ -37,11 +37,29 @@ class AuthService:
 
     def _generate_access_token(self, user_data: Dict[str, Any]) -> str:
         """Generate JWT access token."""
+        expiry_time = datetime.utcnow() + timedelta(
+            hours=self.access_token_expire_hours
+        )
+
+        # Log token expiration for debugging
+        from ..services.logging_service import logging_service, LogLevel, LogCategory
+
+        logging_service.log_structured(
+            level=LogLevel.INFO,
+            category=LogCategory.SYSTEM_EVENTS,
+            message=f"Generating access token with {self.access_token_expire_hours}h expiry",
+            additional_data={
+                "user_id": user_data["id"],
+                "expires_at": expiry_time.isoformat(),
+                "expires_in_hours": self.access_token_expire_hours,
+            },
+        )
+
         payload = {
             "sub": user_data["id"],
             "email": user_data["email"],
             "isAdmin": user_data.get("isAdmin", False),
-            "exp": datetime.utcnow() + timedelta(hours=self.access_token_expire_hours),
+            "exp": expiry_time,
             "iat": datetime.utcnow(),
             "type": "access",
         }
