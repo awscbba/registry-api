@@ -3,7 +3,7 @@ Authorization middleware to enforce RBAC on all endpoints.
 """
 
 import re
-from typing import Callable, Optional
+from typing import Callable, Optional, List
 from fastapi import Request, HTTPException, status
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -24,9 +24,18 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
             "POST": Permission.USER_CREATE,
         },
         r"^/v2/people/[^/]+$": {
-            "GET": Permission.USER_READ_OWN,  # Will check ownership
-            "PUT": Permission.USER_UPDATE_OWN,  # Will check ownership
-            "DELETE": Permission.USER_DELETE_OWN,  # Will check ownership
+            "GET": [
+                Permission.USER_READ_OWN,
+                Permission.USER_READ_ALL,
+            ],  # Users can read own, admins can read all
+            "PUT": [
+                Permission.USER_UPDATE_OWN,
+                Permission.USER_UPDATE_ALL,
+            ],  # Users can update own, admins can update all
+            "DELETE": [
+                Permission.USER_DELETE_OWN,
+                Permission.USER_DELETE_ALL,
+            ],  # Users can delete own, admins can delete all
         },
         # Project endpoints
         r"^/v2/projects$": {
@@ -35,8 +44,14 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
         },
         r"^/v2/projects/[^/]+$": {
             "GET": Permission.PROJECT_READ_ALL,
-            "PUT": Permission.PROJECT_UPDATE_OWN,  # Will check ownership
-            "DELETE": Permission.PROJECT_DELETE_OWN,  # Will check ownership
+            "PUT": [
+                Permission.PROJECT_UPDATE_OWN,
+                Permission.PROJECT_UPDATE_ALL,
+            ],  # Users can update own, admins can update all
+            "DELETE": [
+                Permission.PROJECT_DELETE_OWN,
+                Permission.PROJECT_DELETE_ALL,
+            ],  # Users can delete own, admins can delete all
         },
         # Subscription endpoints
         r"^/v2/subscriptions$": {
@@ -44,9 +59,18 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
             "POST": Permission.SUBSCRIPTION_CREATE,
         },
         r"^/v2/subscriptions/[^/]+$": {
-            "GET": Permission.SUBSCRIPTION_READ_OWN,  # Will check ownership
-            "PUT": Permission.SUBSCRIPTION_UPDATE_OWN,  # Will check ownership
-            "DELETE": Permission.SUBSCRIPTION_DELETE_ALL,  # Admins can delete any subscription
+            "GET": [
+                Permission.SUBSCRIPTION_READ_OWN,
+                Permission.SUBSCRIPTION_READ_ALL,
+            ],  # Users can read own, admins can read all
+            "PUT": [
+                Permission.SUBSCRIPTION_UPDATE_OWN,
+                Permission.SUBSCRIPTION_UPDATE_ALL,
+            ],  # Users can update own, admins can update all
+            "DELETE": [
+                Permission.SUBSCRIPTION_DELETE_OWN,
+                Permission.SUBSCRIPTION_DELETE_ALL,
+            ],  # Users can delete own, admins can delete all
         },
         # Admin endpoints
         r"^/v2/admin/.*": {
@@ -69,8 +93,13 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
         r"^/auth/reset-password$",
         r"^/auth/validate-reset-token/.*",
         r"^/v2/projects$",  # Allow public access to projects list
+        r"^/v2/projects/.*",  # Allow public access to individual projects
         r"^/v2/projects/public$",
         r"^/v2/public/subscribe$",
+        # Dynamic Form Builder endpoints
+        r"^/v2/form-submissions$",  # Allow form submissions
+        r"^/v2/form-submissions/.*",  # Allow form submission queries
+        r"^/v2/images/upload-url$",  # Allow image upload URL generation
     ]
 
     async def dispatch(self, request: Request, call_next: Callable):
@@ -103,24 +132,33 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
             )
 
         # Find required permission for this endpoint
-        required_permission = self._get_required_permission(path, method)
-        if not required_permission:
+        required_permissions = self._get_required_permission(path, method)
+        if not required_permissions:
             # No specific permission required, allow access
             return await call_next(request)
 
-        # Check permission
+        # Check permission (OR logic - user needs ANY of the required permissions)
         try:
             # Extract resource ID from path if present
             resource_id = self._extract_resource_id(path)
 
-            permission_result = await rbac_service.user_has_permission(
-                user_id=user_id,
-                permission=required_permission,
-                resource_id=resource_id,
-                context=getattr(request.state, "context", None),
-            )
+            # Check if user has any of the required permissions
+            permission_granted = False
+            permission_result = None
 
-            if not permission_result.has_permission:
+            for required_permission in required_permissions:
+                permission_result = await rbac_service.user_has_permission(
+                    user_id=user_id,
+                    permission=required_permission,
+                    resource_id=resource_id,
+                    context=getattr(request.state, "context", None),
+                )
+
+                if permission_result.has_permission:
+                    permission_granted = True
+                    break
+
+            if not permission_granted:
                 logging_service.log_security_event(
                     event_type="authorization_denied",
                     severity="medium",
@@ -128,8 +166,12 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
                     details={
                         "path": path,
                         "method": method,
-                        "required_permission": required_permission.value,
-                        "reason": permission_result.reason,
+                        "required_permissions": [p.value for p in required_permissions],
+                        "reason": (
+                            permission_result.reason
+                            if permission_result
+                            else "no_permission"
+                        ),
                     },
                 )
 
@@ -139,7 +181,7 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
                 )
 
             # Store permission check result in request state
-            request.state.authorized_permission = required_permission
+            request.state.authorized_permissions = required_permissions
             request.state.resource_id = resource_id
 
             return await call_next(request)
@@ -171,11 +213,17 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
                 return True
         return False
 
-    def _get_required_permission(self, path: str, method: str) -> Optional[Permission]:
-        """Get required permission for endpoint."""
+    def _get_required_permission(
+        self, path: str, method: str
+    ) -> Optional[List[Permission]]:
+        """Get required permission(s) for endpoint."""
         for pattern, permissions in self.ENDPOINT_PERMISSIONS.items():
             if re.match(pattern, path):
-                return permissions.get(method)
+                permission = permissions.get(method)
+                if permission is None:
+                    return None
+                # Return as list if it's already a list, otherwise wrap in list
+                return permission if isinstance(permission, list) else [permission]
         return None
 
     def _extract_resource_id(self, path: str) -> Optional[str]:

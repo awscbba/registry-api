@@ -180,6 +180,7 @@ DEFAULT_ROLES: Dict[RoleType, Role] = {
             Permission.SUBSCRIPTION_CREATE,
             Permission.SUBSCRIPTION_UPDATE_ALL,
             Permission.SUBSCRIPTION_DELETE_OWN,
+            Permission.SYSTEM_CONFIG,  # Required for admin endpoint access
         },
     ),
     RoleType.ADMIN: Role(
@@ -203,6 +204,7 @@ DEFAULT_ROLES: Dict[RoleType, Role] = {
             Permission.SUBSCRIPTION_ADMIN,
             Permission.ROLE_READ,
             Permission.ROLE_ASSIGN,
+            Permission.SYSTEM_CONFIG,  # Required for admin endpoint access
             Permission.SYSTEM_MONITOR,
             Permission.SYSTEM_AUDIT,  # Required for admin dashboard access
             Permission.SECURITY_AUDIT,  # Required for admin security operations
@@ -222,6 +224,7 @@ DEFAULT_ROLES: Dict[RoleType, Role] = {
             Permission.USER_READ_ALL,
             Permission.PROJECT_READ_ALL,
             Permission.SUBSCRIPTION_READ_ALL,
+            Permission.SYSTEM_CONFIG,  # Required for admin endpoint access (read-only)
             Permission.SYSTEM_AUDIT,
             Permission.SECURITY_AUDIT,
             Permission.ROLE_READ,

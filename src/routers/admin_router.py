@@ -39,7 +39,7 @@ async def get_dashboard_data(
 ):
     """Get admin dashboard data."""
     try:
-        dashboard_data = await admin_service.get_dashboard_data()
+        dashboard_data = admin_service.get_dashboard_data()
 
         # Log successful dashboard access
         from ..services.logging_service import logging_service
@@ -57,22 +57,44 @@ async def get_dashboard_data(
 
         return create_success_response(dashboard_data)
 
-    except Exception as e:
-        # Log error with enterprise logging
+    except DatabaseException as e:
+        # Log database error
         from ..services.logging_service import logging_service
 
         logging_service.log_structured(
             level=LogLevel.ERROR,
             category=LogCategory.SYSTEM_EVENTS,
-            message=f"Failed to get dashboard data: {str(e)}",
+            message=f"Database unavailable for dashboard: {str(e)}",
             additional_data={"admin_user_id": current_user.id, "error": str(e)},
         )
 
-        # Raise appropriate enterprise exception
-        raise DatabaseException(
+        # Return proper error response for database unavailability
+        return create_error_response(
+            message="Database service unavailable",
+            details={
+                "error_type": "database_unavailable",
+                "user_message": "Dashboard data cannot be retrieved - database service is currently unavailable",
+                "retry_after": "Please try again in a few minutes",
+            },
+            status_code=503,
+        )
+
+    except Exception as e:
+        # Log unexpected error
+        from ..services.logging_service import logging_service
+
+        logging_service.log_structured(
+            level=LogLevel.ERROR,
+            category=LogCategory.SYSTEM_EVENTS,
+            message=f"Unexpected error getting dashboard data: {str(e)}",
+            additional_data={"admin_user_id": current_user.id, "error": str(e)},
+        )
+
+        # Return generic error response
+        return create_error_response(
             message="Failed to retrieve dashboard data",
             details={"error": str(e)},
-            user_message="Unable to retrieve dashboard information at this time",
+            status_code=500,
         )
 
 
@@ -375,7 +397,7 @@ async def get_admin_subscriptions(
 ):
     """Get all subscriptions (admin endpoint)."""
     try:
-        subscriptions = await subscriptions_service.list_subscriptions()
+        subscriptions = subscriptions_service.list_subscriptions()  # Not async
         return create_success_response(subscriptions)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -444,7 +466,7 @@ async def get_admin_registrations(
 ):
     """Get all registrations (alias for subscriptions)."""
     try:
-        subscriptions = await subscriptions_service.list_subscriptions()
+        subscriptions = subscriptions_service.list_subscriptions()  # Not async
         return create_success_response(subscriptions)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -520,6 +542,30 @@ async def get_performance_health(
         return create_success_response(fallback_health)
 
 
+@router.get("/debug-stats", response_model=dict)
+async def debug_admin_stats(
+    admin_service: AdminService = Depends(get_admin_service),
+):
+    """Debug endpoint to test admin stats without authentication."""
+    try:
+        dashboard_data = admin_service.get_dashboard_data()
+        return create_success_response(dashboard_data)
+    except Exception as e:
+        from ..services.logging_service import logging_service
+
+        logging_service.log_structured(
+            level=LogLevel.ERROR,
+            category=LogCategory.ERROR_HANDLING,
+            message=f"Debug admin stats failed: {str(e)}",
+            additional_data={"error_type": type(e).__name__, "error_details": str(e)},
+        )
+        return create_error_response(
+            message="Debug admin stats failed",
+            error_code="DEBUG_ERROR",
+            details={"error": str(e)},
+        )
+
+
 @router.get("/stats", response_model=dict)
 async def get_admin_stats(
     current_user: User = Depends(require_admin),
@@ -528,7 +574,7 @@ async def get_admin_stats(
 ):
     """Get comprehensive admin statistics."""
     try:
-        dashboard_data = await admin_service.get_dashboard_data()
+        dashboard_data = admin_service.get_dashboard_data()
         performance_stats = await performance_service.get_performance_stats()
 
         stats = {
@@ -637,6 +683,71 @@ async def get_cache_stats(
             "timestamp": "2025-09-04T02:56:00Z",
         }
     )
+
+
+@router.get("/performance/dashboard", response_model=dict)
+async def get_performance_dashboard(
+    current_user: User = Depends(require_admin),
+    performance_service=Depends(get_performance_service),
+):
+    """Get performance dashboard data."""
+    try:
+        dashboard_data = await performance_service.get_dashboard_data()
+        return create_success_response(dashboard_data)
+    except Exception as e:
+        from ..services.logging_service import logging_service
+
+        logging_service.log_structured(
+            level=LogLevel.ERROR,
+            category=LogCategory.ERROR_HANDLING,
+            message=f"Performance dashboard failed: {str(e)}",
+            additional_data={"admin_user_id": current_user.id, "error": str(e)},
+        )
+        raise HTTPException(status_code=500, detail="Performance dashboard unavailable")
+
+
+@router.get("/performance/analytics", response_model=dict)
+async def get_performance_analytics(
+    current_user: User = Depends(require_admin),
+    performance_service=Depends(get_performance_service),
+):
+    """Get performance analytics data."""
+    try:
+        analytics_data = await performance_service.get_analytics_data()
+        return create_success_response(analytics_data)
+    except Exception as e:
+        from ..services.logging_service import logging_service
+
+        logging_service.log_structured(
+            level=LogLevel.ERROR,
+            category=LogCategory.ERROR_HANDLING,
+            message=f"Performance analytics failed: {str(e)}",
+            additional_data={"admin_user_id": current_user.id, "error": str(e)},
+        )
+        raise HTTPException(status_code=500, detail="Performance analytics unavailable")
+
+
+@router.get("/performance/slowest-endpoints", response_model=dict)
+async def get_slowest_endpoints(
+    current_user: User = Depends(require_admin),
+    performance_service=Depends(get_performance_service),
+):
+    """Get slowest endpoints data."""
+    try:
+        endpoints_data = await performance_service.get_slowest_endpoints()
+        return create_success_response({"endpoints": endpoints_data})
+    except Exception as e:
+        from ..services.logging_service import logging_service
+
+        logging_service.log_structured(
+            level=LogLevel.ERROR,
+            category=LogCategory.ERROR_HANDLING,
+            message=f"Slowest endpoints query failed: {str(e)}",
+            additional_data={"admin_user_id": current_user.id, "error": str(e)},
+        )
+        raise HTTPException(
+            status_code=500, detail="Slowest endpoints data unavailable"
+        )
 
 
 # Database Performance Endpoints

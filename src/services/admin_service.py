@@ -27,41 +27,58 @@ class AdminService:
         self.projects_repository = ProjectsRepository()
         self.subscriptions_repository = SubscriptionsRepository()
 
-    async def get_dashboard_data(self) -> Dict[str, Any]:
+    def get_dashboard_data(self) -> Dict[str, Any]:
         """Get basic dashboard data."""
+        # Get counts with detailed logging for debugging
+        people = []
+        projects = []
+        subscriptions = []
+
         try:
-            # Get counts
             people = self.people_repository.list_all()
-            projects = self.projects_repository.list_all()
-            subscriptions = self.subscriptions_repository.list_all()
-
-            # Calculate basic stats - handle missing attributes safely
-            active_people = len([p for p in people if getattr(p, "isActive", True)])
-            active_projects = len([p for p in projects if getattr(p, "isActive", True)])
-            active_subscriptions = len(
-                [s for s in subscriptions if getattr(s, "isActive", True)]
-            )
-
-            return {
-                "totalUsers": len(people),
-                "activeUsers": active_people,
-                "totalProjects": len(projects),
-                "activeProjects": active_projects,
-                "totalSubscriptions": len(subscriptions),
-                "activeSubscriptions": active_subscriptions,
-                "lastUpdated": datetime.utcnow().isoformat(),
-            }
+            print(f"DEBUG: Fetched {len(people)} people")
         except Exception as e:
-            raise DatabaseException(
-                operation="get_dashboard_data",
-                details={"error": str(e)},
-                user_message="Unable to retrieve dashboard data at this time.",
-            )
+            print(f"ERROR: Could not fetch people: {e}")
+            people = []
 
-    async def get_enhanced_dashboard_data(self) -> Dict[str, Any]:
+        try:
+            projects = self.projects_repository.list_all()
+            print(f"DEBUG: Fetched {len(projects)} projects")
+        except Exception as e:
+            print(f"ERROR: Could not fetch projects: {e}")
+            projects = []
+
+        try:
+            subscriptions = self.subscriptions_repository.list_all()
+            print(f"DEBUG: Fetched {len(subscriptions)} subscriptions")
+        except Exception as e:
+            print(f"ERROR: Could not fetch subscriptions: {e}")
+            subscriptions = []
+
+        # Calculate basic stats - handle missing attributes safely
+        active_people = len([p for p in people if getattr(p, "isActive", True)])
+        active_projects = len([p for p in projects if getattr(p, "isActive", True)])
+        active_subscriptions = len(
+            [s for s in subscriptions if getattr(s, "isActive", True)]
+        )
+
+        result = {
+            "totalUsers": len(people),
+            "activeUsers": active_people,
+            "totalProjects": len(projects),
+            "activeProjects": active_projects,
+            "totalSubscriptions": len(subscriptions),
+            "activeSubscriptions": active_subscriptions,
+            "lastUpdated": datetime.utcnow().isoformat(),
+        }
+
+        print(f"DEBUG: Returning dashboard data: {result}")
+        return result
+
+    def get_enhanced_dashboard_data(self) -> Dict[str, Any]:
         """Get enhanced dashboard data with more detailed analytics."""
         try:
-            basic_data = await self.get_dashboard_data()
+            basic_data = self.get_dashboard_data()
 
             # Get additional analytics
             people = self.people_repository.list_all()
@@ -111,7 +128,7 @@ class AdminService:
                 user_message="Unable to retrieve enhanced dashboard data at this time.",
             )
 
-    async def get_analytics_data(self) -> Dict[str, Any]:
+    def get_analytics_data(self) -> Dict[str, Any]:
         """Get detailed analytics data."""
         try:
             people = self.people_repository.list_all()
@@ -167,7 +184,7 @@ class AdminService:
                 user_message="Unable to retrieve analytics data at this time.",
             )
 
-    async def execute_bulk_action(self, bulk_data: Dict[str, Any]) -> Dict[str, Any]:
+    def execute_bulk_action(self, bulk_data: Dict[str, Any]) -> Dict[str, Any]:
         """Execute bulk actions on users."""
         try:
             action = bulk_data.get("action")

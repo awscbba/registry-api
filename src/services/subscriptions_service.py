@@ -58,18 +58,121 @@ class SubscriptionsService:
         subscriptions = self.subscriptions_repository.get_by_person(person_id)
         return [SubscriptionResponse(**sub.model_dump()) for sub in subscriptions]
 
-    def get_project_subscriptions(self, project_id: str) -> List[SubscriptionResponse]:
-        """Get all subscriptions for a project."""
+    def get_project_subscriptions(self, project_id: str) -> List[dict]:
+        """Get all subscriptions for a project with person details."""
         subscriptions = self.subscriptions_repository.get_by_project(project_id)
-        return [SubscriptionResponse(**sub.model_dump()) for sub in subscriptions]
+
+        # Enrich subscriptions with person details
+        enriched_subscriptions = []
+        for sub in subscriptions:
+            subscription_dict = sub.model_dump()
+
+            # Get person details
+            try:
+                from ..services.service_registry_manager import service_registry
+
+                people_service = service_registry.get_people_service()
+                person = people_service.get_person(sub.personId)
+
+                if person:
+                    subscription_dict.update(
+                        {
+                            "personName": f"{person.firstName} {person.lastName}".strip(),
+                            "personEmail": person.email,
+                            "personFirstName": person.firstName,
+                            "personLastName": person.lastName,
+                        }
+                    )
+                else:
+                    subscription_dict.update(
+                        {
+                            "personName": "Unknown User",
+                            "personEmail": "unknown@example.com",
+                            "personFirstName": "Unknown",
+                            "personLastName": "User",
+                        }
+                    )
+            except Exception:
+                # Fallback if person lookup fails
+                subscription_dict.update(
+                    {
+                        "personName": "Unknown User",
+                        "personEmail": "unknown@example.com",
+                        "personFirstName": "Unknown",
+                        "personLastName": "User",
+                    }
+                )
+
+            enriched_subscriptions.append(subscription_dict)
+
+        return enriched_subscriptions
 
     def update_subscription(
         self, subscription_id: str, updates: SubscriptionUpdate
     ) -> Optional[SubscriptionResponse]:
-        """Update a subscription."""
+        """Update a subscription and send welcome email if approved."""
+        # Get current subscription to check status change
+        current_subscription = self.subscriptions_repository.get_by_id(subscription_id)
+        if not current_subscription:
+            return None
+
+        # Update the subscription
         subscription = self.subscriptions_repository.update(subscription_id, updates)
         if not subscription:
             return None
+
+        # Check if status changed from pending to active (approval)
+        if current_subscription.status == "pending" and updates.status == "active":
+
+            # Send welcome email asynchronously
+            import asyncio
+            from ..services.service_registry_manager import (
+                get_email_service,
+                get_people_service,
+                get_projects_service,
+            )
+
+            async def send_welcome_email():
+                try:
+                    email_service = get_email_service()
+                    people_service = get_people_service()
+                    projects_service = get_projects_service()
+
+                    # Get person and project details
+                    person = people_service.get_person(
+                        subscription.personId
+                    )  # Not async
+                    project = await projects_service.get_project(subscription.projectId)
+
+                    if person and project:
+                        await email_service.send_project_welcome_email(
+                            person.email, person.firstName, project.name
+                        )
+                except Exception as e:
+                    # Log error but don't fail the subscription update
+                    from ..services.logging_service import (
+                        logging_service,
+                        LogCategory,
+                        LogLevel,
+                    )
+
+                    logging_service.log(
+                        LogLevel.ERROR,
+                        LogCategory.BUSINESS_LOGIC,
+                        "Failed to send welcome email on subscription approval",
+                        event_type="welcome_email_failed",
+                        details={"subscription_id": subscription_id, "error": str(e)},
+                    )
+
+            # Run email sending in background
+            try:
+                asyncio.create_task(send_welcome_email())
+            except Exception:
+                # If we can't create task, try to run it directly
+                try:
+                    asyncio.run(send_welcome_email())
+                except Exception:
+                    pass  # Fail silently to not break subscription update
 
         return SubscriptionResponse(**subscription.model_dump())
 

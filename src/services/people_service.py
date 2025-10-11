@@ -168,7 +168,37 @@ class PeopleService:
             details={"email": person.email},
         )
 
-        return self.people_repository.delete(person_id)
+        # Delete the person from database
+        person_deleted = self.people_repository.delete(person_id)
+
+        if person_deleted:
+            # Clean up orphaned subscriptions after successful person deletion
+            try:
+                subscriptions = subscriptions_service.get_person_subscriptions(
+                    person_id
+                )
+                for subscription in subscriptions:
+                    subscriptions_service.delete_subscription(subscription.id)
+                    logging_service.log_structured(
+                        level=LogLevel.INFO,
+                        category=LogCategory.USER_OPERATIONS,
+                        message=f"Deleted orphaned subscription {subscription.id} for deleted person {person_id}",
+                        additional_data={
+                            "person_id": person_id,
+                            "subscription_id": subscription.id,
+                            "project_id": subscription.projectId,
+                        },
+                    )
+            except Exception as e:
+                # Log error but don't fail the person deletion
+                logging_service.log_structured(
+                    level=LogLevel.WARNING,
+                    category=LogCategory.USER_OPERATIONS,
+                    message=f"Failed to clean up subscriptions for deleted person {person_id}: {str(e)}",
+                    additional_data={"person_id": person_id, "error": str(e)},
+                )
+
+        return person_deleted
 
     def list_people(self, limit: Optional[int] = None) -> List[PersonResponse]:
         """List all people."""

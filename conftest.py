@@ -55,7 +55,7 @@ def aws_credentials():
     os.environ["AWS_SESSION_TOKEN"] = "testing"
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="function", autouse=True)
 def dynamodb_mock():
     """Mock DynamoDB for tests."""
     with mock_aws():
@@ -64,11 +64,16 @@ def dynamodb_mock():
 
         # Create test tables
         tables_to_create = [
-            ("test-people-table", "id"),  # The actual key used in the code
-            ("test-projects-table", "id"),  # Likely also uses "id"
-            ("test-subscriptions-table", "id"),  # Likely also uses "id"
-            ("test-audit-table", "id"),  # Likely also uses "id"
-            ("test-lockout-table", "email"),  # This one uses email as key
+            # Legacy tables
+            ("test-people-table", "id"),
+            ("test-projects-table", "id"),
+            ("test-subscriptions-table", "id"),
+            ("test-audit-table", "id"),
+            ("test-lockout-table", "email"),
+            # V2 tables (standardized)
+            ("test-people-table-v2", "id"),
+            ("test-projects-table-v2", "id"),
+            ("test-subscriptions-table-v2", "id"),
         ]
 
         for table_name, key_name in tables_to_create:

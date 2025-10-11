@@ -141,7 +141,7 @@ async def change_password(
         from ..utils.password_utils import hash_and_validate_password, PasswordHasher
 
         # Verify current password
-        person = await auth_service.people_repository.get_by_id(current_user.id)
+        person = auth_service.people_repository.get_by_id(current_user.id)  # Not async
         if not person or not hasattr(person, "passwordHash") or not person.passwordHash:
             raise HTTPException(
                 status_code=400, detail="Account not set up for password change"
@@ -166,9 +166,9 @@ async def change_password(
         from ..models.person import PersonUpdate
 
         update_data = PersonUpdate(passwordHash=new_hash)
-        updated_person = await auth_service.people_repository.update(
+        updated_person = auth_service.people_repository.update(
             current_user.id, update_data
-        )
+        )  # Not async
 
         if not updated_person:
             raise HTTPException(status_code=500, detail="Failed to update password")

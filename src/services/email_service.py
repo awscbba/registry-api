@@ -133,6 +133,273 @@ class EmailService:
                 "error_code": "UNKNOWN_ERROR",
             }
 
+    async def send_project_welcome_email(
+        self, email: str, first_name: str, project_name: str
+    ) -> Dict[str, Any]:
+        """Send welcome email for project subscription."""
+
+        if self.test_mode:
+            return {
+                "success": True,
+                "message": "Welcome email would be sent (TEST MODE)",
+                "message_id": "test-mode-message-id",
+            }
+
+        subject = f"¡Bienvenido al proyecto {project_name}!"
+
+        html_body = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Bienvenido al Proyecto</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+                <h1 style="color: white; margin: 0; font-size: 28px;">¡Bienvenido al Proyecto!</h1>
+            </div>
+
+            <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #e9ecef;">
+                <p style="font-size: 18px; margin-bottom: 20px;">Hola {first_name},</p>
+
+                <p style="font-size: 16px; margin-bottom: 20px;">
+                    ¡Felicitaciones! Tu suscripción al proyecto <strong>{project_name}</strong> ha sido confirmada.
+                </p>
+
+                <div style="background: #28a745; color: white; padding: 15px; border-radius: 5px; margin: 20px 0; text-align: center;">
+                    <p style="margin: 0; font-size: 16px; font-weight: bold;">✅ Suscripción Activa</p>
+                </div>
+
+                <p style="font-size: 16px; margin-bottom: 20px;">
+                    Ahora recibirás todas las actualizaciones, noticias y comunicaciones importantes relacionadas con este proyecto.
+                </p>
+
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{self.frontend_url}"
+                       style="background: #007bff; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+                        Visitar Dashboard
+                    </a>
+                </div>
+
+                <p style="font-size: 14px; color: #666; margin-top: 30px;">
+                    Si tienes alguna pregunta, no dudes en contactarnos.<br>
+                    <strong>AWS User Group Cochabamba</strong>
+                </p>
+            </div>
+        </body>
+        </html>
+        """
+
+        try:
+            response = self.ses_client.send_email(
+                Source=self.from_email,
+                Destination={"ToAddresses": [email]},
+                Message={
+                    "Subject": {"Data": subject, "Charset": "UTF-8"},
+                    "Body": {"Html": {"Data": html_body, "Charset": "UTF-8"}},
+                },
+            )
+
+            return {
+                "success": True,
+                "message": "Welcome email sent successfully",
+                "message_id": response["MessageId"],
+            }
+
+        except ClientError as e:
+            return {
+                "success": False,
+                "message": f"Failed to send email: {e.response['Error']['Message']}",
+                "error_code": e.response["Error"]["Code"],
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Unexpected error: {str(e)}",
+                "error_code": "UNKNOWN_ERROR",
+            }
+
+    async def send_subscription_pending_email(
+        self, email: str, first_name: str, project_name: str
+    ) -> Dict[str, Any]:
+        """Send email notifying that subscription is pending approval."""
+
+        if self.test_mode:
+            return {
+                "success": True,
+                "message": "Pending approval email would be sent (TEST MODE)",
+                "message_id": "test-mode-message-id",
+            }
+
+        subject = f"Suscripción Pendiente - {project_name}"
+
+        html_body = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Suscripción Pendiente</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #ffc107 0%, #ff8f00 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+                <h1 style="color: white; margin: 0; font-size: 28px;">Suscripción Recibida</h1>
+            </div>
+
+            <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #e9ecef;">
+                <p style="font-size: 18px; margin-bottom: 20px;">Hola {first_name},</p>
+
+                <p style="font-size: 16px; margin-bottom: 20px;">
+                    Gracias por tu interés en el proyecto <strong>{project_name}</strong>.
+                </p>
+
+                <div style="background: #ffc107; color: #212529; padding: 15px; border-radius: 5px; margin: 20px 0; text-align: center;">
+                    <p style="margin: 0; font-size: 16px; font-weight: bold;">⏳ Pendiente de Aprobación</p>
+                </div>
+
+                <p style="font-size: 16px; margin-bottom: 20px;">
+                    Tu suscripción está siendo revisada por nuestro equipo administrativo. Te notificaremos por email una vez que sea aprobada.
+                </p>
+
+                <p style="font-size: 16px; margin-bottom: 20px;">
+                    Mientras tanto, puedes explorar otros proyectos disponibles en nuestra plataforma.
+                </p>
+
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{self.frontend_url}"
+                       style="background: #007bff; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+                        Ver Proyectos
+                    </a>
+                </div>
+
+                <p style="font-size: 14px; color: #666; margin-top: 30px;">
+                    Si tienes alguna pregunta, no dudes en contactarnos.<br>
+                    <strong>AWS User Group Cochabamba</strong>
+                </p>
+            </div>
+        </body>
+        </html>
+        """
+
+        try:
+            response = self.ses_client.send_email(
+                Source=self.from_email,
+                Destination={"ToAddresses": [email]},
+                Message={
+                    "Subject": {"Data": subject, "Charset": "UTF-8"},
+                    "Body": {"Html": {"Data": html_body, "Charset": "UTF-8"}},
+                },
+            )
+
+            return {
+                "success": True,
+                "message": "Pending approval email sent successfully",
+                "message_id": response["MessageId"],
+            }
+
+        except ClientError as e:
+            return {
+                "success": False,
+                "message": f"Failed to send email: {e.response['Error']['Message']}",
+                "error_code": e.response["Error"]["Code"],
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Unexpected error: {str(e)}",
+                "error_code": "UNKNOWN_ERROR",
+            }
+
+    async def send_admin_notification_email(
+        self, user_email: str, user_name: str, project_name: str
+    ) -> Dict[str, Any]:
+        """Send notification email to admin when new user registers."""
+
+        if self.test_mode:
+            return {
+                "success": True,
+                "message": "Admin notification email would be sent (TEST MODE)",
+                "message_id": "test-mode-message-id",
+            }
+
+        # Send to a configured admin email (you might want to make this configurable)
+        admin_email = "admin@cbba.cloud.org.bo"  # Configure this appropriately
+        subject = f"Nueva Suscripción Pendiente - {project_name}"
+
+        html_body = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Nueva Suscripción Pendiente</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+                <h1 style="color: white; margin: 0; font-size: 28px;">Nueva Suscripción Pendiente</h1>
+            </div>
+
+            <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #e9ecef;">
+                <p style="font-size: 18px; margin-bottom: 20px;">Hola Administrador,</p>
+
+                <p style="font-size: 16px; margin-bottom: 20px;">
+                    Un nuevo usuario se ha registrado y está esperando aprobación para unirse a un proyecto.
+                </p>
+
+                <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                    <h3 style="margin: 0 0 10px 0; color: #856404;">Detalles de la Solicitud:</h3>
+                    <p style="margin: 5px 0;"><strong>Usuario:</strong> {user_name}</p>
+                    <p style="margin: 5px 0;"><strong>Email:</strong> {user_email}</p>
+                    <p style="margin: 5px 0;"><strong>Proyecto:</strong> {project_name}</p>
+                </div>
+
+                <p style="font-size: 16px; margin-bottom: 20px;">
+                    Por favor, revisa la solicitud en el panel de administración y aprueba o rechaza la suscripción.
+                </p>
+
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{self.frontend_url}/admin"
+                       style="background: #007bff; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+                        Ir al Panel de Administración
+                    </a>
+                </div>
+
+                <p style="font-size: 14px; color: #666; margin-top: 30px;">
+                    Este es un mensaje automático del sistema de registro.<br>
+                    <strong>AWS User Group Cochabamba</strong>
+                </p>
+            </div>
+        </body>
+        </html>
+        """
+
+        try:
+            response = self.ses_client.send_email(
+                Source=self.from_email,
+                Destination={"ToAddresses": [admin_email]},
+                Message={
+                    "Subject": {"Data": subject, "Charset": "UTF-8"},
+                    "Body": {"Html": {"Data": html_body, "Charset": "UTF-8"}},
+                },
+            )
+
+            return {
+                "success": True,
+                "message": "Admin notification email sent successfully",
+                "message_id": response["MessageId"],
+            }
+
+        except ClientError as e:
+            return {
+                "success": False,
+                "message": f"Failed to send email: {e.response['Error']['Message']}",
+                "error_code": e.response["Error"]["Code"],
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Unexpected error: {str(e)}",
+                "error_code": "UNKNOWN_ERROR",
+            }
+
     async def send_subscription_notification_email(
         self, email: str, first_name: str, project_name: str, status: str
     ) -> Dict[str, Any]:

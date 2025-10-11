@@ -57,7 +57,10 @@ class AuthConfig(BaseModel):
         )
     )
     jwt_algorithm: str = "HS256"
-    access_token_expire_hours: int = 24
+    # Temporarily increase to 48 hours to debug the expiration issue
+    access_token_expire_hours: int = Field(
+        default=48, description="Access token expiration in hours"
+    )
     refresh_token_expire_days: int = 30
 
 
