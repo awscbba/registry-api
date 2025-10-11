@@ -61,6 +61,31 @@ def create_app() -> FastAPI:
         redoc_url="/redoc",
     )
 
+    # Add CORS middleware FIRST (critical for preflight requests)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            "*",  # Allow all origins for development
+            "https://deploy-subscription-fix.d36qiwhuhsb8gy.amplifyapp.com",
+            "https://d28z2il3z2vmpc.cloudfront.net",
+            "http://localhost:3000",
+            "http://localhost:4321",
+        ],
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+        allow_headers=[
+            "Accept",
+            "Accept-Language",
+            "Content-Language",
+            "Content-Type",
+            "Authorization",
+            "X-Requested-With",
+            "X-Api-Key",
+            "X-Amz-Date",
+            "X-Amz-Security-Token",
+        ],
+    )
+
     # Add enterprise middleware (order matters!)
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(RateLimitingMiddleware, requests_per_minute=100)
@@ -70,15 +95,6 @@ def create_app() -> FastAPI:
     app.add_middleware(InputValidationMiddleware)
     app.add_middleware(AuthorizationMiddleware)
     app.add_middleware(AuthenticationMiddleware)
-
-    # Add CORS middleware
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],  # Configure appropriately for production
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
 
     # Include routers
     app.include_router(people_router.router)
