@@ -65,11 +65,7 @@ def create_app() -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[
-            "*",  # Allow all origins for development
-            "https://deploy-subscription-fix.d36qiwhuhsb8gy.amplifyapp.com",
-            "https://d28z2il3z2vmpc.cloudfront.net",
-            "http://localhost:3000",
-            "http://localhost:4321",
+            "*",  # Allow all origins (includes all Amplify branch domains)
         ],
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
