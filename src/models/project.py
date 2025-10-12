@@ -51,6 +51,29 @@ class ProjectBase(BaseModel):
     formSchema: Optional[Dict[str, Any]] = Field(
         None, description="Dynamic form schema for enhanced project features"
     )
+    richText: Optional[str] = Field(
+        None, max_length=10000, description="Rich text content (HTML, max 10KB)"
+    )
+
+    @field_validator("richText")
+    @classmethod
+    def validate_rich_text_size(cls, v):
+        """Validate rich text content size."""
+        if v is not None:
+            # Check character count
+            if len(v) > 10000:
+                raise ValueError(
+                    "Rich text content is too long (maximum 10,000 characters allowed)"
+                )
+
+            # Check byte size (HTML can be larger in bytes than characters)
+            byte_size = len(v.encode("utf-8"))
+            if byte_size > 15000:  # 15KB byte limit
+                raise ValueError(
+                    "Rich text content is too large (maximum 15KB allowed)"
+                )
+
+        return v
 
     @field_validator("endDate")
     @classmethod
