@@ -275,6 +275,8 @@ async def get_project_with_dynamic_fields(
             raise HTTPException(status_code=404, detail="Project not found")
 
         return create_success_response(project.model_dump())
+    except HTTPException:
+        raise  # Re-raise HTTPException as-is
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

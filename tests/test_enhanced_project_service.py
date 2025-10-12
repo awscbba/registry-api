@@ -46,12 +46,21 @@ class TestEnhancedProjectService:
             customFields=[custom_field],
         )
 
-        mock_put_item.return_value = True
-        mock_get_item.return_value = {
-            "id": "project-123",
-            "name": "Test Project",
-            "customFields": [custom_field.model_dump()],
-        }
+        # Configure mock repository to return a proper Project object
+        expected_project = Project(
+            id="project-123",
+            name="Test Project",
+            description="Test description",
+            startDate="2025-01-01",
+            endDate="2025-12-31",
+            maxParticipants=50,
+            status=ProjectStatus.PENDING,
+            currentParticipants=0,
+            createdAt="2025-01-01T00:00:00",
+            updatedAt="2025-01-01T00:00:00",
+            createdBy="system",
+        )
+        self.mock_repository.create.return_value = expected_project
 
         # Act
         result = self.projects_service.create_with_dynamic_fields(project_data)
@@ -90,6 +99,23 @@ class TestEnhancedProjectService:
             "name": "Rich Text Project",
             "formSchema": form_schema.model_dump(),
         }
+
+        # Configure mock repository to return a proper Project object
+        expected_project = Project(
+            id="project-456",
+            name="Rich Text Project",
+            description="Basic description",
+            startDate="2025-01-01",
+            endDate="2025-12-31",
+            maxParticipants=100,
+            status=ProjectStatus.PENDING,
+            currentParticipants=0,
+            createdAt="2025-01-01T00:00:00",
+            updatedAt="2025-01-01T00:00:00",
+            createdBy="system",
+            formSchema=form_schema.model_dump(),
+        )
+        self.mock_repository.create.return_value = expected_project
 
         # Act
         result = self.projects_service.create_with_dynamic_fields(project_data)
@@ -154,6 +180,22 @@ class TestEnhancedProjectService:
                 "richTextDescription": "# Dynamic Description",
             },
         }
+
+        # Configure mock repository to return a proper Project object
+        expected_project = Project(
+            id=project_id,
+            name="Dynamic Project",
+            description="Dynamic description",
+            startDate="2025-01-01",
+            endDate="2025-12-31",
+            maxParticipants=100,
+            status=ProjectStatus.PENDING,
+            currentParticipants=0,
+            createdAt="2025-01-01T00:00:00",
+            updatedAt="2025-01-01T00:00:00",
+            createdBy="system",
+        )
+        self.mock_repository.get_by_id.return_value = expected_project
 
         # Act
         result = self.projects_service.get_with_dynamic_fields(project_id)
@@ -238,6 +280,22 @@ class TestEnhancedProjectService:
             "name": "Project with Images",
             "images": [image.model_dump()],
         }
+
+        # Configure mock repository to return a proper Project object
+        expected_project = Project(
+            id="project-with-images",
+            name="Project with Images",
+            description="Project description",
+            startDate="2025-01-01",
+            endDate="2025-12-31",
+            maxParticipants=75,
+            status=ProjectStatus.PENDING,
+            currentParticipants=0,
+            createdAt="2025-01-01T00:00:00",
+            updatedAt="2025-01-01T00:00:00",
+            createdBy="system",
+        )
+        self.mock_repository.create.return_value = expected_project
 
         # Act
         result = self.projects_service.create_with_dynamic_fields(project_data)
