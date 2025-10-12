@@ -23,7 +23,7 @@ class ProjectBase(BaseModel):
 
     name: str = Field(..., min_length=1, max_length=200, description="Project name")
     description: str = Field(
-        ..., min_length=1, max_length=2000, description="Project description"
+        ..., min_length=1, max_length=5000, description="Project description"
     )
     startDate: str = Field(..., description="Project start date (YYYY-MM-DD)")
     endDate: str = Field(..., description="Project end date (YYYY-MM-DD)")
@@ -40,7 +40,25 @@ class ProjectBase(BaseModel):
         None, max_length=200, description="Project location"
     )
     requirements: Optional[str] = Field(
-        None, max_length=1000, description="Project requirements"
+        None, max_length=5000, description="Project requirements"
+    )
+    registrationEndDate: Optional[str] = Field(
+        None, description="Registration end date (YYYY-MM-DD)"
+    )
+    isEnabled: Optional[bool] = Field(
+        True, description="Whether the project is enabled"
+    )
+    formSchema: Optional[Dict[str, Any]] = Field(
+        None, description="Dynamic form schema for enhanced project features"
+    )
+    registrationEndDate: Optional[str] = Field(
+        None, description="Registration end date (YYYY-MM-DD)"
+    )
+    isEnabled: Optional[bool] = Field(
+        True, description="Whether the project is enabled"
+    )
+    formSchema: Optional[Dict[str, Any]] = Field(
+        None, description="Dynamic form schema for enhanced project features"
     )
     registrationEndDate: Optional[str] = Field(
         None, description="Registration end date (YYYY-MM-DD)"
