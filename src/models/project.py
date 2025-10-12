@@ -6,7 +6,7 @@ Clean camelCase models with no field mapping complexity.
 from datetime import datetime
 from enum import Enum
 from typing import Optional, Any, Dict
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class ProjectStatus(str, Enum):
@@ -51,24 +51,6 @@ class ProjectBase(BaseModel):
     formSchema: Optional[Dict[str, Any]] = Field(
         None, description="Dynamic form schema for enhanced project features"
     )
-    registrationEndDate: Optional[str] = Field(
-        None, description="Registration end date (YYYY-MM-DD)"
-    )
-    isEnabled: Optional[bool] = Field(
-        True, description="Whether the project is enabled"
-    )
-    formSchema: Optional[Dict[str, Any]] = Field(
-        None, description="Dynamic form schema for enhanced project features"
-    )
-    registrationEndDate: Optional[str] = Field(
-        None, description="Registration end date (YYYY-MM-DD)"
-    )
-    isEnabled: Optional[bool] = Field(
-        True, description="Whether the project is enabled"
-    )
-    formSchema: Optional[Dict[str, Any]] = Field(
-        None, description="Dynamic form schema for enhanced project features"
-    )
 
     @field_validator("endDate")
     @classmethod
@@ -77,6 +59,26 @@ class ProjectBase(BaseModel):
         if info.data.get("startDate") and v <= info.data["startDate"]:
             raise ValueError("End date must be after start date")
         return v
+
+    @model_validator(mode="after")
+    def validate_form_schema(self):
+        """Validate formSchema size and richTextDescription length."""
+        if self.formSchema:
+            # Check total JSON size (approximate)
+            import json
+
+            json_str = json.dumps(self.formSchema)
+            if len(json_str) > 50000:  # 50KB limit
+                raise ValueError("Form schema is too large (max 50KB)")
+
+            # Check richTextDescription specifically
+            rich_text = self.formSchema.get("richTextDescription", "")
+            if isinstance(rich_text, str) and len(rich_text) > 10000:
+                raise ValueError(
+                    "Rich text description is too long (max 10,000 characters)"
+                )
+
+        return self
 
 
 class ProjectCreate(ProjectBase):
