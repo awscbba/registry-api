@@ -121,6 +121,54 @@ class ProjectsService:
     # Enhanced methods for dynamic forms support
     def create_with_dynamic_fields(self, project_data) -> Optional[Project]:
         """Create project with dynamic fields support"""
+        # Convert EnhancedProjectCreate to ProjectCreate for repository
+        if hasattr(project_data, "model_dump"):
+            # Extract base project fields
+            base_data = {
+                "name": project_data.name,
+                "description": project_data.description,
+                "startDate": project_data.startDate,
+                "endDate": project_data.endDate,
+                "maxParticipants": project_data.maxParticipants,
+            }
+
+            # Add optional fields if present
+            if hasattr(project_data, "category"):
+                base_data["category"] = project_data.category
+            if hasattr(project_data, "location"):
+                base_data["location"] = project_data.location
+            if hasattr(project_data, "requirements"):
+                base_data["requirements"] = project_data.requirements
+            if hasattr(project_data, "registrationEndDate"):
+                base_data["registrationEndDate"] = project_data.registrationEndDate
+            if hasattr(project_data, "isEnabled"):
+                base_data["isEnabled"] = project_data.isEnabled
+
+            # Handle dynamic fields
+            if hasattr(project_data, "customFields") and project_data.customFields:
+                # Convert customFields to formSchema
+                form_schema = {
+                    "version": "1.0",
+                    "richTextDescription": getattr(
+                        project_data, "richTextDescription", ""
+                    ),
+                    "fields": [
+                        field.model_dump() if hasattr(field, "model_dump") else field
+                        for field in project_data.customFields
+                    ],
+                }
+                base_data["formSchema"] = form_schema
+
+            if hasattr(project_data, "richTextDescription"):
+                base_data["richText"] = project_data.richTextDescription
+
+            # Create ProjectCreate object
+            from ..models.project import ProjectCreate
+
+            project_create = ProjectCreate(**base_data)
+            return self.projects_repository.create(project_create)
+
+        # Fallback for direct ProjectCreate objects
         return self.projects_repository.create(project_data)
 
     def update_form_schema(self, project_id: str, form_schema) -> Optional[Project]:
