@@ -190,7 +190,10 @@ class ProjectsService:
 
     def get_with_dynamic_fields(self, project_id: str) -> Optional[Project]:
         """Get project with dynamic fields"""
-        return self.projects_repository.get_by_id(project_id)
+        try:
+            return self.projects_repository.get_by_id(project_id)
+        except Exception:
+            return None
 
     def validate_form_schema(self, form_schema) -> bool:
         """Validate form schema structure"""
