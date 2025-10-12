@@ -121,21 +121,7 @@ class ProjectsService:
     # Enhanced methods for dynamic forms support
     def create_with_dynamic_fields(self, project_data) -> Optional[Project]:
         """Create project with dynamic fields support"""
-        # This method will be implemented to handle EnhancedProjectCreate
-        # For now, minimal implementation to pass tests
-        return Project(
-            id="test-id",
-            name=project_data.name,
-            description=project_data.description,
-            startDate=project_data.startDate,
-            endDate=project_data.endDate,
-            maxParticipants=project_data.maxParticipants,
-            status=ProjectStatus.PENDING,
-            currentParticipants=0,
-            createdAt="2025-01-01T00:00:00",
-            updatedAt="2025-01-01T00:00:00",
-            createdBy="system",
-        )
+        return self.projects_repository.create(project_data)
 
     def update_form_schema(self, project_id: str, form_schema) -> Optional[Project]:
         """Update project form schema"""
@@ -156,20 +142,7 @@ class ProjectsService:
 
     def get_with_dynamic_fields(self, project_id: str) -> Optional[Project]:
         """Get project with dynamic fields"""
-        # Minimal implementation to pass tests
-        return Project(
-            id=project_id,
-            name="Dynamic Project",
-            description="Dynamic description",
-            startDate="2025-01-01",
-            endDate="2025-12-31",
-            maxParticipants=100,
-            status=ProjectStatus.PENDING,
-            currentParticipants=0,
-            createdAt="2025-01-01T00:00:00",
-            updatedAt="2025-01-01T00:00:00",
-            createdBy="system",
-        )
+        return self.projects_repository.get_by_id(project_id)
 
     def validate_form_schema(self, form_schema) -> bool:
         """Validate form schema structure"""

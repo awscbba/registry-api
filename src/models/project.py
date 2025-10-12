@@ -125,6 +125,27 @@ class ProjectUpdate(BaseModel):
     registrationEndDate: Optional[str] = None
     isEnabled: Optional[bool] = None
     formSchema: Optional[Dict[str, Any]] = None
+    richText: Optional[str] = Field(None, max_length=10000)
+
+    @field_validator("richText")
+    @classmethod
+    def validate_rich_text_size(cls, v):
+        """Validate rich text content size."""
+        if v is not None:
+            # Check character count
+            if len(v) > 10000:
+                raise ValueError(
+                    "Rich text content is too long (maximum 10,000 characters allowed)"
+                )
+
+            # Check byte size (approximate)
+            byte_size = len(v.encode("utf-8"))
+            if byte_size > 15 * 1024:  # 15KB
+                raise ValueError(
+                    "Rich text content is too large (maximum 15KB allowed)"
+                )
+
+        return v
 
     @field_validator("endDate")
     @classmethod
