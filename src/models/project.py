@@ -5,7 +5,7 @@ Clean camelCase models with no field mapping complexity.
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional
+from typing import Optional, Any, Dict
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -42,6 +42,15 @@ class ProjectBase(BaseModel):
     requirements: Optional[str] = Field(
         None, max_length=1000, description="Project requirements"
     )
+    registrationEndDate: Optional[str] = Field(
+        None, description="Registration end date (YYYY-MM-DD)"
+    )
+    isEnabled: Optional[bool] = Field(
+        True, description="Whether the project is enabled"
+    )
+    formSchema: Optional[Dict[str, Any]] = Field(
+        None, description="Dynamic form schema for enhanced project features"
+    )
 
     @field_validator("endDate")
     @classmethod
@@ -70,6 +79,9 @@ class ProjectUpdate(BaseModel):
     category: Optional[str] = Field(None, max_length=100)
     location: Optional[str] = Field(None, max_length=200)
     requirements: Optional[str] = Field(None, max_length=1000)
+    registrationEndDate: Optional[str] = None
+    isEnabled: Optional[bool] = None
+    formSchema: Optional[Dict[str, Any]] = None
 
     @field_validator("endDate")
     @classmethod
