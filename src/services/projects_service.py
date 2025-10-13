@@ -144,22 +144,19 @@ class ProjectsService:
             if hasattr(project_data, "isEnabled"):
                 base_data["isEnabled"] = project_data.isEnabled
 
-            # Handle dynamic fields
-            if hasattr(project_data, "customFields") and project_data.customFields:
-                # Convert customFields to formSchema
-                form_schema = {
-                    "version": "1.0",
-                    "richTextDescription": getattr(
-                        project_data, "richTextDescription", ""
-                    ),
-                    "fields": [
-                        field.model_dump() if hasattr(field, "model_dump") else field
-                        for field in project_data.customFields
-                    ],
-                }
-                base_data["formSchema"] = form_schema
+            # Handle formSchema from EnhancedProjectCreate
+            if hasattr(project_data, "formSchema") and project_data.formSchema:
+                base_data["formSchema"] = (
+                    project_data.formSchema.model_dump()
+                    if hasattr(project_data.formSchema, "model_dump")
+                    else project_data.formSchema
+                )
 
-            if hasattr(project_data, "richTextDescription"):
+            # Handle richTextDescription
+            if (
+                hasattr(project_data, "richTextDescription")
+                and project_data.richTextDescription
+            ):
                 base_data["richText"] = project_data.richTextDescription
 
             # Create ProjectCreate object
