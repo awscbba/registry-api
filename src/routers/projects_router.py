@@ -256,7 +256,10 @@ async def create_project_with_dynamic_fields(
     """Create a project with dynamic form fields and rich text description."""
     try:
         project = projects_service.create_with_dynamic_fields(project_data)
-        return create_success_response(project.model_dump())
+        if project:
+            return create_success_response(project.model_dump())
+        else:
+            raise HTTPException(status_code=400, detail="Failed to create project")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
