@@ -119,6 +119,24 @@ def create_app() -> FastAPI:
         """Handle validation errors with detailed logging."""
         from .services.logging_service import logging_service, LogLevel, LogCategory
 
+        # Serialize errors safely - convert any non-serializable objects to strings
+        def serialize_error(error: dict) -> dict:
+            """Convert error dict to JSON-serializable format."""
+            serialized = {}
+            for key, value in error.items():
+                if key == "ctx" and isinstance(value, dict):
+                    # Convert context values to strings
+                    serialized[key] = {k: str(v) for k, v in value.items()}
+                elif isinstance(value, (str, int, float, bool, type(None))):
+                    serialized[key] = value
+                elif isinstance(value, (list, tuple)):
+                    serialized[key] = list(value)
+                else:
+                    serialized[key] = str(value)
+            return serialized
+
+        errors = [serialize_error(error) for error in exc.errors()]
+
         # Log validation error details
         logging_service.log_structured(
             level=LogLevel.WARNING,
@@ -127,7 +145,7 @@ def create_app() -> FastAPI:
             additional_data={
                 "method": request.method,
                 "path": request.url.path,
-                "errors": exc.errors(),
+                "errors": errors,
                 "body": await request.body() if hasattr(request, "body") else None,
             },
         )
@@ -137,8 +155,8 @@ def create_app() -> FastAPI:
             content={
                 "success": False,
                 "message": "Request validation failed",
-                "detail": exc.errors(),
-                "details": exc.errors(),
+                "detail": errors,
+                "details": errors,
                 "version": "v2",
             },
         )
