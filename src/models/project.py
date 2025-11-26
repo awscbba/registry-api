@@ -78,9 +78,9 @@ class ProjectBase(BaseModel):
     @field_validator("endDate")
     @classmethod
     def end_date_after_start_date(cls, v, info):
-        """Validate that end date is after start date."""
-        if info.data.get("startDate") and v <= info.data["startDate"]:
-            raise ValueError("End date must be after start date")
+        """Validate that end date is not before start date."""
+        if info.data.get("startDate") and v < info.data["startDate"]:
+            raise ValueError("End date cannot be before start date")
         return v
 
     @model_validator(mode="after")
@@ -150,9 +150,9 @@ class ProjectUpdate(BaseModel):
     @field_validator("endDate")
     @classmethod
     def end_date_after_start_date(cls, v, info):
-        """Validate that end date is after start date."""
-        if v and info.data.get("startDate") and v <= info.data["startDate"]:
-            raise ValueError("End date must be after start date")
+        """Validate that end date is not before start date."""
+        if v and info.data.get("startDate") and v < info.data["startDate"]:
+            raise ValueError("End date cannot be before start date")
         return v
 
 
