@@ -3,7 +3,8 @@
   "packages": [
     "python@latest",
     "uv@latest",
-    "git@latest"
+    "git@latest",
+    "gh@latest"
   ],
   "shell": {
     "init_hook": [

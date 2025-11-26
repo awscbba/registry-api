@@ -1,0 +1,66 @@
+name: PR Validation
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Install just
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run critical integration tests
+        run: |
+          echo "🔧 Running API critical integration tests..."
+          just test-critical-passing
+
+      - name: Run modernized async/sync validation
+        run: |
+          echo "🔧 Running modernized async/sync validation..."
+          uv run pytest tests/test_modernized_async_validation.py -v -x
+
+      - name: Run code formatting check
+        run: |
+          echo "📝 Checking code formatting..."
+          uv run black --check --diff src/ tests/
+
+      - name: Run linting
+        run: |
+          echo "🔍 Running Flake8 linting..."
+          uv run flake8 --config=.flake8 src/ tests/
+
+      - name: Run syntax validation
+        run: |
+          echo "🔍 Checking Python syntax..."
+          python -m py_compile src/handlers/modular_api_handler.py
+
+      - name: Validation summary
+        if: success()
+        run: |
+          echo "🎉 PR validation completed successfully!"
+          echo "✅ Critical integration tests: PASSED"
+          echo "✅ Async/sync validation: PASSED"
+          echo "✅ Code formatting: PASSED"
+          echo "✅ Linting: PASSED"
+          echo "✅ Syntax validation: PASSED"
