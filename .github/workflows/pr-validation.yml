@@ -53,7 +53,7 @@ jobs:
       - name: Run syntax validation
         run: |
           echo "🔍 Checking Python syntax..."
-          python -m py_compile src/handlers/modular_api_handler.py
+          python -m py_compile src/app.py
 
       - name: Validation summary
         if: success()
