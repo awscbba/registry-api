@@ -18,9 +18,12 @@ from src.models.rbac import RoleType, RoleAssignmentRequest
 async def assign_super_admin(user_id: str, assigned_by: str = "system"):
     """Assign super_admin role to a user."""
     from src.repositories.people_repository import PeopleRepository
+    from src.repositories.roles_repository import RolesRepository
+    from src.models.rbac import UserRole
 
-    rbac_service = RBACService()
     people_repo = PeopleRepository()
+    roles_repo = RolesRepository()
+    rbac_service = RBACService()
 
     print(f"Assigning super_admin role to user: {user_id}")
 
@@ -33,19 +36,21 @@ async def assign_super_admin(user_id: str, assigned_by: str = "system"):
 
         print(f"  User: {person.firstName} {person.lastName} ({person.email})")
 
-        # Create role assignment request
-        request = RoleAssignmentRequest(
+        # Create role assignment directly (bypassing permission checks for system setup)
+        user_role = UserRole(
+            user_id=user_id,
             user_email=person.email,
             role_type=RoleType.SUPER_ADMIN,
-            reason="Initial super admin setup",
+            assigned_by=assigned_by,
+            notes="Initial super admin setup",
         )
 
-        # Assign the role through the service
-        result = await rbac_service.assign_role(request, assigned_by)
+        # Save directly to database
+        roles_repo.create_role_assignment(user_role)
 
         print(f"✓ Successfully assigned super_admin role")
-        print(f"  User ID: {result.user_role.user_id}")
-        print(f"  Role: {result.user_role.role_type.value}")
+        print(f"  User ID: {user_role.user_id}")
+        print(f"  Role: {user_role.role_type.value}")
 
         # Verify the assignment
         user_roles = await rbac_service.get_user_roles(user_id)
