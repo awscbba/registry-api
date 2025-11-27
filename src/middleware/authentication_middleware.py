@@ -27,6 +27,11 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         r"^/auth/forgot-password$",
         r"^/auth/reset-password$",
         r"^/auth/validate-reset-token/.*",
+        r"^/v2/auth/login$",  # V2 auth endpoints
+        r"^/v2/auth/refresh$",
+        r"^/v2/auth/forgot-password$",
+        r"^/v2/auth/reset-password$",
+        r"^/v2/auth/validate-reset-token/.*",
         r"^/v2/projects$",  # Allow public access to projects list
         r"^/v2/projects/.*",  # Allow public access to individual projects
         r"^/v2/projects/public$",
