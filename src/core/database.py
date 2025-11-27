@@ -70,7 +70,12 @@ class DatabaseClient:
                     attr_value = f":{field}"
                     update_expression += f"{attr_name} = {attr_value}, "
                     expression_names[attr_name] = field
-                    expression_values[attr_value] = value
+
+                    # Convert nested dicts recursively to ensure proper serialization
+                    if isinstance(value, dict):
+                        expression_values[attr_value] = self._serialize_dict(value)
+                    else:
+                        expression_values[attr_value] = value
 
             # Remove trailing comma and space
             update_expression = update_expression.rstrip(", ")
@@ -85,6 +90,16 @@ class DatabaseClient:
         except ClientError as e:
             logger.error(f"Error updating item in {table_name}: {e}")
             return False
+
+    def _serialize_dict(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Recursively serialize dictionary for DynamoDB, preserving camelCase."""
+        result = {}
+        for key, value in data.items():
+            if isinstance(value, dict):
+                result[key] = self._serialize_dict(value)
+            elif value is not None:  # Skip None values
+                result[key] = value
+        return result
 
     def delete_item(self, table_name: str, key: Dict[str, Any]) -> bool:
         """Delete an item from DynamoDB."""
