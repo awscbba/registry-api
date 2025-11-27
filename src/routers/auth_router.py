@@ -245,3 +245,88 @@ async def validate_reset_token(
 async def validate_token(current_user: User = Depends(get_current_user)):
     """Validate JWT token."""
     return create_success_response({"valid": True, "user": current_user.model_dump()})
+
+
+@router.put("/profile", response_model=dict)
+async def update_profile(
+    profile_data: dict,
+    current_user: User = Depends(get_current_user),
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    """Update current user's profile information."""
+    try:
+        from ..models.person import PersonUpdate, Address
+        from ..services.logging_service import logging_service, LogCategory, LogLevel
+
+        # Build update data from request
+        update_fields = {}
+
+        # Only allow users to update their own profile fields
+        allowed_fields = ["firstName", "lastName", "phone", "dateOfBirth", "address"]
+
+        for field in allowed_fields:
+            if field in profile_data:
+                if field == "address" and isinstance(profile_data[field], dict):
+                    # Convert address dict to Address model
+                    update_fields[field] = Address(**profile_data[field])
+                else:
+                    update_fields[field] = profile_data[field]
+
+        # Prevent users from updating email through this endpoint (requires verification)
+        if "email" in profile_data and profile_data["email"] != current_user.email:
+            raise HTTPException(
+                status_code=400,
+                detail="Email changes require verification. Please contact support.",
+            )
+
+        # Prevent users from updating admin status
+        if "isAdmin" in profile_data:
+            raise HTTPException(
+                status_code=403,
+                detail="Cannot modify admin status through profile update",
+            )
+
+        if not update_fields:
+            raise HTTPException(status_code=400, detail="No valid fields to update")
+
+        # Update person using people repository
+        update_data = PersonUpdate(**update_fields)
+        updated_person = auth_service.people_repository.update(
+            current_user.id, update_data
+        )
+
+        if not updated_person:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Log profile update
+        logging_service.log_structured(
+            level=LogLevel.INFO,
+            category=LogCategory.USER_OPERATIONS,
+            message=f"Profile updated for user {current_user.id}",
+            additional_data={
+                "user_id": current_user.id,
+                "updated_fields": list(update_fields.keys()),
+            },
+        )
+
+        # Return updated user data
+        from ..models.person import PersonResponse
+
+        response_data = PersonResponse(**updated_person.model_dump())
+
+        return create_success_response(
+            response_data.model_dump(), "Profile updated successfully"
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        from ..services.logging_service import logging_service, LogCategory, LogLevel
+
+        logging_service.log_structured(
+            level=LogLevel.ERROR,
+            category=LogCategory.ERROR_HANDLING,
+            message=f"Profile update failed: {str(e)}",
+            additional_data={"user_id": current_user.id, "error": str(e)},
+        )
+        raise HTTPException(status_code=500, detail=str(e))
