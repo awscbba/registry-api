@@ -97,14 +97,21 @@ class TestRBACService:
                 mock_user.email = "target@example.com"
                 mock_get.return_value = mock_user
 
-                request = RoleAssignmentRequest(
-                    user_email="target@example.com", role_type=RoleType.MODERATOR
-                )
+                # Mock DynamoDB put_item call
+                with patch.object(
+                    self.rbac_service.roles_repository, "create_role_assignment"
+                ) as mock_create:
+                    mock_create.return_value = None
 
-                result = await self.rbac_service.assign_role(request, "admin123")
+                    request = RoleAssignmentRequest(
+                        user_email="target@example.com", role_type=RoleType.MODERATOR
+                    )
 
-                assert result.success is True
-                assert result.user_role.role_type == RoleType.MODERATOR
+                    result = await self.rbac_service.assign_role(request, "admin123")
+
+                    assert result.success is True
+                    assert result.user_role.role_type == RoleType.MODERATOR
+                    mock_create.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_user_is_admin(self):
