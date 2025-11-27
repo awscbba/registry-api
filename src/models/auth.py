@@ -60,6 +60,9 @@ class User(BaseModel):
     email: str
     firstName: str
     lastName: str
+    phone: Optional[str] = Field(default="", description="User phone number")
+    dateOfBirth: Optional[str] = Field(default="", description="User date of birth")
+    address: Optional[dict] = Field(default_factory=dict, description="User address")
     isAdmin: bool
     isActive: bool
     roles: list[str] = Field(default_factory=list, description="User RBAC roles")
