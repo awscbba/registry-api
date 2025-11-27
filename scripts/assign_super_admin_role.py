@@ -17,14 +17,26 @@ from src.models.rbac import RoleType, RoleAssignmentRequest
 
 async def assign_super_admin(user_id: str, assigned_by: str = "system"):
     """Assign super_admin role to a user."""
+    from src.repositories.people_repository import PeopleRepository
+
     rbac_service = RBACService()
+    people_repo = PeopleRepository()
 
     print(f"Assigning super_admin role to user: {user_id}")
 
     try:
+        # Get user email
+        person = people_repo.get_by_id(user_id)
+        if not person:
+            print(f"✗ User not found: {user_id}")
+            return False
+
+        print(f"  User: {person.firstName} {person.lastName} ({person.email})")
+
         # Create role assignment request
         request = RoleAssignmentRequest(
             user_id=user_id,
+            user_email=person.email,
             role_type=RoleType.SUPER_ADMIN,
             assigned_by=assigned_by,
             reason="Initial super admin setup",
