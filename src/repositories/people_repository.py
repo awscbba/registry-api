@@ -144,6 +144,8 @@ class PeopleRepository(BaseRepository[Person]):
 
     def update(self, person_id: str, updates: PersonUpdate) -> Optional[Person]:
         """Update an existing person."""
+        from ..services.logging_service import logging_service, LogCategory, LogLevel
+
         # Check if person exists
         existing_person = self.get_by_id(person_id)
         if not existing_person:
@@ -151,6 +153,19 @@ class PeopleRepository(BaseRepository[Person]):
 
         # Prepare update data (exclude None values)
         update_data = updates.model_dump(exclude_none=True)
+
+        # Log what we're trying to update
+        logging_service.log_structured(
+            level=LogLevel.INFO,
+            category=LogCategory.DATA_OPERATIONS,
+            message=f"Updating person {person_id}",
+            additional_data={
+                "person_id": person_id,
+                "update_fields": list(update_data.keys()),
+                "update_data": update_data,
+            },
+        )
+
         if update_data:
             update_data["updatedAt"] = datetime.utcnow().isoformat()
 

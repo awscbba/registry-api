@@ -262,6 +262,14 @@ async def update_profile(
         from ..models.person import PersonUpdate, Address
         from ..services.logging_service import logging_service, LogCategory, LogLevel
 
+        # Log incoming profile data
+        logging_service.log_structured(
+            level=LogLevel.INFO,
+            category=LogCategory.USER_OPERATIONS,
+            message=f"Profile update request for user {current_user.id}",
+            additional_data={"user_id": current_user.id, "profile_data": profile_data},
+        )
+
         # Build update data from request
         update_fields = {}
 
