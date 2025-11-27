@@ -54,6 +54,14 @@ async def get_person(
         user_roles = await rbac_service.get_user_roles(person_id)
         role_names = [role.value for role in user_roles]
 
+        # Fallback: If no roles found but user is admin, assign admin role
+        if (
+            not role_names and person.isAdmin
+            if hasattr(person, "isAdmin")
+            else person.get("isAdmin", False)
+        ):
+            role_names = ["admin"]
+
         # Add roles to person data
         person_dict = person if isinstance(person, dict) else person.model_dump()
         person_dict["roles"] = role_names

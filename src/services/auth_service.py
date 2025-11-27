@@ -146,10 +146,9 @@ class AuthService:
         user_roles = await rbac_service.get_user_roles(person_data.get("id"))
         role_names = [role.value for role in user_roles]
 
-        # Temporary fix: Add super_admin for specific user
-        if person_data.get("id") == "4a375abe-6d1a-47bc-98ff-ced6f8247c1b":
-            if "super_admin" not in role_names:
-                role_names.append("super_admin")
+        # Fallback: If no roles found but user is admin, assign admin role
+        if not role_names and person_data.get("isAdmin", False):
+            role_names = ["admin"]
 
         # Create user response
         user_response = {

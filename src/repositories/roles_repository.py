@@ -67,6 +67,34 @@ class RolesRepository(BaseRepository):
             print(f"Error fetching user roles: {e}")
             return []
 
+    def create_role_assignment(self, user_role: UserRole) -> UserRole:
+        """Create a role assignment in DynamoDB."""
+        try:
+            item = {
+                "user_id": {"S": user_role.user_id},
+                "role_type": {"S": user_role.role_type.value},
+                "email": {"S": user_role.user_email},
+                "assigned_at": {"S": user_role.assigned_at.isoformat()},
+                "assigned_by": {"S": user_role.assigned_by},
+                "is_active": {"BOOL": user_role.is_active},
+            }
+
+            if user_role.expires_at:
+                item["expires_at"] = {"S": user_role.expires_at.isoformat()}
+            else:
+                item["expires_at"] = {"NULL": True}
+
+            if user_role.notes:
+                item["notes"] = {"S": user_role.notes}
+
+            self.dynamodb.put_item(TableName=self.table_name, Item=item)
+
+            return user_role
+
+        except ClientError as e:
+            print(f"Error creating role assignment: {e}")
+            raise
+
     # Required abstract method implementations
     def create(self, data: Dict[str, Any]) -> Any:
         """Create a role assignment."""
