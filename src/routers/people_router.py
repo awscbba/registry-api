@@ -47,7 +47,18 @@ async def get_person(
         if not person:
             raise HTTPException(status_code=404, detail="Person not found")
 
-        return create_success_response(person)
+        # Get user roles from RBAC service
+        from ..services.service_registry_manager import get_rbac_service
+
+        rbac_service = get_rbac_service()
+        user_roles = await rbac_service.get_user_roles(person_id)
+        role_names = [role.value for role in user_roles]
+
+        # Add roles to person data
+        person_dict = person if isinstance(person, dict) else person.model_dump()
+        person_dict["roles"] = role_names
+
+        return create_success_response(person_dict)
 
     except HTTPException:
         raise
