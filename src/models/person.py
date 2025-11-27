@@ -71,6 +71,7 @@ class PersonResponse(BaseModel):
     isActive: bool
     requirePasswordChange: bool
     emailVerified: bool
+    roles: List[str] = Field(default_factory=list, description="User RBAC roles")
     createdAt: datetime
     updatedAt: datetime
     lastLoginAt: Optional[datetime] = None
