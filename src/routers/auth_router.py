@@ -8,7 +8,11 @@ from fastapi import APIRouter, HTTPException, Depends, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from ..services.auth_service import AuthService
-from ..services.service_registry_manager import get_auth_service
+from ..services.subscriptions_service import SubscriptionsService
+from ..services.service_registry_manager import (
+    get_auth_service,
+    get_subscriptions_service,
+)
 from ..models.auth import (
     LoginRequest,
     LoginResponse,
@@ -327,6 +331,49 @@ async def update_profile(
             level=LogLevel.ERROR,
             category=LogCategory.ERROR_HANDLING,
             message=f"Profile update failed: {str(e)}",
+            additional_data={"user_id": current_user.id, "error": str(e)},
+        )
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/subscriptions", response_model=dict)
+async def get_user_subscriptions(
+    current_user: User = Depends(get_current_user),
+    subscriptions_service: SubscriptionsService = Depends(get_subscriptions_service),
+):
+    """Get current user's subscriptions."""
+    try:
+        from ..services.logging_service import logging_service, LogCategory, LogLevel
+
+        # Get all subscriptions and filter by current user
+        all_subscriptions = subscriptions_service.list_subscriptions()
+
+        # Filter subscriptions for current user
+        user_subscriptions = [
+            sub for sub in all_subscriptions if sub.get("personId") == current_user.id
+        ]
+
+        logging_service.log_structured(
+            level=LogLevel.INFO,
+            category=LogCategory.USER_OPERATIONS,
+            message=f"Retrieved subscriptions for user {current_user.id}",
+            additional_data={
+                "user_id": current_user.id,
+                "subscription_count": len(user_subscriptions),
+            },
+        )
+
+        return create_success_response(
+            {"subscriptions": user_subscriptions, "count": len(user_subscriptions)}
+        )
+
+    except Exception as e:
+        from ..services.logging_service import logging_service, LogCategory, LogLevel
+
+        logging_service.log_structured(
+            level=LogLevel.ERROR,
+            category=LogCategory.ERROR_HANDLING,
+            message=f"Failed to retrieve user subscriptions: {str(e)}",
             additional_data={"user_id": current_user.id, "error": str(e)},
         )
         raise HTTPException(status_code=500, detail=str(e))
