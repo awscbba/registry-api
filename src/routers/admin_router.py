@@ -134,6 +134,8 @@ async def list_users(
 ):
     """List all users (admin endpoint)."""
     try:
+        from ..services.service_registry_manager import get_rbac_service
+
         users = people_service.list_people(limit=limit)
 
         # Apply search filter if provided
@@ -149,7 +151,25 @@ async def list_users(
                 )
             ]
 
-        return create_success_response(users)
+        # Add roles to each user
+        rbac_service = get_rbac_service()
+        users_with_roles = []
+        for user in users:
+            user_dict = user if isinstance(user, dict) else user.model_dump()
+            user_id = user_dict.get("id")
+
+            # Get user roles from RBAC service
+            user_roles = await rbac_service.get_user_roles(user_id)
+            role_names = [role.value for role in user_roles]
+
+            # Fallback: If no roles found but user is admin, assign admin role
+            if not role_names and user_dict.get("isAdmin", False):
+                role_names = ["admin"]
+
+            user_dict["roles"] = role_names
+            users_with_roles.append(user_dict)
+
+        return create_success_response(users_with_roles)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
