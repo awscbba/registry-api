@@ -35,20 +35,17 @@ async def assign_super_admin(user_id: str, assigned_by: str = "system"):
 
         # Create role assignment request
         request = RoleAssignmentRequest(
-            user_id=user_id,
             user_email=person.email,
             role_type=RoleType.SUPER_ADMIN,
-            assigned_by=assigned_by,
             reason="Initial super admin setup",
         )
 
-        # Assign the role (bypassing permission check for system assignment)
-        result = await rbac_service._create_role_assignment(request)
+        # Assign the role through the service
+        result = await rbac_service.assign_role(request, assigned_by)
 
         print(f"✓ Successfully assigned super_admin role")
-        print(f"  Assignment ID: {result.id}")
-        print(f"  User ID: {result.user_id}")
-        print(f"  Role: {result.role_type.value}")
+        print(f"  User ID: {result.user_role.user_id}")
+        print(f"  Role: {result.user_role.role_type.value}")
 
         # Verify the assignment
         user_roles = await rbac_service.get_user_roles(user_id)

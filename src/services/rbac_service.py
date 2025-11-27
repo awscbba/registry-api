@@ -253,8 +253,8 @@ class RBACService:
                 notes=request.notes,
             )
 
-            # Store role assignment (for now, just log it - database operations would go here)
-            print(f"Role {request.role_type} assigned to user {target_user.id}")
+            # Store role assignment in database
+            self.roles_repository.create_role_assignment(user_role)
 
             # Log role assignment
             logging_service.log_structured(
