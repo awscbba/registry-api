@@ -24,6 +24,7 @@ class PeopleService:
             BusinessLogicException,
             ErrorCode,
         )
+        from ..utils.password_utils import hash_and_validate_password
 
         # Validate email format
         email_result = InputValidator.validate_email(person_data.email)
@@ -50,6 +51,18 @@ class PeopleService:
                 message=f"Email {person_data.email} is already in use",
                 error_code=ErrorCode.DUPLICATE_RESOURCE,
             )
+
+        # Hash password if provided
+        if person_data.password and not person_data.passwordHash:
+            is_valid, hashed_password, validation_errors = hash_and_validate_password(
+                person_data.password
+            )
+            if not is_valid:
+                raise ValidationException(
+                    message=f"Password validation failed: {', '.join(validation_errors)}",
+                    error_code=ErrorCode.VALIDATION_ERROR,
+                )
+            person_data.passwordHash = hashed_password
 
         # Log person creation attempt
         logging_service.log_data_operation(
