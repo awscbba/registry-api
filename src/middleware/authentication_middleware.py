@@ -30,6 +30,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         r"^/v2/projects$",  # Allow public access to projects list
         r"^/v2/projects/.*",  # Allow public access to individual projects
         r"^/v2/projects/public$",
+        r"^/v2/public/register$",  # Allow public user registration
         r"^/v2/public/subscribe$",
         # Dynamic Form Builder endpoints
         r"^/v2/form-submissions$",  # Allow form submissions

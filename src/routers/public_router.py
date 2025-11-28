@@ -24,6 +24,27 @@ from ..utils.responses import create_success_response
 router = APIRouter(prefix="/v2/public", tags=["public"])
 
 
+class PublicRegistrationRequest(BaseModel):
+    """Schema for public user registration (no project required)."""
+
+    email: str = Field(..., description="Email address")
+    firstName: str = Field(..., description="First name")
+    lastName: str = Field(..., description="Last name")
+    password: str = Field(..., min_length=8, description="Password (min 8 characters)")
+    phone: str = Field(default="", description="Phone number (optional)")
+    dateOfBirth: str = Field(..., description="Date of birth (YYYY-MM-DD format)")
+    address: dict = Field(
+        default_factory=lambda: {
+            "street": "",
+            "city": "",
+            "state": "",
+            "postalCode": "",
+            "country": "",
+        },
+        description="Address information (optional)",
+    )
+
+
 class PublicSubscriptionRequest(BaseModel):
     """Schema for public subscription requests using email."""
 
@@ -45,6 +66,68 @@ class PublicSubscriptionRequest(BaseModel):
         },
         description="Address information (optional)",
     )
+
+
+@router.post("/register", response_model=dict, status_code=201)
+async def public_register(
+    registration_data: PublicRegistrationRequest,
+    people_service: PeopleService = Depends(get_people_service),
+    email_service: EmailService = Depends(get_email_service),
+):
+    """Public registration endpoint (no authentication or project required)."""
+    try:
+        from ..models.person import Address
+
+        # Check if user already exists
+        existing_person = await people_service.get_person_by_email(
+            registration_data.email
+        )
+        if existing_person:
+            raise HTTPException(
+                status_code=400,
+                detail="An account with this email already exists. Please login instead.",
+            )
+
+        # Create new person
+        address = Address(**registration_data.address)
+        person_create = PersonCreate(
+            firstName=registration_data.firstName,
+            lastName=registration_data.lastName,
+            email=registration_data.email,
+            phone=registration_data.phone,
+            dateOfBirth=registration_data.dateOfBirth,
+            address=address,
+            password=registration_data.password,
+            isAdmin=False,
+        )
+
+        new_person = people_service.create_person(person_create)
+
+        # Send welcome email (if email service has this method, otherwise skip)
+        try:
+            await email_service.send_welcome_email(
+                registration_data.email, registration_data.firstName
+            )
+            email_sent = True
+        except AttributeError:
+            # Welcome email method doesn't exist yet, that's okay
+            email_sent = False
+
+        return create_success_response(
+            {
+                "personId": new_person.id,
+                "email": new_person.email,
+                "firstName": new_person.firstName,
+                "lastName": new_person.lastName,
+                "emailSent": email_sent,
+                "message": "Account created successfully! You can now login with your credentials.",
+            }
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
 
 
 @router.post("/subscribe", response_model=dict, status_code=201)
