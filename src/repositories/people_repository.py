@@ -157,7 +157,7 @@ class PeopleRepository(BaseRepository[Person]):
         # Log what we're trying to update
         logging_service.log_structured(
             level=LogLevel.INFO,
-            category=LogCategory.DATA_OPERATIONS,
+            category=LogCategory.DATABASE_OPERATIONS,
             message=f"Updating person {person_id}",
             additional_data={
                 "person_id": person_id,
