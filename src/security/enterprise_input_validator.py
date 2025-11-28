@@ -53,6 +53,7 @@ class EnterpriseInputValidator:
         r"^/auth/forgot-password$": ValidationContext.AUTHENTICATION,
         r"^/auth/reset-password$": ValidationContext.AUTHENTICATION,
         r"^/auth/validate-reset-token/.*": ValidationContext.AUTHENTICATION,
+        r"^/v2/public/register$": ValidationContext.AUTHENTICATION,
         # User data endpoints - moderate security
         r"^/v2/people.*": ValidationContext.USER_DATA,
         r"^/v2/admin/users.*": ValidationContext.USER_DATA,
