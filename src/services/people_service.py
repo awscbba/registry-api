@@ -36,7 +36,7 @@ class PeopleService:
             )
             raise ValidationException(
                 message=f"Invalid email format: {', '.join(email_result.errors)}",
-                error_code=ErrorCode.VALIDATION_ERROR,
+                error_code=ErrorCode.INVALID_INPUT,
             )
 
         # Check if email already exists
@@ -60,7 +60,7 @@ class PeopleService:
             if not is_valid:
                 raise ValidationException(
                     message=f"Password validation failed: {', '.join(validation_errors)}",
-                    error_code=ErrorCode.VALIDATION_ERROR,
+                    error_code=ErrorCode.INVALID_INPUT,
                 )
             person_data.passwordHash = hashed_password
 
