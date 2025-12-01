@@ -50,6 +50,7 @@ class EnterpriseInputValidator:
         # Authentication endpoints - special handling for credentials
         r"^/auth/login$": ValidationContext.AUTHENTICATION,
         r"^/auth/refresh$": ValidationContext.AUTHENTICATION,
+        r"^/auth/password/change$": ValidationContext.AUTHENTICATION,
         r"^/auth/forgot-password$": ValidationContext.AUTHENTICATION,
         r"^/auth/reset-password$": ValidationContext.AUTHENTICATION,
         r"^/auth/validate-reset-token/.*": ValidationContext.AUTHENTICATION,
