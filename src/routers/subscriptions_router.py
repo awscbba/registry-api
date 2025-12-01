@@ -1,6 +1,7 @@
 """
 Subscriptions router with clean, standardized endpoints.
 All fields use camelCase - no mapping complexity.
+Follows domain-driven router pattern with enterprise exception handling.
 """
 
 from typing import List, Optional
@@ -12,10 +13,18 @@ from ..models.subscription import (
     SubscriptionCreate,
     SubscriptionUpdate,
     SubscriptionResponse,
+    EnrichedSubscriptionResponse,
 )
 from ..models.auth import User
 from ..routers.auth_router import require_admin
 from ..utils.responses import create_success_response, create_error_response
+from ..exceptions.base_exceptions import (
+    BaseApplicationException,
+    BusinessLogicException,
+    ResourceNotFoundException,
+    ValidationException,
+)
+from ..services.logging_service import logging_service, LogLevel, LogCategory
 
 router = APIRouter(prefix="/v2/subscriptions", tags=["subscriptions"])
 
@@ -58,14 +67,24 @@ async def create_subscription(
     subscription_data: SubscriptionCreate,
     subscriptions_service: SubscriptionsService = Depends(get_subscriptions_service),
 ):
-    """Create a new subscription."""
+    """Create a new subscription with enterprise exception handling."""
     try:
         subscription = subscriptions_service.create_subscription(subscription_data)
         return create_success_response(subscription)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except BusinessLogicException as e:
+        raise HTTPException(status_code=409, detail=e.user_message or str(e))
+    except ValidationException as e:
+        raise HTTPException(status_code=400, detail=e.user_message or str(e))
+    except BaseApplicationException as e:
+        raise HTTPException(status_code=500, detail=e.user_message or str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logging_service.log_structured(
+            level=LogLevel.ERROR,
+            category=LogCategory.ERROR_HANDLING,
+            message=f"Unexpected error creating subscription: {str(e)}",
+            additional_data={"error": str(e)},
+        )
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.put("/{subscription_id}", response_model=dict)
@@ -75,19 +94,28 @@ async def update_subscription(
     current_user: User = Depends(require_admin),  # Add admin authentication back
     subscriptions_service: SubscriptionsService = Depends(get_subscriptions_service),
 ):
-    """Update a subscription."""
+    """Update a subscription with enterprise exception handling."""
     try:
         subscription = subscriptions_service.update_subscription(
             subscription_id, updates
         )
-        if not subscription:
-            raise HTTPException(status_code=404, detail="Subscription not found")
-
         return create_success_response(subscription)
+    except ResourceNotFoundException as e:
+        raise HTTPException(status_code=404, detail=e.user_message or str(e))
+    except ValidationException as e:
+        raise HTTPException(status_code=400, detail=e.user_message or str(e))
+    except BaseApplicationException as e:
+        raise HTTPException(status_code=500, detail=e.user_message or str(e))
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logging_service.log_structured(
+            level=LogLevel.ERROR,
+            category=LogCategory.ERROR_HANDLING,
+            message=f"Unexpected error updating subscription: {str(e)}",
+            additional_data={"subscription_id": subscription_id, "error": str(e)},
+        )
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.delete("/{subscription_id}", response_model=dict)
@@ -136,12 +164,20 @@ async def get_person_subscriptions(
     person_id: str,
     subscriptions_service: SubscriptionsService = Depends(get_subscriptions_service),
 ):
-    """Get all subscriptions for a person."""
+    """Get all subscriptions for a person enriched with project details."""
     try:
         subscriptions = subscriptions_service.get_person_subscriptions(person_id)
         return create_success_response(subscriptions)
+    except BaseApplicationException as e:
+        raise HTTPException(status_code=500, detail=e.user_message or str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logging_service.log_structured(
+            level=LogLevel.ERROR,
+            category=LogCategory.ERROR_HANDLING,
+            message=f"Unexpected error getting person subscriptions: {str(e)}",
+            additional_data={"person_id": person_id, "error": str(e)},
+        )
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/project/{project_id}", response_model=dict)
@@ -149,9 +185,17 @@ async def get_project_subscriptions(
     project_id: str,
     subscriptions_service: SubscriptionsService = Depends(get_subscriptions_service),
 ):
-    """Get all subscriptions for a project."""
+    """Get all subscriptions for a project enriched with person details."""
     try:
         subscriptions = subscriptions_service.get_project_subscriptions(project_id)
         return create_success_response(subscriptions)
+    except BaseApplicationException as e:
+        raise HTTPException(status_code=500, detail=e.user_message or str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logging_service.log_structured(
+            level=LogLevel.ERROR,
+            category=LogCategory.ERROR_HANDLING,
+            message=f"Unexpected error getting project subscriptions: {str(e)}",
+            additional_data={"project_id": project_id, "error": str(e)},
+        )
+        raise HTTPException(status_code=500, detail="Internal server error")

@@ -49,3 +49,18 @@ class Subscription(BaseModel):
     isActive: bool = True
     createdAt: str
     updatedAt: str
+
+
+class EnrichedSubscriptionResponse(SubscriptionResponse):
+    """Subscription response enriched with related entity details."""
+
+    # Project details
+    projectName: Optional[str] = None
+    projectDescription: Optional[str] = None
+    projectStatus: Optional[str] = None
+
+    # Person details
+    personName: Optional[str] = None
+    personEmail: Optional[str] = None
+    personFirstName: Optional[str] = None
+    personLastName: Optional[str] = None
