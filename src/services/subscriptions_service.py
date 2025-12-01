@@ -605,7 +605,7 @@ class SubscriptionsService:
         """
         try:
             # Get project details
-            project = self.projects_service.get_project(project_id)
+            project = self._get_projects_service().get_project(project_id)
             if not project:
                 logging_service.log_structured(
                     level=LogLevel.WARNING,
@@ -626,7 +626,7 @@ class SubscriptionsService:
                 return
 
             # Get subscriber details
-            person = self.people_service.get_person(person_id)
+            person = self._get_people_service().get_person(person_id)
             if not person:
                 logging_service.log_structured(
                     level=LogLevel.WARNING,
@@ -637,7 +637,7 @@ class SubscriptionsService:
                 return
 
             # Get project creator details
-            creator = self.people_service.get_person(project.createdBy)
+            creator = self._get_people_service().get_person(project.createdBy)
             if not creator:
                 logging_service.log_structured(
                     level=LogLevel.WARNING,
@@ -740,9 +740,10 @@ class SubscriptionsService:
             """
 
             # Send email to all recipients
+            email_service = self._get_email_service()
             for recipient in recipients:
                 try:
-                    self.email_service.send_email(
+                    email_service.send_email(
                         to_email=recipient,
                         subject=subject,
                         html_body=html_body,
