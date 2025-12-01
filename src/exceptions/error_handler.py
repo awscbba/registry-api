@@ -57,7 +57,16 @@ class EnterpriseErrorHandler:
         if self._should_include_details(exc):
             response_data["error"]["details"] = exc.details
 
-        return JSONResponse(status_code=status_code, content=response_data)
+        return JSONResponse(
+            status_code=status_code,
+            content=response_data,
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Credentials": "true",
+                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+                "Access-Control-Allow-Headers": "Accept, Accept-Language, Content-Language, Content-Type, Authorization, X-Requested-With, X-Api-Key, X-Amz-Date, X-Amz-Security-Token",
+            },
+        )
 
     def handle_http_exception(
         self,
@@ -89,7 +98,16 @@ class EnterpriseErrorHandler:
             },
         }
 
-        return JSONResponse(status_code=exc.status_code, content=response_data)
+        return JSONResponse(
+            status_code=exc.status_code,
+            content=response_data,
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Credentials": "true",
+                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+                "Access-Control-Allow-Headers": "Accept, Accept-Language, Content-Language, Content-Type, Authorization, X-Requested-With, X-Api-Key, X-Amz-Date, X-Amz-Security-Token",
+            },
+        )
 
     def handle_generic_exception(
         self,
@@ -133,7 +151,14 @@ class EnterpriseErrorHandler:
         }
 
         return JSONResponse(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=response_data
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content=response_data,
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Credentials": "true",
+                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+                "Access-Control-Allow-Headers": "Accept, Accept-Language, Content-Language, Content-Type, Authorization, X-Requested-With, X-Api-Key, X-Amz-Date, X-Amz-Security-Token",
+            },
         )
 
     def _log_exception(
