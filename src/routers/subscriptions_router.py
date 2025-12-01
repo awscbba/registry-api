@@ -166,7 +166,7 @@ async def get_person_subscriptions(
 ):
     """Get all subscriptions for a person enriched with project details."""
     try:
-        subscriptions = subscriptions_service.get_person_subscriptions(person_id)
+        subscriptions = await subscriptions_service.get_person_subscriptions(person_id)
         return create_success_response(subscriptions)
     except BaseApplicationException as e:
         raise HTTPException(status_code=500, detail=e.user_message or str(e))
@@ -187,7 +187,9 @@ async def get_project_subscriptions(
 ):
     """Get all subscriptions for a project enriched with person details."""
     try:
-        subscriptions = subscriptions_service.get_project_subscriptions(project_id)
+        subscriptions = await subscriptions_service.get_project_subscriptions(
+            project_id
+        )
         return create_success_response(subscriptions)
     except BaseApplicationException as e:
         raise HTTPException(status_code=500, detail=e.user_message or str(e))
