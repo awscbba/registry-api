@@ -4,6 +4,7 @@ All fields use camelCase - no mapping complexity.
 """
 
 from typing import Optional
+from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
@@ -169,13 +170,26 @@ async def change_password(
         # Update password in database
         from ..models.person import PersonUpdate
 
-        update_data = PersonUpdate(passwordHash=new_hash)
-        updated_person = auth_service.people_repository.update(
-            current_user.id, update_data
-        )  # Not async
+        # Note: passwordHash has exclude=True in the model, so we need to pass it differently
+        # We'll update the database directly through the repository
+        update_data = {
+            "passwordHash": new_hash,
+            "updatedAt": datetime.utcnow().isoformat(),
+        }
 
-        if not updated_person:
+        from ..core.database import db
+
+        success = db.update_item(
+            auth_service.people_repository.table_name,
+            {"id": current_user.id},
+            update_data,
+        )
+
+        if not success:
             raise HTTPException(status_code=500, detail="Failed to update password")
+
+        # Get updated person
+        updated_person = auth_service.people_repository.get_by_id(current_user.id)
 
         # Log password change
         from ..services.logging_service import logging_service, LogCategory, LogLevel
