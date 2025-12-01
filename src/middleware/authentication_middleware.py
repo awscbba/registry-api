@@ -103,10 +103,19 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
                 },
             )
 
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication token required",
-                headers={"WWW-Authenticate": "Bearer"},
+            # Return JSON response with CORS headers
+            from fastapi.responses import JSONResponse
+
+            return JSONResponse(
+                status_code=401,
+                content={"detail": "Authentication token required"},
+                headers={
+                    "WWW-Authenticate": "Bearer",
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Credentials": "true",
+                    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+                    "Access-Control-Allow-Headers": "Accept, Accept-Language, Content-Language, Content-Type, Authorization, X-Requested-With, X-Api-Key, X-Amz-Date, X-Amz-Security-Token",
+                },
             )
 
         token = auth_header.split(" ")[1]
@@ -125,13 +134,19 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
                     },
                 )
 
-                # Return proper JSON response instead of HTTPException to avoid CORS issues
+                # Return proper JSON response with CORS headers
                 from fastapi.responses import JSONResponse
 
                 return JSONResponse(
                     status_code=401,
                     content={"detail": "Invalid or expired token"},
-                    headers={"WWW-Authenticate": "Bearer"},
+                    headers={
+                        "WWW-Authenticate": "Bearer",
+                        "Access-Control-Allow-Origin": "*",
+                        "Access-Control-Allow-Credentials": "true",
+                        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+                        "Access-Control-Allow-Headers": "Accept, Accept-Language, Content-Language, Content-Type, Authorization, X-Requested-With, X-Api-Key, X-Amz-Date, X-Amz-Security-Token",
+                    },
                 )
 
             # Check if account is locked
@@ -145,9 +160,18 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
                     details={"path": path, "method": request.method},
                 )
 
-                raise HTTPException(
-                    status_code=status.HTTP_423_LOCKED,
-                    detail="Account is temporarily locked",
+                # Return JSON response with CORS headers
+                from fastapi.responses import JSONResponse
+
+                return JSONResponse(
+                    status_code=423,
+                    content={"detail": "Account is temporarily locked"},
+                    headers={
+                        "Access-Control-Allow-Origin": "*",
+                        "Access-Control-Allow-Credentials": "true",
+                        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+                        "Access-Control-Allow-Headers": "Accept, Accept-Language, Content-Language, Content-Type, Authorization, X-Requested-With, X-Api-Key, X-Amz-Date, X-Amz-Security-Token",
+                    },
                 )
 
             # Get user roles
