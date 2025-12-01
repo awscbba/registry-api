@@ -138,6 +138,23 @@ class SubscriptionsService:
                 },
             )
 
+            # Send notification emails to project admins (async, non-blocking)
+            try:
+                self._send_subscription_notification(
+                    subscription.personId, subscription.projectId
+                )
+            except Exception as email_error:
+                # Log email error but don't fail subscription creation
+                logging_service.log_structured(
+                    level=LogLevel.WARNING,
+                    category=LogCategory.EMAIL_OPERATIONS,
+                    message=f"Failed to send subscription notification: {str(email_error)}",
+                    additional_data={
+                        "subscription_id": subscription.id,
+                        "error": str(email_error),
+                    },
+                )
+
             # Convert to response format
             return SubscriptionResponse(**subscription.model_dump())
 
@@ -574,3 +591,194 @@ class SubscriptionsService:
     def check_subscription_exists(self, person_id: str, project_id: str) -> bool:
         """Check if a subscription exists for a person and project."""
         return self.subscriptions_repository.subscription_exists(person_id, project_id)
+
+    def _send_subscription_notification(self, person_id: str, project_id: str) -> None:
+        """Send email notification to project admins about new subscription.
+
+        Args:
+            person_id: ID of the person who subscribed
+            project_id: ID of the project they subscribed to
+
+        Note:
+            This method is called after subscription creation and should not
+            fail the subscription if email sending fails.
+        """
+        try:
+            # Get project details
+            project = self.projects_service.get_project(project_id)
+            if not project:
+                logging_service.log_structured(
+                    level=LogLevel.WARNING,
+                    category=LogCategory.EMAIL_OPERATIONS,
+                    message="Cannot send notification - project not found",
+                    additional_data={"project_id": project_id},
+                )
+                return
+
+            # Check if notifications are enabled for this project
+            if not getattr(project, "enableSubscriptionNotifications", True):
+                logging_service.log_structured(
+                    level=LogLevel.INFO,
+                    category=LogCategory.EMAIL_OPERATIONS,
+                    message="Subscription notifications disabled for project",
+                    additional_data={"project_id": project_id},
+                )
+                return
+
+            # Get subscriber details
+            person = self.people_service.get_person(person_id)
+            if not person:
+                logging_service.log_structured(
+                    level=LogLevel.WARNING,
+                    category=LogCategory.EMAIL_OPERATIONS,
+                    message="Cannot send notification - person not found",
+                    additional_data={"person_id": person_id},
+                )
+                return
+
+            # Get project creator details
+            creator = self.people_service.get_person(project.createdBy)
+            if not creator:
+                logging_service.log_structured(
+                    level=LogLevel.WARNING,
+                    category=LogCategory.EMAIL_OPERATIONS,
+                    message="Cannot send notification - project creator not found",
+                    additional_data={"creator_id": project.createdBy},
+                )
+                return
+
+            # Build recipient list: creator + additional notification emails
+            recipients = [creator.email]
+            notification_emails = getattr(project, "notificationEmails", [])
+            if notification_emails:
+                recipients.extend(notification_emails)
+
+            # Remove duplicates
+            recipients = list(set(recipients))
+
+            # Prepare email content
+            subscriber_name = f"{person.firstName} {person.lastName}"
+            subscriber_email = person.email
+            project_name = project.name
+
+            subject = f"Nueva suscripción al proyecto: {project_name}"
+
+            html_body = f"""
+            <html>
+            <head>
+                <style>
+                    body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                    .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                    .header {{ background-color: #3b82f6; color: white; padding: 20px; border-radius: 8px 8px 0 0; }}
+                    .content {{ background-color: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }}
+                    .info-box {{ background-color: white; padding: 20px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #3b82f6; }}
+                    .label {{ font-weight: bold; color: #1f2937; }}
+                    .value {{ color: #4b5563; margin-left: 10px; }}
+                    .footer {{ text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }}
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h2 style="margin: 0;">🎉 Nueva Suscripción</h2>
+                    </div>
+                    <div class="content">
+                        <p>Hola,</p>
+                        <p>Un nuevo usuario se ha suscrito a tu proyecto.</p>
+
+                        <div class="info-box">
+                            <h3 style="margin-top: 0; color: #1f2937;">Información del Proyecto</h3>
+                            <p><span class="label">Proyecto:</span><span class="value">{project_name}</span></p>
+                            <p><span class="label">Participantes actuales:</span><span class="value">{project.currentParticipants}/{project.maxParticipants}</span></p>
+                        </div>
+
+                        <div class="info-box">
+                            <h3 style="margin-top: 0; color: #1f2937;">Información del Suscriptor</h3>
+                            <p><span class="label">Nombre:</span><span class="value">{subscriber_name}</span></p>
+                            <p><span class="label">Email:</span><span class="value">{subscriber_email}</span></p>
+                        </div>
+
+                        <p style="margin-top: 30px;">
+                            Puedes ver todos los suscriptores y gestionar tu proyecto desde el panel de administración.
+                        </p>
+
+                        <div style="text-align: center; margin-top: 30px;">
+                            <a href="https://registry.cbba.cloud.org.bo/dashboard"
+                               style="background-color: #3b82f6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                                Ver Panel de Administración
+                            </a>
+                        </div>
+                    </div>
+                    <div class="footer">
+                        <p>AWS User Group Cochabamba - Sistema de Registro</p>
+                        <p>Este es un correo automático, por favor no responder.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """
+
+            text_body = f"""
+            Nueva Suscripción al Proyecto
+
+            Un nuevo usuario se ha suscrito a tu proyecto.
+
+            Información del Proyecto:
+            - Proyecto: {project_name}
+            - Participantes actuales: {project.currentParticipants}/{project.maxParticipants}
+
+            Información del Suscriptor:
+            - Nombre: {subscriber_name}
+            - Email: {subscriber_email}
+
+            Puedes ver todos los suscriptores y gestionar tu proyecto desde el panel de administración:
+            https://registry.cbba.cloud.org.bo/dashboard
+
+            ---
+            AWS User Group Cochabamba - Sistema de Registro
+            Este es un correo automático, por favor no responder.
+            """
+
+            # Send email to all recipients
+            for recipient in recipients:
+                try:
+                    self.email_service.send_email(
+                        to_email=recipient,
+                        subject=subject,
+                        html_body=html_body,
+                        text_body=text_body,
+                    )
+
+                    logging_service.log_structured(
+                        level=LogLevel.INFO,
+                        category=LogCategory.EMAIL_OPERATIONS,
+                        message="Subscription notification sent",
+                        additional_data={
+                            "recipient": recipient,
+                            "project_id": project_id,
+                            "subscriber_id": person_id,
+                        },
+                    )
+                except Exception as send_error:
+                    logging_service.log_structured(
+                        level=LogLevel.ERROR,
+                        category=LogCategory.EMAIL_OPERATIONS,
+                        message=f"Failed to send notification to {recipient}",
+                        additional_data={
+                            "recipient": recipient,
+                            "error": str(send_error),
+                        },
+                    )
+
+        except Exception as e:
+            logging_service.log_structured(
+                level=LogLevel.ERROR,
+                category=LogCategory.ERROR_HANDLING,
+                message=f"Error in subscription notification: {str(e)}",
+                additional_data={
+                    "person_id": person_id,
+                    "project_id": project_id,
+                    "error": str(e),
+                },
+            )
+            # Don't re-raise - we don't want to fail subscription creation

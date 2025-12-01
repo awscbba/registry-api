@@ -5,8 +5,8 @@ Clean camelCase models with no field mapping complexity.
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional, Any, Dict
-from pydantic import BaseModel, Field, field_validator, model_validator
+from typing import Optional, Any, Dict, List
+from pydantic import BaseModel, Field, field_validator, model_validator, EmailStr
 
 
 class ProjectStatus(str, Enum):
@@ -53,6 +53,13 @@ class ProjectBase(BaseModel):
     )
     richText: Optional[str] = Field(
         None, max_length=10000, description="Rich text content (HTML, max 10KB)"
+    )
+    enableSubscriptionNotifications: Optional[bool] = Field(
+        True, description="Enable email notifications when users subscribe"
+    )
+    notificationEmails: Optional[List[EmailStr]] = Field(
+        default_factory=list,
+        description="Additional admin emails to notify on new subscriptions",
     )
 
     @field_validator("richText")
@@ -126,6 +133,8 @@ class ProjectUpdate(BaseModel):
     isEnabled: Optional[bool] = None
     formSchema: Optional[Dict[str, Any]] = None
     richText: Optional[str] = Field(None, max_length=10000)
+    enableSubscriptionNotifications: Optional[bool] = None
+    notificationEmails: Optional[List[EmailStr]] = None
 
     @field_validator("richText")
     @classmethod
