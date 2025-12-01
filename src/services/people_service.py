@@ -111,7 +111,7 @@ class PeopleService:
 
         return PersonResponse(**person.model_dump())
 
-    def delete_person(self, person_id: str, requesting_user_id: str) -> bool:
+    async def delete_person(self, person_id: str, requesting_user_id: str) -> bool:
         """Delete a person with business rule validation."""
         from ..services.logging_service import logging_service, LogCategory, LogLevel
         from ..exceptions.base_exceptions import BusinessLogicException, ErrorCode
@@ -130,7 +130,9 @@ class PeopleService:
             subscriptions_service = get_subscriptions_service()
 
             # Get user's subscriptions
-            subscriptions = subscriptions_service.get_person_subscriptions(person_id)
+            subscriptions = await subscriptions_service.get_person_subscriptions(
+                person_id
+            )
             active_subscriptions = [
                 sub
                 for sub in subscriptions
@@ -187,7 +189,7 @@ class PeopleService:
         if person_deleted:
             # Clean up orphaned subscriptions after successful person deletion
             try:
-                subscriptions = subscriptions_service.get_person_subscriptions(
+                subscriptions = await subscriptions_service.get_person_subscriptions(
                     person_id
                 )
                 for subscription in subscriptions:

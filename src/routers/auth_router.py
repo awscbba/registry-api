@@ -366,7 +366,7 @@ async def get_user_subscriptions(
         )
 
         # Use the service method that gets subscriptions by person ID
-        user_subscriptions = subscriptions_service.get_person_subscriptions(
+        user_subscriptions = await subscriptions_service.get_person_subscriptions(
             current_user.id
         )
 

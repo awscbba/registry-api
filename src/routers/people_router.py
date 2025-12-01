@@ -125,7 +125,7 @@ async def delete_person(
 ) -> dict:
     """Delete a person."""
     try:
-        success = people_service.delete_person(person_id)
+        success = await people_service.delete_person(person_id, "system")
 
         if not success:
             raise HTTPException(status_code=404, detail="Person not found")

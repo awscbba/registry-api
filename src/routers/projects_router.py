@@ -167,9 +167,9 @@ async def get_project_subscriptions(
 ):
     """Get all subscriptions for a specific project."""
     try:
-        subscriptions = subscriptions_service.get_project_subscriptions(
+        subscriptions = await subscriptions_service.get_project_subscriptions(
             project_id
-        )  # Not async
+        )
         return create_success_response(subscriptions)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
