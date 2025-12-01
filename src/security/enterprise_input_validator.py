@@ -259,6 +259,7 @@ class EnterpriseInputValidator:
             for field, value in data.items():
                 if isinstance(value, str) and field not in [
                     "password",
+                    "currentPassword",
                     "newPassword",
                     "confirmPassword",
                 ]:
