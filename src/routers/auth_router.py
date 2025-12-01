@@ -353,9 +353,33 @@ async def get_user_subscriptions(
     try:
         from ..services.logging_service import logging_service, LogCategory, LogLevel
 
+        # Debug: Log the current user ID
+        logging_service.log_structured(
+            level=LogLevel.INFO,
+            category=LogCategory.USER_OPERATIONS,
+            message=f"DEBUG: Fetching subscriptions for user",
+            additional_data={
+                "user_id": current_user.id,
+                "user_email": current_user.email,
+                "user_model_dump": current_user.model_dump(),
+            },
+        )
+
         # Use the service method that gets subscriptions by person ID
         user_subscriptions = subscriptions_service.get_person_subscriptions(
             current_user.id
+        )
+
+        # Debug: Log what we got back
+        logging_service.log_structured(
+            level=LogLevel.INFO,
+            category=LogCategory.USER_OPERATIONS,
+            message=f"DEBUG: Got subscriptions from service",
+            additional_data={
+                "user_id": current_user.id,
+                "subscription_count": len(user_subscriptions),
+                "subscriptions": [sub.model_dump() for sub in user_subscriptions],
+            },
         )
 
         # Convert to dict format for response

@@ -4,7 +4,8 @@
     "python@latest",
     "uv@latest",
     "git@latest",
-    "gh@latest"
+    "gh@latest",
+    "just@latest"
   ],
   "shell": {
     "init_hook": [
