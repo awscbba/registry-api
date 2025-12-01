@@ -145,17 +145,40 @@ async def change_password(
         # Validate and change password
         from ..utils.password_utils import hash_and_validate_password, PasswordHasher
 
-        # Verify current password
+        # Get current user from database
         person = auth_service.people_repository.get_by_id(current_user.id)  # Not async
-        if not person or not hasattr(person, "passwordHash") or not person.passwordHash:
-            raise HTTPException(
-                status_code=400, detail="Account not set up for password change"
+        if not person:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Check if user has existing password
+        has_existing_password = hasattr(person, "passwordHash") and person.passwordHash
+
+        if has_existing_password:
+            # Verify current password if one exists
+            if not PasswordHasher.verify_password(
+                password_data.currentPassword, person.passwordHash
+            ):
+                raise HTTPException(
+                    status_code=400, detail="Current password is incorrect"
+                )
+        else:
+            # No existing password - this is setting initial password
+            # Still require currentPassword field for security, but don't validate it
+            from ..services.logging_service import (
+                logging_service,
+                LogCategory,
+                LogLevel,
             )
 
-        if not PasswordHasher.verify_password(
-            password_data.currentPassword, person.passwordHash
-        ):
-            raise HTTPException(status_code=400, detail="Current password is incorrect")
+            logging_service.log_structured(
+                level=LogLevel.INFO,
+                category=LogCategory.PASSWORD_MANAGEMENT,
+                message=f"Setting initial password for user {current_user.id}",
+                additional_data={
+                    "user_id": current_user.id,
+                    "email": current_user.email,
+                },
+            )
 
         # Validate and hash new password
         is_valid, new_hash, errors = hash_and_validate_password(
