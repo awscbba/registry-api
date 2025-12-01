@@ -174,7 +174,7 @@ class SubscriptionsService:
         subscriptions = self.subscriptions_repository.list_all(limit=limit)
         return [SubscriptionResponse(**sub.model_dump()) for sub in subscriptions]
 
-    def get_person_subscriptions(
+    async def get_person_subscriptions(
         self, person_id: str
     ) -> List[EnrichedSubscriptionResponse]:
         """Get all subscriptions for a person enriched with project details.
@@ -197,7 +197,7 @@ class SubscriptionsService:
         # Enrich subscriptions with project details
         enriched_subscriptions = []
         for sub in subscriptions:
-            enriched_sub = self._enrich_subscription_with_project(sub)
+            enriched_sub = await self._enrich_subscription_with_project(sub)
             enriched_subscriptions.append(enriched_sub)
 
         logging_service.log_structured(
@@ -212,7 +212,7 @@ class SubscriptionsService:
 
         return enriched_subscriptions
 
-    def _enrich_subscription_with_project(
+    async def _enrich_subscription_with_project(
         self, subscription: Subscription
     ) -> EnrichedSubscriptionResponse:
         """Enrich a subscription with project details.
@@ -229,7 +229,7 @@ class SubscriptionsService:
         # Get project details
         try:
             projects_service = self._get_projects_service()
-            project = projects_service.get_project(subscription.projectId)
+            project = await projects_service.get_project(subscription.projectId)
 
             if project:
                 enriched_data.update(
@@ -289,7 +289,7 @@ class SubscriptionsService:
 
         return EnrichedSubscriptionResponse(**enriched_data)
 
-    def get_project_subscriptions(
+    async def get_project_subscriptions(
         self, project_id: str
     ) -> List[EnrichedSubscriptionResponse]:
         """Get all subscriptions for a project enriched with person details.
