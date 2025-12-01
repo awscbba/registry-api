@@ -181,12 +181,37 @@ async def subscribe_to_project(
     subscription_data: dict,
     subscriptions_service: SubscriptionsService = Depends(get_subscriptions_service),
 ):
-    """Subscribe a person to a project."""
+    """Subscribe a person to a project.
+
+    Super admins are automatically approved (status: active).
+    Regular users require admin approval (status: pending).
+    """
     try:
         # Add project_id to subscription data
         subscription_data["projectId"] = project_id
 
         from ..models.subscription import SubscriptionCreate
+        from ..services.service_registry_manager import service_registry
+
+        # Check if user is super admin - auto-approve if so
+        person_id = subscription_data.get("personId")
+        if person_id:
+            try:
+                people_service = service_registry.get_people_service()
+                person = people_service.get_person(person_id)
+
+                # Auto-approve super admins
+                if person and hasattr(person, "roles") and person.roles:
+                    if "super_admin" in person.roles or "SUPER_ADMIN" in person.roles:
+                        subscription_data["status"] = "active"
+                    elif "status" not in subscription_data:
+                        subscription_data["status"] = "pending"
+                elif "status" not in subscription_data:
+                    subscription_data["status"] = "pending"
+            except Exception:
+                # If we can't check roles, default to pending
+                if "status" not in subscription_data:
+                    subscription_data["status"] = "pending"
 
         subscription_create = SubscriptionCreate(**subscription_data)
 

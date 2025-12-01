@@ -353,13 +353,13 @@ async def get_user_subscriptions(
     try:
         from ..services.logging_service import logging_service, LogCategory, LogLevel
 
-        # Get all subscriptions and filter by current user
-        all_subscriptions = subscriptions_service.list_subscriptions()
+        # Use the service method that gets subscriptions by person ID
+        user_subscriptions = subscriptions_service.get_person_subscriptions(
+            current_user.id
+        )
 
-        # Filter subscriptions for current user
-        user_subscriptions = [
-            sub for sub in all_subscriptions if sub.get("personId") == current_user.id
-        ]
+        # Convert to dict format for response
+        subscriptions_data = [sub.model_dump() for sub in user_subscriptions]
 
         logging_service.log_structured(
             level=LogLevel.INFO,
@@ -367,12 +367,12 @@ async def get_user_subscriptions(
             message=f"Retrieved subscriptions for user {current_user.id}",
             additional_data={
                 "user_id": current_user.id,
-                "subscription_count": len(user_subscriptions),
+                "subscription_count": len(subscriptions_data),
             },
         )
 
         return create_success_response(
-            {"subscriptions": user_subscriptions, "count": len(user_subscriptions)}
+            {"subscriptions": subscriptions_data, "count": len(subscriptions_data)}
         )
 
     except Exception as e:
