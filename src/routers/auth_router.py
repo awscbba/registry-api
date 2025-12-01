@@ -193,7 +193,23 @@ async def change_password(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # Log the full error for debugging
+        from ..services.logging_service import logging_service, LogCategory, LogLevel
+        import traceback
+
+        logging_service.log_structured(
+            level=LogLevel.ERROR,
+            category=LogCategory.ERROR_HANDLING,
+            message=f"Password change failed: {str(e)}",
+            additional_data={
+                "user_id": current_user.id if current_user else None,
+                "error": str(e),
+                "traceback": traceback.format_exc(),
+            },
+        )
+        raise HTTPException(
+            status_code=500, detail=f"Failed to change password: {str(e)}"
+        )
 
 
 @router.post("/forgot-password", response_model=dict)
