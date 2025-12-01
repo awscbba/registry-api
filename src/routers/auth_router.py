@@ -354,7 +354,9 @@ async def get_user_subscriptions(
         from ..services.logging_service import logging_service, LogCategory, LogLevel
 
         # Use the service method that gets subscriptions by person ID
-        user_subscriptions = subscriptions_service.get_person_subscriptions(current_user.id)
+        user_subscriptions = subscriptions_service.get_person_subscriptions(
+            current_user.id
+        )
 
         # Convert to dict format for response
         subscriptions_data = [sub.model_dump() for sub in user_subscriptions]

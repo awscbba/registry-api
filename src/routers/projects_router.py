@@ -182,7 +182,7 @@ async def subscribe_to_project(
     subscriptions_service: SubscriptionsService = Depends(get_subscriptions_service),
 ):
     """Subscribe a person to a project.
-    
+
     Super admins are automatically approved (status: active).
     Regular users require admin approval (status: pending).
     """
@@ -199,10 +199,10 @@ async def subscribe_to_project(
             try:
                 people_service = service_registry.get_people_service()
                 person = people_service.get_person(person_id)
-                
+
                 # Auto-approve super admins
-                if person and hasattr(person, 'roles') and person.roles:
-                    if 'super_admin' in person.roles or 'SUPER_ADMIN' in person.roles:
+                if person and hasattr(person, "roles") and person.roles:
+                    if "super_admin" in person.roles or "SUPER_ADMIN" in person.roles:
                         subscription_data["status"] = "active"
                     elif "status" not in subscription_data:
                         subscription_data["status"] = "pending"
