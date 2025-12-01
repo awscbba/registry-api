@@ -5,7 +5,8 @@
     "uv@latest",
     "git@latest",
     "gh@latest",
-    "just@latest"
+    "just@latest",
+    "awscli2@latest"
   ],
   "shell": {
     "init_hook": [
