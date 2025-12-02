@@ -69,9 +69,7 @@ async def create_subscription(
 ):
     """Create a new subscription with enterprise exception handling."""
     try:
-        subscription = await subscriptions_service.create_subscription(
-            subscription_data
-        )
+        subscription = subscriptions_service.create_subscription(subscription_data)
         return create_success_response(subscription)
     except BusinessLogicException as e:
         raise HTTPException(status_code=409, detail=e.user_message or str(e))
