@@ -69,6 +69,10 @@ scripts/compare_*.py
 scripts/check_*.py
 scripts/quick_*.py
 
+# Manual test scripts with credentials
+test_email_*.py
+test_production_*.py
+
 # Environment variables
 .env
 .env.local

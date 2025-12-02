@@ -24,6 +24,8 @@ from ..utils.responses import (
     create_error_response,
     create_list_response,
 )
+from ..routers.auth_router import get_current_user
+from ..models.auth import User
 
 router = APIRouter(prefix="/v2/projects", tags=["Projects"])
 
@@ -79,10 +81,11 @@ async def get_project(
 async def create_project(
     project_data: ProjectCreate,
     projects_service: ProjectsService = Depends(get_projects_service),
+    current_user: User = Depends(get_current_user),
 ) -> dict:
-    """Create a new project."""
+    """Create a new project (requires authentication)."""
     try:
-        project = await projects_service.create_project(project_data)
+        project = await projects_service.create_project(project_data, current_user.id)
         return create_success_response(project, "Project created successfully")
 
     except ValueError as e:

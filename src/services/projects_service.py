@@ -22,14 +22,16 @@ class ProjectsService:
     def __init__(self, projects_repository: ProjectsRepository):
         self.projects_repository = projects_repository
 
-    async def create_project(self, project_data: ProjectCreate) -> ProjectResponse:
+    async def create_project(
+        self, project_data: ProjectCreate, created_by: str
+    ) -> ProjectResponse:
         """Create a new project with business validation."""
         # Business validation (dates are already validated by Pydantic model)
         if project_data.maxParticipants <= 0:
             raise ValueError("Maximum participants must be greater than 0")
 
         # Create project
-        project = self.projects_repository.create(project_data)
+        project = self.projects_repository.create(project_data, created_by)
 
         # Convert to response model
         return ProjectResponse(**project.model_dump())
