@@ -20,7 +20,9 @@ class ProjectsRepository(BaseRepository[Project]):
 
         self.table_name = config.database.projects_table
 
-    def create(self, project_data: ProjectCreate) -> Project:
+    def create(
+        self, project_data: ProjectCreate, created_by: str = "system"
+    ) -> Project:
         """Create a new project in the database."""
         # Generate ID and timestamps
         project_id = str(uuid.uuid4())
@@ -34,7 +36,7 @@ class ProjectsRepository(BaseRepository[Project]):
                 "createdAt": now.isoformat(),
                 "updatedAt": now.isoformat(),
                 "currentParticipants": 0,
-                "createdBy": "system",  # TODO: Use actual user ID when auth is implemented
+                "createdBy": created_by,
             }
         )
 

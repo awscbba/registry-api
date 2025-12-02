@@ -75,35 +75,61 @@ class TestProjectsRouter:
 
     def test_create_project_validation(self):
         """Test project creation with validation."""
-        # Test missing required fields
-        response = client.post("/v2/projects/", json={})
-        assert response.status_code == 422
+        # Override the dependency to bypass authentication
+        from src.routers.auth_router import get_current_user
+        from .test_utils import TestMockUtils
+
+        async def mock_get_current_user():
+            return TestMockUtils.mock_user()
+
+        app.dependency_overrides[get_current_user] = mock_get_current_user
+
+        try:
+            # Test missing required fields
+            response = client.post("/v2/projects/", json={})
+            assert response.status_code == 422
+        finally:
+            # Clean up
+            app.dependency_overrides.clear()
 
     @patch("src.core.database.db.put_item")
     def test_create_project_success(self, mock_put):
         """Test successful project creation."""
+        # Override the dependency to bypass authentication
+        from src.routers.auth_router import get_current_user
+        from .test_utils import TestMockUtils
+
+        async def mock_get_current_user():
+            return TestMockUtils.mock_user(user_id="user-123")
+
+        app.dependency_overrides[get_current_user] = mock_get_current_user
         mock_put.return_value = True
 
-        valid_project = {
-            "name": "Community Garden",
-            "description": "Building a community garden for local residents",
-            "startDate": "2025-03-01",
-            "endDate": "2025-06-30",
-            "maxParticipants": 20,
-            "status": "pending",
-            "category": "Environment",
-            "location": "Central Park",
-            "requirements": "Basic gardening knowledge helpful",
-        }
+        try:
+            valid_project = {
+                "name": "Community Garden",
+                "description": "Building a community garden for local residents",
+                "startDate": "2025-03-01",
+                "endDate": "2025-06-30",
+                "maxParticipants": 20,
+                "status": "pending",
+                "category": "Environment",
+                "location": "Central Park",
+                "requirements": "Basic gardening knowledge helpful",
+            }
 
-        headers = TestAuthUtils.get_auth_headers()
-        response = client.post("/v2/projects/", json=valid_project, headers=headers)
-        assert response.status_code == 201
+            headers = TestAuthUtils.get_auth_headers()
+            response = client.post("/v2/projects/", json=valid_project, headers=headers)
+            assert response.status_code == 201
 
-        data = response.json()
-        assert data["success"] is True
-        assert data["data"]["name"] == "Community Garden"
-        assert data["data"]["status"] == "pending"
-        assert "id" in data["data"]
+            data = response.json()
+            assert data["success"] is True
+            assert data["data"]["name"] == "Community Garden"
+            assert data["data"]["status"] == "pending"
+            assert "id" in data["data"]
+            assert data["data"]["createdBy"] == "user-123"  # Verify creator is set
+        finally:
+            # Clean up
+            app.dependency_overrides.clear()
         assert "createdAt" in data["data"]
         assert data["data"]["currentParticipants"] == 0

@@ -339,6 +339,8 @@ class TestEnhancedProjectService:
 
         import asyncio
 
-        result = asyncio.run(self.projects_service.create_project(standard_project))
+        result = asyncio.run(
+            self.projects_service.create_project(standard_project, "test-user-123")
+        )
         assert result is not None
         assert result.name == "Standard Project"
