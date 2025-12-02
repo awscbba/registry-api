@@ -340,7 +340,7 @@ async def delete_user(
 ):
     """Delete user (admin endpoint)."""
     try:
-        success = people_service.delete_person(user_id, current_user.id)
+        success = await people_service.delete_person(user_id, current_user.id)
         if not success:
             raise HTTPException(status_code=404, detail="User not found")
 
