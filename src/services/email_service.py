@@ -31,6 +31,65 @@ class EmailService:
         self.from_email = config.email.from_email
         self.frontend_url = config.frontend_url
 
+    def send_email(
+        self,
+        to_email: str,
+        subject: str,
+        html_body: str,
+        text_body: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Send a generic email via SES.
+
+        Args:
+            to_email: Recipient email address
+            subject: Email subject
+            html_body: HTML email body
+            text_body: Plain text email body (optional)
+
+        Returns:
+            Dict with success status and message_id or error
+        """
+        if self.test_mode:
+            return {
+                "success": True,
+                "message": "Email would be sent (TEST MODE)",
+                "message_id": "test-mode-message-id",
+            }
+
+        try:
+            message_body = {"Html": {"Data": html_body, "Charset": "UTF-8"}}
+
+            if text_body:
+                message_body["Text"] = {"Data": text_body, "Charset": "UTF-8"}
+
+            response = self.ses_client.send_email(
+                Source=f"AWS User Group Cochabamba <{self.from_email}>",
+                Destination={"ToAddresses": [to_email]},
+                Message={
+                    "Subject": {"Data": subject, "Charset": "UTF-8"},
+                    "Body": message_body,
+                },
+            )
+
+            return {
+                "success": True,
+                "message": "Email sent successfully",
+                "message_id": response["MessageId"],
+            }
+
+        except ClientError as e:
+            return {
+                "success": False,
+                "message": f"Failed to send email: {e.response['Error']['Message']}",
+                "error_code": e.response["Error"]["Code"],
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Unexpected error: {str(e)}",
+                "error_code": "UNKNOWN_ERROR",
+            }
+
     async def send_password_reset_email(
         self, email: str, first_name: str, reset_token: str
     ) -> Dict[str, Any]:
