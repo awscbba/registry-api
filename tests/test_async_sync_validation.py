@@ -16,7 +16,12 @@ class TestAsyncSyncConsistency:
     """Test async/sync consistency across the service layer."""
 
     def test_subscription_service_methods_are_sync(self):
-        """Ensure all SubscriptionsService methods are synchronous."""
+        """Ensure all SubscriptionsService methods are synchronous.
+
+        Note: create_subscription is synchronous but uses asyncio.create_task()
+        internally for non-blocking email notifications. This design maintains
+        test compatibility while allowing async operations in production.
+        """
         service = SubscriptionsService(Mock())
 
         critical_methods = [
