@@ -656,25 +656,38 @@ class SubscriptionsService:
                 )
                 return
 
-            # Get project creator details
-            creator = people_service.get_person(project.createdBy)
-            if not creator:
-                logging_service.log_structured(
-                    level=LogLevel.WARNING,
-                    category=LogCategory.EMAIL_OPERATIONS,
-                    message="Cannot send notification - project creator not found",
-                    additional_data={"creator_id": project.createdBy},
-                )
-                return
+            # Build recipient list starting with additional notification emails
+            recipients = []
 
-            # Build recipient list: creator + additional notification emails
-            recipients = [creator.email]
+            # Get project creator details (if not system)
+            if project.createdBy and project.createdBy != "system":
+                creator = people_service.get_person(project.createdBy)
+                if creator:
+                    recipients.append(creator.email)
+                else:
+                    logging_service.log_structured(
+                        level=LogLevel.WARNING,
+                        category=LogCategory.EMAIL_OPERATIONS,
+                        message="Project creator not found, will notify additional emails only",
+                        additional_data={"creator_id": project.createdBy},
+                    )
+
             notification_emails = getattr(project, "notificationEmails", [])
             if notification_emails:
                 recipients.extend(notification_emails)
 
             # Remove duplicates
             recipients = list(set(recipients))
+
+            # If no recipients, log and return
+            if not recipients:
+                logging_service.log_structured(
+                    level=LogLevel.WARNING,
+                    category=LogCategory.EMAIL_OPERATIONS,
+                    message="No recipients for subscription notification",
+                    additional_data={"project_id": project_id},
+                )
+                return
 
             # Prepare email content
             subscriber_name = f"{person.firstName} {person.lastName}"
