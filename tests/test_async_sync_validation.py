@@ -22,16 +22,24 @@ class TestAsyncSyncConsistency:
         critical_methods = [
             "list_subscriptions",
             "get_subscription",
-            "create_subscription",
             "update_subscription",
             "delete_subscription",
         ]
+
+        # create_subscription is now async to properly await email notifications
+        async_methods = ["create_subscription"]
 
         for method_name in critical_methods:
             method = getattr(service, method_name)
             assert not inspect.iscoroutinefunction(
                 method
             ), f"{method_name} should be synchronous"
+
+        for method_name in async_methods:
+            method = getattr(service, method_name)
+            assert inspect.iscoroutinefunction(
+                method
+            ), f"{method_name} should be asynchronous"
 
     def test_subscription_repository_methods_are_sync(self):
         """Ensure all SubscriptionsRepository methods are synchronous."""
