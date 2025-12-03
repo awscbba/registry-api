@@ -16,6 +16,11 @@ class SubscriptionCreate(BaseModel):
         ..., min_length=1, description="ID of the project to subscribe to"
     )
     status: str = Field(default="active", description="Subscription status")
+    notes: Optional[str] = Field(
+        None,
+        max_length=1000,
+        description="Additional notes or comments from subscriber",
+    )
 
 
 class SubscriptionUpdate(BaseModel):
@@ -23,6 +28,9 @@ class SubscriptionUpdate(BaseModel):
 
     status: Optional[str] = Field(None, description="Subscription status")
     isActive: Optional[bool] = Field(None, description="Whether subscription is active")
+    notes: Optional[str] = Field(
+        None, max_length=1000, description="Additional notes or comments"
+    )
 
 
 class SubscriptionResponse(BaseModel):
@@ -36,6 +44,7 @@ class SubscriptionResponse(BaseModel):
     isActive: bool
     createdAt: str
     updatedAt: str
+    notes: Optional[str] = None
 
 
 class Subscription(BaseModel):
@@ -49,6 +58,7 @@ class Subscription(BaseModel):
     isActive: bool = True
     createdAt: str
     updatedAt: str
+    notes: Optional[str] = None
 
 
 class EnrichedSubscriptionResponse(SubscriptionResponse):
