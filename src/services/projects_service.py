@@ -48,12 +48,19 @@ class ProjectsService:
         self, project_id: str, updates: ProjectUpdate
     ) -> Optional[ProjectResponse]:
         """Update a project with business validation."""
-        # Business validation
-        if (
-            updates.endDate
-            and updates.startDate
-            and updates.endDate <= updates.startDate
-        ):
+        # Get existing project to validate date changes
+        existing_project = self.projects_repository.get_by_id(project_id)
+        if not existing_project:
+            return None
+
+        # Validate dates when updating
+        # Use existing values if not being updated
+        start_date = (
+            updates.startDate if updates.startDate else existing_project.startDate
+        )
+        end_date = updates.endDate if updates.endDate else existing_project.endDate
+
+        if start_date and end_date and end_date <= start_date:
             raise ValueError("End date must be after start date")
 
         if updates.maxParticipants is not None and updates.maxParticipants <= 0:
