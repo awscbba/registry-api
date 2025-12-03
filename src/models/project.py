@@ -156,15 +156,8 @@ class ProjectUpdate(BaseModel):
 
         return v
 
-    @field_validator("endDate")
-    @classmethod
-    def end_date_after_start_date(cls, v, info):
-        """Validate that end date is not before start date when both are provided."""
-        # Only validate if both dates are being updated together
-        start_date = info.data.get("startDate")
-        if v and start_date and v <= start_date:
-            raise ValueError("End date must be after start date")
-        return v
+    # Note: Date validation is handled in the service layer for updates
+    # since we need to compare against existing project data
 
 
 class ProjectResponse(ProjectBase):
