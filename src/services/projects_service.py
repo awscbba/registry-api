@@ -60,8 +60,16 @@ class ProjectsService:
         )
         end_date = updates.endDate if updates.endDate else existing_project.endDate
 
-        if start_date and end_date and end_date <= start_date:
-            raise ValueError("End date must be after start date")
+        # Normalize dates to YYYY-MM-DD format for comparison (remove time if present)
+        if start_date and len(start_date) > 10:
+            start_date = start_date[:10]
+        if end_date and len(end_date) > 10:
+            end_date = end_date[:10]
+
+        if start_date and end_date and end_date < start_date:
+            raise ValueError(
+                f"End date ({end_date}) cannot be before start date ({start_date})"
+            )
 
         if updates.maxParticipants is not None and updates.maxParticipants <= 0:
             raise ValueError("Maximum participants must be greater than 0")
