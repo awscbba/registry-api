@@ -79,6 +79,13 @@ class ProjectsService:
         if not project:
             return None
 
+        # If project status changed to completed or cancelled, update subscription statuses
+        if updates.status and updates.status in [
+            ProjectStatus.COMPLETED,
+            ProjectStatus.CANCELLED,
+        ]:
+            await self._update_subscription_statuses(project_id, updates.status.value)
+
         return ProjectResponse(**project.model_dump())
 
     async def delete_project(self, project_id: str) -> bool:
@@ -221,3 +228,43 @@ class ProjectsService:
             return True
         except Exception as e:
             raise ValueError(str(e))
+
+    async def _update_subscription_statuses(
+        self, project_id: str, new_status: str
+    ) -> None:
+        """Update all subscription statuses when project status changes.
+
+        When a project is completed or cancelled, update all active subscriptions
+        to match the project status.
+
+        Args:
+            project_id: ID of the project
+            new_status: New status to set for subscriptions (completed/cancelled)
+        """
+        try:
+            # Lazy load subscriptions service to avoid circular imports
+            from ..services.service_registry_manager import service_registry
+
+            subscriptions_service = service_registry.get_subscriptions_service()
+
+            # Get all subscriptions for this project
+            subscriptions = await subscriptions_service.get_project_subscriptions(
+                project_id
+            )
+
+            # Update each active subscription
+            from ..models.subscription import SubscriptionUpdate
+
+            for subscription in subscriptions:
+                if subscription.status == "active":
+                    # Update subscription status to match project status
+                    subscriptions_service.update_subscription(
+                        subscription.id, SubscriptionUpdate(status=new_status)
+                    )
+
+        except Exception as e:
+            # Log error but don't fail project update
+            # TODO: Add proper logging when logging service is available
+            print(
+                f"Warning: Failed to update subscription statuses for project {project_id}: {str(e)}"
+            )
