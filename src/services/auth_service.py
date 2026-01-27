@@ -191,14 +191,36 @@ class AuthService:
 
     def verify_token(self, token: str) -> Optional[Dict[str, Any]]:
         """Verify and decode JWT token."""
+        from ..services.logging_service import logging_service, LogLevel, LogCategory
+
         try:
             payload = jwt.decode(
                 token, self.jwt_secret, algorithms=[self.jwt_algorithm]
             )
+            logging_service.log_structured(
+                level=LogLevel.DEBUG,
+                category=LogCategory.AUTHENTICATION,
+                message="JWT token decoded successfully",
+                additional_data={
+                    "token_type": payload.get("type"),
+                    "user_id": payload.get("sub"),
+                },
+            )
             return payload
         except jwt.ExpiredSignatureError:
+            logging_service.log_structured(
+                level=LogLevel.WARNING,
+                category=LogCategory.AUTHENTICATION,
+                message="JWT token expired",
+            )
             return None
-        except jwt.InvalidTokenError:
+        except jwt.InvalidTokenError as e:
+            logging_service.log_structured(
+                level=LogLevel.WARNING,
+                category=LogCategory.AUTHENTICATION,
+                message="JWT token invalid",
+                additional_data={"error": str(e)},
+            )
             return None
 
     async def get_current_user(self, token: str) -> Optional[User]:
@@ -335,19 +357,69 @@ class AuthService:
 
     async def validate_reset_token(self, token: str) -> bool:
         """Validate password reset token."""
+        from ..services.logging_service import logging_service, LogLevel, LogCategory
+
+        logging_service.log_structured(
+            level=LogLevel.INFO,
+            category=LogCategory.AUTHENTICATION,
+            message="Validating password reset token",
+            additional_data={"token_length": len(token) if token else 0},
+        )
+
         payload = self.verify_token(token)
-        if not payload or payload.get("type") != "password_reset":
+        if not payload:
+            logging_service.log_structured(
+                level=LogLevel.WARNING,
+                category=LogCategory.AUTHENTICATION,
+                message="Password reset token validation failed: invalid or expired token",
+                additional_data={"reason": "payload_none"},
+            )
+            return False
+
+        if payload.get("type") != "password_reset":
+            logging_service.log_structured(
+                level=LogLevel.WARNING,
+                category=LogCategory.AUTHENTICATION,
+                message="Password reset token validation failed: wrong token type",
+                additional_data={"token_type": payload.get("type")},
+            )
             return False
 
         user_id = payload.get("sub")
         if not user_id:
+            logging_service.log_structured(
+                level=LogLevel.WARNING,
+                category=LogCategory.AUTHENTICATION,
+                message="Password reset token validation failed: no user_id in token",
+            )
             return False
 
         # Verify user still exists and is active
         person = self.people_repository.get_by_id(user_id)
-        if not person or not person.isActive:
+        if not person:
+            logging_service.log_structured(
+                level=LogLevel.WARNING,
+                category=LogCategory.AUTHENTICATION,
+                message="Password reset token validation failed: user not found",
+                additional_data={"user_id": user_id},
+            )
             return False
 
+        if not person.isActive:
+            logging_service.log_structured(
+                level=LogLevel.WARNING,
+                category=LogCategory.AUTHENTICATION,
+                message="Password reset token validation failed: user not active",
+                additional_data={"user_id": user_id},
+            )
+            return False
+
+        logging_service.log_structured(
+            level=LogLevel.INFO,
+            category=LogCategory.AUTHENTICATION,
+            message="Password reset token validated successfully",
+            additional_data={"user_id": user_id},
+        )
         return True
 
     async def reset_password(self, token: str, new_password: str) -> Dict[str, Any]:
