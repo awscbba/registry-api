@@ -424,6 +424,14 @@ class AuthService:
 
     async def reset_password(self, token: str, new_password: str) -> Dict[str, Any]:
         """Reset user password using reset token."""
+        from ..services.logging_service import logging_service, LogLevel, LogCategory
+        from ..core.database import db
+
+        logging_service.log_structured(
+            level=LogLevel.INFO,
+            category=LogCategory.PASSWORD_MANAGEMENT,
+            message="Password reset attempt started",
+        )
 
         # Validate password strength (basic validation)
         if len(new_password) < 8:
@@ -453,22 +461,44 @@ class AuthService:
                 f"Password validation failed: {', '.join(validation_errors)}"
             )
 
-        # Update the password in the database
-        # Note: This would require updating the person repository to support password updates
-        # For now, we'll simulate success but this needs to be implemented
-
-        # Update password in database
-        from ..models.person import PersonUpdate
-
-        update_data = PersonUpdate(
-            passwordHash=hashed_password,
-            requirePasswordChange=False,
-            lastPasswordChange=__import__("datetime").datetime.utcnow(),
+        logging_service.log_structured(
+            level=LogLevel.INFO,
+            category=LogCategory.PASSWORD_MANAGEMENT,
+            message="Password validated and hashed, updating database",
+            additional_data={"user_id": user_id},
         )
 
-        updated_person = self.people_repository.update(user_id, update_data)
-        if not updated_person:
+        # Update password directly in database
+        # Note: We can't use PersonUpdate.model_dump() because passwordHash has exclude=True
+        # So we update the database directly to ensure the passwordHash is saved
+        update_data = {
+            "passwordHash": hashed_password,
+            "requirePasswordChange": False,
+            "lastPasswordChange": datetime.utcnow().isoformat(),
+            "updatedAt": datetime.utcnow().isoformat(),
+        }
+
+        success = db.update_item(
+            self.people_repository.table_name,
+            {"id": user_id},
+            update_data,
+        )
+
+        if not success:
+            logging_service.log_structured(
+                level=LogLevel.ERROR,
+                category=LogCategory.PASSWORD_MANAGEMENT,
+                message="Failed to update password in database",
+                additional_data={"user_id": user_id},
+            )
             raise ValueError("Failed to update password in database")
+
+        logging_service.log_structured(
+            level=LogLevel.INFO,
+            category=LogCategory.PASSWORD_MANAGEMENT,
+            message="Password reset completed successfully",
+            additional_data={"user_id": user_id, "email": person.email},
+        )
 
         return {
             "message": "Password has been reset successfully",
