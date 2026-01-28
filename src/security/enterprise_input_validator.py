@@ -256,13 +256,16 @@ class EnterpriseInputValidator:
                 )
 
             # Validate individual fields rather than the entire string
-            # This allows passwords to contain special characters
+            # This allows passwords and tokens to contain special characters
             for field, value in data.items():
                 if isinstance(value, str) and field not in [
                     "password",
                     "currentPassword",
                     "newPassword",
                     "confirmPassword",
+                    "token",  # JWT tokens contain base64 characters
+                    "refreshToken",
+                    "accessToken",
                 ]:
                     # Apply security patterns to non-password fields
                     for pattern_type, pattern_list in patterns.items():
