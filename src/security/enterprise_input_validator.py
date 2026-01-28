@@ -246,11 +246,43 @@ class EnterpriseInputValidator:
     ) -> ValidationResult:
         """Validate authentication requests with special handling for passwords."""
         try:
+            # Log the raw body for debugging (truncated for security)
+            from ..services.logging_service import (
+                logging_service,
+                LogLevel,
+                LogCategory,
+            )
+
+            body_preview = body_str[:100] if len(body_str) > 100 else body_str
+            # Mask password in preview
+            if "password" in body_preview.lower():
+                body_preview = "[contains password - masked]"
+
+            logging_service.log_structured(
+                level=LogLevel.DEBUG,
+                category=LogCategory.SECURITY_EVENTS,
+                message="Validating authentication request",
+                additional_data={
+                    "body_length": len(body_str),
+                    "body_preview": body_preview,
+                    "body_type": type(body_str).__name__,
+                },
+            )
+
             # Parse JSON to validate structure
             data = json.loads(body_str)
 
             # Check for required authentication fields
             if not isinstance(data, dict):
+                logging_service.log_structured(
+                    level=LogLevel.WARNING,
+                    category=LogCategory.SECURITY_EVENTS,
+                    message="Authentication data is not a JSON object",
+                    additional_data={
+                        "data_type": type(data).__name__,
+                        "body_preview": body_preview,
+                    },
+                )
                 return ValidationResult(
                     False, ["Authentication data must be a JSON object"]
                 )
@@ -280,7 +312,23 @@ class EnterpriseInputValidator:
 
             return ValidationResult(True)
 
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
+            from ..services.logging_service import (
+                logging_service,
+                LogLevel,
+                LogCategory,
+            )
+
+            logging_service.log_structured(
+                level=LogLevel.WARNING,
+                category=LogCategory.SECURITY_EVENTS,
+                message="Failed to parse authentication request as JSON",
+                additional_data={
+                    "error": str(e),
+                    "body_length": len(body_str),
+                    "body_first_50_chars": body_str[:50] if body_str else "empty",
+                },
+            )
             return ValidationResult(False, ["Invalid JSON format"])
 
     @classmethod
